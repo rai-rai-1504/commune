@@ -1,0 +1,49 @@
+import React, { useState } from 'react';
+import { useStore } from '../store/useStore';
+
+const TABS = [
+  { id: 'city', label: 'City', icon: '🏙️' },
+  { id: 'editor', label: '3D Editor', icon: '✏️' },
+  { id: 'governance', label: 'Governance', icon: '🏛️' },
+];
+
+export default function Navbar() {
+  const { activeModule, setActiveModule, connected, presence, username, setUsername, clientColor } = useStore();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  return (
+    <nav className="navbar">
+      <div className="nav-logo">commune<span>.build</span></div>
+      {TABS.map(t => (
+        <button key={t.id} className={`nav-tab ${activeModule === t.id ? 'active' : ''}`} onClick={() => setActiveModule(t.id)}>
+          <span>{t.icon}</span> {t.label}
+        </button>
+      ))}
+      <div className="nav-right">
+        <div className="presence-avatars">
+          {presence.slice(0, 6).map((p, i) => (
+            <div key={p.id} className="p-avatar" style={{ background: p.color + '33', color: p.color, zIndex: 6 - i }} title={p.username}>
+              {p.username.slice(0, 2).toUpperCase()}
+            </div>
+          ))}
+        </div>
+        {editing ? (
+          <input
+            className="username-input"
+            autoFocus
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={() => { if (draft.trim()) setUsername(draft.trim()); setEditing(false); }}
+            onKeyDown={e => { if (e.key === 'Enter') { if (draft.trim()) setUsername(draft.trim()); setEditing(false); } }}
+          />
+        ) : (
+          <span style={{ fontSize: 12, color: 'var(--text2)', cursor: 'pointer' }} onClick={() => { setDraft(username); setEditing(true); }}>
+            @{username}
+          </span>
+        )}
+        <div className={`conn-dot ${connected ? '' : 'off'}`} title={connected ? 'Connected' : 'Disconnected'} />
+      </div>
+    </nav>
+  );
+}
