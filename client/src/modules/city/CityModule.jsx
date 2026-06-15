@@ -107,8 +107,7 @@ export default function CityModule() {
   }, [offset, cellSize]);
 
   const isPlacementValid = useCallback((col, row) => {
-    if (!city || !pendingPlacementAsset) return false;
-    return col >= 0 && col <= city.cols && row >= 0 && row <= city.rows;
+    return !!city && !!pendingPlacementAsset;
   }, [city, pendingPlacementAsset]);
 
   const getRoadAlignment = useCallback((col, row) => {
@@ -163,21 +162,40 @@ export default function CityModule() {
     ctx.fillStyle = '#b7e4c7';
     ctx.fillRect(0, 0, W, H);
 
-    // Decorative faint grid overlay
+    // Decorative infinite grid overlay
     ctx.strokeStyle = 'rgba(0,0,0,0.03)';
     ctx.lineWidth = 0.5;
-    for (let c = 0; c <= city.cols; c++) {
-      const x = offset.x + c * cellSize;
+    const startX = ((offset.x % cellSize) + cellSize) % cellSize;
+    const startY = ((offset.y % cellSize) + cellSize) % cellSize;
+
+    for (let x = startX - cellSize; x < W + cellSize; x += cellSize) {
       ctx.beginPath();
-      ctx.moveTo(x, offset.y);
-      ctx.lineTo(x, offset.y + city.rows * cellSize);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
       ctx.stroke();
     }
-    for (let r = 0; r <= city.rows; r++) {
-      const y = offset.y + r * cellSize;
+    for (let y = startY - cellSize; y < H + cellSize; y += cellSize) {
       ctx.beginPath();
-      ctx.moveTo(offset.x, y);
-      ctx.lineTo(offset.x + city.cols * cellSize, y);
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+
+    // Draw central origin axes (col = 0, row = 0 reference)
+    const axisX = offset.x;
+    const axisY = offset.y;
+    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+    ctx.lineWidth = 1.0;
+    if (axisX >= 0 && axisX <= W) {
+      ctx.beginPath();
+      ctx.moveTo(axisX, 0);
+      ctx.lineTo(axisX, H);
+      ctx.stroke();
+    }
+    if (axisY >= 0 && axisY <= H) {
+      ctx.beginPath();
+      ctx.moveTo(0, axisY);
+      ctx.lineTo(W, axisY);
       ctx.stroke();
     }
 
@@ -347,12 +365,12 @@ export default function CityModule() {
   useEffect(() => { draw(); }, [draw]);
 
   function cellFromEvent(e) {
+    if (!canvasRef.current || !city) return null;
     const rect = canvasRef.current.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     const col = Math.floor((mx - offset.x) / cellSize);
     const row = Math.floor((my - offset.y) / cellSize);
-    if (!city || col < 0 || col >= city.cols || row < 0 || row >= city.rows) return null;
     return { col, row };
   }
 
@@ -1046,16 +1064,24 @@ function StreetView({ city, onExit }) {
           }
           
           const mesh = new THREE.Mesh(getStreetGeo(obj.geometry), materials);
+          const oPos = obj.position || { x: 0, y: 0, z: 0 };
+          const oRot = obj.rotation || { x: 0, y: 0, z: 0 };
+          const oScl = obj.scale || { x: 1, y: 1, z: 1 };
+
           mesh.position.set(
-            obj.position.x * scaleFactor,
-            obj.position.y * scaleFactor,
-            obj.position.z * scaleFactor
+            (oPos.x !== undefined ? oPos.x : 0) * scaleFactor,
+            (oPos.y !== undefined ? oPos.y : 0) * scaleFactor,
+            (oPos.z !== undefined ? oPos.z : 0) * scaleFactor
           );
-          mesh.rotation.set(obj.rotation.x, obj.rotation.y, obj.rotation.z);
+          mesh.rotation.set(
+            oRot.x !== undefined ? oRot.x : 0,
+            oRot.y !== undefined ? oRot.y : 0,
+            oRot.z !== undefined ? oRot.z : 0
+          );
           mesh.scale.set(
-            obj.scale.x * scaleFactor,
-            obj.scale.y * scaleFactor,
-            obj.scale.z * scaleFactor
+            (oScl.x !== undefined ? oScl.x : 1) * scaleFactor,
+            (oScl.y !== undefined ? oScl.y : 1) * scaleFactor,
+            (oScl.z !== undefined ? oScl.z : 1) * scaleFactor
           );
           mesh.castShadow = true;
           mesh.receiveShadow = true;
@@ -1141,7 +1167,16 @@ function StreetView({ city, onExit }) {
     scene.background = new THREE.Color(0x87CEEB);
 
     const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 200);
-    camera.position.set(city.cols * 3.4 / 2, 1.7, city.rows * 3.4 / 2);
+    let startX = 0;
+    let startZ = 0;
+    if (city.roads && city.roads.length > 0 && city.roads[0].points.length > 0) {
+      startX = (city.roads[0].points[0].x || 0) * 3.4;
+      startZ = (city.roads[0].points[0].z || 0) * 3.4;
+    } else if (city.placedAssets && city.placedAssets.length > 0) {
+      startX = (city.placedAssets[0].col || 0) * 3.4;
+      startZ = (city.placedAssets[0].row || 0) * 3.4;
+    }
+    camera.position.set(startX, 1.7, startZ);
     camRef.current = camera;
 
     // Lights - warm sunlighting and soft shadows
@@ -1161,7 +1196,7 @@ function StreetView({ city, onExit }) {
 
     // Ground plane
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 200),
+      new THREE.PlaneGeometry(10000, 10000),
       new THREE.MeshStandardMaterial({ color: 0x7cb342, roughness: 0.95 })
     );
     ground.rotation.x = -Math.PI / 2;

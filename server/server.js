@@ -3,6 +3,13 @@ import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import cors from 'cors';
 import { v4 as uuid } from 'uuid';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const SAVE_FILE = path.join(__dirname, 'city_save.json');
 
 const app = express();
 app.use(cors());
@@ -16,13 +23,38 @@ const wss = new WebSocketServer({ server: httpServer });
 const state = {
   // Editor scenes: sceneId -> { objects: {id: obj}, vectorClock: {} }
   scenes: {},
-  // City: single shared city state
-  city: createInitialCity(),
+  // City: single shared city state, loaded from disk or default initialized
+  city: null,
   // Governance: proposals list
   proposals: createInitialProposals(),
   // Connected clients: ws -> { id, username, room, color }
   clients: new Map(),
 };
+
+function saveCity() {
+  try {
+    fs.writeFileSync(SAVE_FILE, JSON.stringify(state.city, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to save city:', err);
+  }
+}
+
+function loadCity() {
+  try {
+    if (fs.existsSync(SAVE_FILE)) {
+      const data = fs.readFileSync(SAVE_FILE, 'utf8');
+      state.city = JSON.parse(data);
+      console.log('City loaded from disk');
+    } else {
+      state.city = createInitialCity();
+    }
+  } catch (err) {
+    console.error('Failed to load city, using defaults:', err);
+    state.city = createInitialCity();
+  }
+}
+
+loadCity();
 
 function createInitialCity() {
   const COLS = 20, ROWS = 20;
@@ -307,6 +339,7 @@ function handleMessage(ws, client, msg) {
       };
       state.city.placedAssets.push(asset);
       broadcast({ type: 'CITY_ASSET_PLACED', asset });
+      saveCity();
       break;
     }
 
@@ -314,12 +347,14 @@ function handleMessage(ws, client, msg) {
     case 'CITY_ADD_ROAD': {
       state.city.roads.push(msg.road);
       broadcast({ type: 'CITY_ROAD_ADDED', road: msg.road });
+      saveCity();
       break;
     }
 
     case 'CITY_REMOVE_ROAD': {
       state.city.roads = state.city.roads.filter(r => r.id !== msg.roadId);
       broadcast({ type: 'CITY_ROAD_REMOVED', roadId: msg.roadId });
+      saveCity();
       break;
     }
 
@@ -339,12 +374,14 @@ function handleMessage(ws, client, msg) {
       };
       state.city.placedAssets.push(asset);
       broadcast({ type: 'CITY_ASSET_PLACED', asset });
+      saveCity();
       break;
     }
 
     case 'CITY_REMOVE_ASSET': {
       state.city.placedAssets = state.city.placedAssets.filter(a => a.id !== msg.assetId);
       broadcast({ type: 'CITY_ASSET_REMOVED', assetId: msg.assetId });
+      saveCity();
       break;
     }
 
@@ -355,6 +392,7 @@ function handleMessage(ws, client, msg) {
         if (msg.objects !== undefined) asset.objects = msg.objects;
         if (msg.color !== undefined) asset.color = msg.color;
         broadcast({ type: 'CITY_ASSET_UPDATED', asset });
+        saveCity();
       }
       break;
     }
@@ -362,6 +400,7 @@ function handleMessage(ws, client, msg) {
     case 'CITY_CLEAR': {
       state.city = createEmptyCity();
       broadcast({ type: 'CITY_CLEARED', city: state.city });
+      saveCity();
       break;
     }
 
@@ -437,6 +476,7 @@ function applyProposal(proposal) {
   if (proposal.category === 'budget') {
     state.city.stats.happiness = Math.min(95, state.city.stats.happiness + 3);
   }
+  saveCity();
 }
 
 // ── REST API ───────────────────────────────────────────────────────────────
