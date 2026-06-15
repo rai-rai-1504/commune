@@ -527,9 +527,9 @@ export const useStore = create((set, get) => ({
   setStreetView(v) { set({ streetView: v }); },
   selectAsset(id) { set({ selectedAssetId: id }); },
 
-  addRoadSegment(points) {
+  addRoadSegment(points, roadType = 'standard') {
     const id = uuid();
-    const newRoad = { id, points };
+    const newRoad = { id, points, roadType };
     get().send({ type: 'CITY_ADD_ROAD', road: newRoad });
     set(state => ({
       city: state.city ? { ...state.city, roads: [...(state.city.roads || []), newRoad] } : state.city

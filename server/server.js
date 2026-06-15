@@ -391,6 +391,9 @@ function handleMessage(ws, client, msg) {
         if (msg.scaleMultiplier !== undefined) asset.scaleMultiplier = msg.scaleMultiplier;
         if (msg.objects !== undefined) asset.objects = msg.objects;
         if (msg.color !== undefined) asset.color = msg.color;
+        if (msg.col !== undefined) asset.col = msg.col;
+        if (msg.row !== undefined) asset.row = msg.row;
+        if (msg.rotation !== undefined) asset.rotation = msg.rotation;
         broadcast({ type: 'CITY_ASSET_UPDATED', asset });
         saveCity();
       }

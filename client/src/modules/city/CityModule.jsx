@@ -63,6 +63,33 @@ function getStreetGeo(type) {
   return STREET_GEO[type];
 }
 
+const getOffsetPoints = (samples, dist) => {
+  const result = [];
+  for (let i = 0; i < samples.length; i++) {
+    const pt = samples[i];
+    let dx = 0, dz = 0;
+    if (i === 0) {
+      dx = samples[1].x - pt.x;
+      dz = samples[1].z - pt.z;
+    } else if (i === samples.length - 1) {
+      dx = pt.x - samples[i-1].x;
+      dz = pt.z - samples[i-1].z;
+    } else {
+      dx = samples[i+1].x - samples[i-1].x;
+      dz = samples[i+1].z - samples[i-1].z;
+    }
+    const len = Math.sqrt(dx*dx + dz*dz);
+    if (len > 0) {
+      const nx = -dz / len;
+      const nz = dx / len;
+      result.push({ x: pt.x + nx * dist, z: pt.z + nz * dist });
+    } else {
+      result.push({ x: pt.x, z: pt.z });
+    }
+  }
+  return result;
+};
+
 const getMaxScaleFactor = (asset) => {
   return 5.0;
 };
@@ -89,6 +116,8 @@ export default function CityModule() {
   const [selectedCell, setSelectedCell] = useState(null);
   const [activeRoadPoints, setActiveRoadPoints] = useState([]);
   const [manualRotation, setManualRotation] = useState(0);
+  const [activeRoadType, setActiveRoadType] = useState('standard');
+  const [draggingAssetId, setDraggingAssetId] = useState(null);
 
   useEffect(() => {
     setManualRotation(0);
@@ -151,6 +180,44 @@ export default function CityModule() {
     return null;
   }, [city]);
 
+  const getRoadSnapPoint = useCallback((col, row) => {
+    if (!city || !city.roads || city.roads.length === 0) return null;
+    let closestDist = Infinity;
+    let closestPt = null;
+    const p = { x: col, z: row };
+
+    city.roads.forEach(road => {
+      if (road.points.length < 2) return;
+      const points3d = road.points.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
+      const curve = new THREE.CatmullRomCurve3(points3d);
+      const samples = curve.getPoints(Math.max(20, road.points.length * 5));
+      for (let i = 0; i < samples.length - 1; i++) {
+        const a = { x: samples[i].x, z: samples[i].z };
+        const b = { x: samples[i+1].x, z: samples[i+1].z };
+        const d = distanceToSegment(p, a, b);
+        if (d < closestDist) {
+          closestDist = d;
+
+          const l2 = (a.x - b.x)**2 + (a.z - b.z)**2;
+          let t = 0;
+          if (l2 > 0) {
+            t = ((p.x - a.x) * (b.x - a.x) + (p.z - a.z) * (b.z - a.z)) / l2;
+            t = Math.max(0, Math.min(1, t));
+          }
+          closestPt = {
+            x: a.x + t * (b.x - a.x),
+            z: a.z + t * (b.z - a.z)
+          };
+        }
+      }
+    });
+
+    if (closestDist < 1.0 && closestPt) {
+      return closestPt;
+    }
+    return null;
+  }, [city]);
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !city) return;
@@ -199,72 +266,114 @@ export default function CityModule() {
       ctx.stroke();
     }
 
+    const drawRoad = (roadPoints, type, isPreview) => {
+      if (roadPoints.length < 2) return;
+      
+      const points3d = roadPoints.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
+      const curve = new THREE.CatmullRomCurve3(points3d);
+      const samples = curve.getPoints(Math.max(30, roadPoints.length * 10));
+      
+      const screenPoints = samples.map(pt => ({
+        x: offset.x + pt.x * cellSize,
+        z: offset.y + pt.z * cellSize
+      }));
+
+      const opacity = isPreview ? 0.6 : 1.0;
+      
+      const drawCurvePoints = (points) => {
+        ctx.beginPath();
+        points.forEach((pt, idx) => {
+          if (idx === 0) ctx.moveTo(pt.x, pt.z);
+          else ctx.lineTo(pt.x, pt.z);
+        });
+        ctx.stroke();
+      };
+
+      if (type === 'multilane') {
+        // Main pavement
+        ctx.strokeStyle = `rgba(51, 65, 85, ${opacity})`;
+        ctx.lineWidth = 28 * zoom;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        drawCurvePoints(screenPoints);
+
+        // Double yellow center lines
+        ctx.strokeStyle = `rgba(245, 158, 11, ${opacity})`;
+        ctx.lineWidth = 1.5 * zoom;
+        ctx.lineCap = 'butt';
+        drawCurvePoints(getOffsetPoints(screenPoints, 2 * zoom));
+        drawCurvePoints(getOffsetPoints(screenPoints, -2 * zoom));
+
+        // Dashed lane lines
+        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45})`;
+        ctx.lineWidth = 1.5 * zoom;
+        ctx.setLineDash([5 * zoom, 8 * zoom]);
+        drawCurvePoints(getOffsetPoints(screenPoints, 8 * zoom));
+        drawCurvePoints(getOffsetPoints(screenPoints, -8 * zoom));
+        ctx.setLineDash([]);
+      } else if (type === 'highway') {
+        // Main pavement
+        ctx.strokeStyle = `rgba(30, 41, 59, ${opacity})`;
+        ctx.lineWidth = 44 * zoom;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        drawCurvePoints(screenPoints);
+
+        // Concrete median (center)
+        ctx.strokeStyle = `rgba(203, 213, 225, ${opacity})`;
+        ctx.lineWidth = 4 * zoom;
+        ctx.lineCap = 'round';
+        drawCurvePoints(screenPoints);
+
+        // Solid yellow inner shoulders
+        ctx.strokeStyle = `rgba(245, 158, 11, ${opacity})`;
+        ctx.lineWidth = 1.5 * zoom;
+        ctx.lineCap = 'butt';
+        drawCurvePoints(getOffsetPoints(screenPoints, 4.5 * zoom));
+        drawCurvePoints(getOffsetPoints(screenPoints, -4.5 * zoom));
+
+        // Dashed lane lines
+        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45})`;
+        ctx.lineWidth = 1.5 * zoom;
+        ctx.setLineDash([6 * zoom, 10 * zoom]);
+        drawCurvePoints(getOffsetPoints(screenPoints, 12 * zoom));
+        drawCurvePoints(getOffsetPoints(screenPoints, -12 * zoom));
+        ctx.setLineDash([]);
+
+        // Solid white outer shoulders
+        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.6})`;
+        ctx.lineWidth = 1.5 * zoom;
+        drawCurvePoints(getOffsetPoints(screenPoints, 19 * zoom));
+        drawCurvePoints(getOffsetPoints(screenPoints, -19 * zoom));
+      } else {
+        // Standard
+        ctx.strokeStyle = `rgba(71, 85, 105, ${opacity})`;
+        ctx.lineWidth = 16 * zoom;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        drawCurvePoints(screenPoints);
+
+        // Center dashes
+        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45})`;
+        ctx.lineWidth = 2 * zoom;
+        ctx.setLineDash([6 * zoom, 8 * zoom]);
+        drawCurvePoints(screenPoints);
+        ctx.setLineDash([]);
+      }
+    };
+
     // Render placed curvy roads
     (city.roads || []).forEach(road => {
-      if (road.points.length < 2) return;
-      const points3d = road.points.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
-      const curve = new THREE.CatmullRomCurve3(points3d);
-      const samples = curve.getPoints(Math.max(30, road.points.length * 10));
-      ctx.strokeStyle = '#475569';
-      ctx.lineWidth = 16 * zoom;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      samples.forEach((pt, idx) => {
-        const px = offset.x + pt.x * cellSize;
-        const py = offset.y + pt.z * cellSize;
-        if (idx === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      });
-      ctx.stroke();
-
-      // Draw center dashes
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-      ctx.lineWidth = 2 * zoom;
-      ctx.setLineDash([6 * zoom, 8 * zoom]);
-      ctx.beginPath();
-      samples.forEach((pt, idx) => {
-        const px = offset.x + pt.x * cellSize;
-        const py = offset.y + pt.z * cellSize;
-        if (idx === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      });
-      ctx.stroke();
-      ctx.setLineDash([]);
+      drawRoad(road.points, road.roadType || 'standard', false);
     });
 
     // Render active road under construction
     if (cityTool === 'road' && activeRoadPoints.length > 0) {
-      ctx.strokeStyle = 'rgba(71, 85, 105, 0.7)';
-      ctx.lineWidth = 16 * zoom;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-
       let pts = [...activeRoadPoints];
       if (hoveredFloat) {
         pts.push({ x: hoveredFloat.col, z: hoveredFloat.row });
       }
-
-      if (pts.length >= 2) {
-        const points3d = pts.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
-        const curve = new THREE.CatmullRomCurve3(points3d);
-        const samples = curve.getPoints(Math.max(30, pts.length * 10));
-        samples.forEach((pt, idx) => {
-          const px = offset.x + pt.x * cellSize;
-          const py = offset.y + pt.z * cellSize;
-          if (idx === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        });
-      } else {
-        const px = offset.x + pts[0].x * cellSize;
-        const py = offset.y + pts[0].z * cellSize;
-        ctx.moveTo(px, py);
-        if (hoveredFloat) {
-          ctx.lineTo(offset.x + hoveredFloat.col * cellSize, offset.y + hoveredFloat.row * cellSize);
-        }
-      }
-      ctx.stroke();
+      drawRoad(pts, activeRoadType, true);
 
       // Node circles
       ctx.fillStyle = '#4ECDC4';
@@ -345,7 +454,7 @@ export default function CityModule() {
       ctx.strokeRect(sx + 1, sy + 1, cellSize - 2, cellSize - 2);
       ctx.setLineDash([]);
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType]);
 
   // Resize + redraw
   useEffect(() => {
@@ -418,7 +527,7 @@ export default function CityModule() {
             }
           });
           if (uniquePoints.length >= 2) {
-            addRoadSegment(uniquePoints);
+            addRoadSegment(uniquePoints, activeRoadType);
           }
           setActiveRoadPoints([]);
         }
@@ -434,7 +543,7 @@ export default function CityModule() {
     };
     window.addEventListener('keydown', handleGlobalKey);
     return () => window.removeEventListener('keydown', handleGlobalKey);
-  }, [cityTool, activeRoadPoints, addRoadSegment, streetView, pendingPlacementAsset]);
+  }, [cityTool, activeRoadPoints, addRoadSegment, streetView, pendingPlacementAsset, activeRoadType]);
 
   function onMouseDown(e) {
     if (e.button === 1 || (e.button === 0 && e.altKey)) {
@@ -462,7 +571,7 @@ export default function CityModule() {
           }
         });
         if (uniquePoints.length >= 2) {
-          addRoadSegment(uniquePoints);
+          addRoadSegment(uniquePoints, activeRoadType);
         }
       }
       setActiveRoadPoints([]);
@@ -483,10 +592,16 @@ export default function CityModule() {
         setSelectedCell(cell);
         const asset = assetAtCell(floatCoords.col, floatCoords.row);
         selectAsset(asset ? asset.id : null);
+        if (asset) {
+          setDraggingAssetId(asset.id);
+        }
         return;
       }
       if (cityTool === 'road') {
-        setActiveRoadPoints(prev => [...prev, { x: floatCoords.col, z: floatCoords.row }]);
+        const snap = getRoadSnapPoint(floatCoords.col, floatCoords.row);
+        const finalCol = snap ? snap.x : floatCoords.col;
+        const finalRow = snap ? snap.z : floatCoords.row;
+        setActiveRoadPoints(prev => [...prev, { x: finalCol, z: finalRow }]);
         return;
       }
       if (cityTool === 'erase') {
@@ -522,7 +637,7 @@ export default function CityModule() {
         }
       });
       if (uniquePoints.length >= 2) {
-        addRoadSegment(uniquePoints);
+        addRoadSegment(uniquePoints, activeRoadType);
       }
       setActiveRoadPoints([]);
     }
@@ -533,11 +648,27 @@ export default function CityModule() {
       setOffset({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
       return;
     }
-    const floatCoords = getFloatCoords(e);
+    let floatCoords = getFloatCoords(e);
+    if (cityTool === 'road') {
+      const snap = getRoadSnapPoint(floatCoords.col, floatCoords.row);
+      if (snap) {
+        floatCoords = { col: snap.x, row: snap.z };
+      }
+    }
     setHoveredFloat(floatCoords);
+
+    if (draggingAssetId) {
+      updateAsset(draggingAssetId, { col: floatCoords.col, row: floatCoords.row });
+    }
   }
 
-  function onMouseUp() { setPanning(false); panStart.current = null; }
+  function onMouseUp() {
+    setPanning(false);
+    panStart.current = null;
+    if (draggingAssetId) {
+      setDraggingAssetId(null);
+    }
+  }
 
   function onWheel(e) {
     e.preventDefault();
@@ -651,6 +782,29 @@ export default function CityModule() {
             );
           })}
         </div>
+
+        {cityTool === 'road' && (
+          <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg3)', borderRadius: 'var(--radius)', margin: '0 8px 10px' }}>
+            <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 6, fontWeight: '600', letterSpacing: '0.05em' }}>Road Type</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {[
+                { id: 'standard', label: 'Standard (2 lanes)', color: '#445566' },
+                { id: 'multilane', label: 'Multi-lane (4 lanes)', color: '#334155' },
+                { id: 'highway', label: 'Highway (4 lanes + Median)', color: '#1e293b' },
+              ].map(rt => (
+                <button
+                  key={rt.id}
+                  className={`btn sm ${activeRoadType === rt.id ? 'primary' : ''}`}
+                  style={{ justifyContent: 'flex-start', width: '100%', padding: '6px 10px' }}
+                  onClick={() => setActiveRoadType(rt.id)}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: rt.color, marginRight: 6 }} />
+                  {rt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Presets Library */}
         <div className="panel-label" style={{ padding:'10px 12px 4px' }}>Build Presets</div>
@@ -850,6 +1004,73 @@ export default function CityModule() {
               />
             </div>
 
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6 }}>
+              <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 600, marginBottom: 4 }}>Position Nudge</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, justifyItems: 'center', alignItems: 'center', width: '100%' }}>
+                <div />
+                <button
+                  className="btn sm"
+                  style={{ padding: '4px 8px', fontSize: 10 }}
+                  onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row - 0.2 })}
+                  title="Move North"
+                >
+                  ▲
+                </button>
+                <div />
+                
+                <button
+                  className="btn sm"
+                  style={{ padding: '4px 8px', fontSize: 10 }}
+                  onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col - 0.2 })}
+                  title="Move West"
+                >
+                  ◀
+                </button>
+                <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center' }}>Move</div>
+                <button
+                  className="btn sm"
+                  style={{ padding: '4px 8px', fontSize: 10 }}
+                  onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col + 0.2 })}
+                  title="Move East"
+                >
+                  ▶
+                </button>
+                
+                <div />
+                <button
+                  className="btn sm"
+                  style={{ padding: '4px 8px', fontSize: 10 }}
+                  onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row + 0.2 })}
+                  title="Move South"
+                >
+                  ▼
+                </button>
+                <div />
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6 }}>
+              <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text2)', marginBottom: 2 }}>
+                <span>Rotation</span>
+                <span style={{ fontWeight: 600, color: 'var(--accent)' }}>
+                  {Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}°
+                </span>
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="360"
+                step="5"
+                value={Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}
+                onChange={(e) => {
+                  const deg = parseInt(e.target.value);
+                  const rad = (deg * Math.PI) / 180;
+                  updateAsset(selectedAsset.id, { rotation: rad });
+                }}
+                style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--accent)' }}
+              />
+            </div>
+
             {selectedAsset.objects && selectedAsset.objects.length > 0 && (
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6 }}>
                 <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 600, marginBottom: 4 }}>Objects Colors</div>
@@ -904,6 +1125,12 @@ function StreetView({ city, onExit }) {
   const isDraggingMouse = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
 
+  const [birdsEye, setBirdsEye] = useState(false);
+  const birdsEyeRef = useRef(false);
+  useEffect(() => {
+    birdsEyeRef.current = birdsEye;
+  }, [birdsEye]);
+
   const cityRef = useRef(city);
   useEffect(() => {
     cityRef.current = city;
@@ -939,8 +1166,10 @@ function StreetView({ city, onExit }) {
               mat.dispose();
             });
           } else {
-            if (child.material.map) child.material.map.dispose();
-            child.material.dispose();
+            if (child.material) {
+              if (child.material.map) child.material.map.dispose();
+              child.material.dispose();
+            }
           }
         }
       });
@@ -950,38 +1179,85 @@ function StreetView({ city, onExit }) {
     const cellS = 3.4;
     const roadMat = new THREE.MeshStandardMaterial({ color: 0x1c1e22, roughness: 0.85 });
     const dashMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
-
+    const yellowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.8 });
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+    const concreteMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 });
+ 
     // Render curvy roads
     (city.roads || []).forEach(road => {
       if (road.points.length < 2) return;
       const points3d = road.points.map(pt => new THREE.Vector3(pt.x * cellS, 0.01, pt.z * cellS));
       const curve = new THREE.CatmullRomCurve3(points3d);
 
+      const type = road.roadType || 'standard';
+      let radius = 0.9;
+      if (type === 'multilane') radius = 1.5;
+      else if (type === 'highway') radius = 2.2;
+ 
       // Squashed TubeGeometry for road surface
-      const roadGeo = new THREE.TubeGeometry(curve, Math.max(30, road.points.length * 10), 0.9, 8, false);
+      const roadGeo = new THREE.TubeGeometry(curve, Math.max(30, road.points.length * 10), radius, 8, false);
       const roadMesh = new THREE.Mesh(roadGeo, roadMat);
       roadMesh.scale.set(1, 0.01, 1);
       roadMesh.receiveShadow = true;
       scene.add(roadMesh);
       meshesRef.current.push(roadMesh);
-
-      // Dash lines along curve
-      const numDashes = Math.max(10, Math.floor(curve.getLength() * 1.5));
-      for (let i = 0; i < numDashes; i++) {
-        if (i % 2 === 0) continue;
-        const t = i / numDashes;
+ 
+      const length = curve.getLength();
+      const step = 0.4;
+      const numSteps = Math.max(10, Math.floor(length / step));
+ 
+      for (let i = 0; i <= numSteps; i++) {
+        const t = i / numSteps;
         const pos = curve.getPointAt(t);
         const tangent = curve.getTangentAt(t);
-
-        const dash = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.015, 0.4), dashMat);
-        dash.position.copy(pos);
-        dash.position.y = 0.025;
-
         const angle = Math.atan2(tangent.x, tangent.z);
-        dash.rotation.y = angle;
-
-        scene.add(dash);
-        meshesRef.current.push(dash);
+ 
+        const len = Math.sqrt(tangent.x * tangent.x + tangent.z * tangent.z);
+        if (len === 0) continue;
+        const nx = -tangent.z / len;
+        const nz = tangent.x / len;
+ 
+        const addMarking = (offsetDist, mWidth, mHeight, mLength, material) => {
+          const m = new THREE.Mesh(new THREE.BoxGeometry(mWidth, mHeight, mLength), material);
+          m.position.set(pos.x + nx * offsetDist, pos.y + mHeight / 2 + 0.005, pos.z + nz * offsetDist);
+          m.rotation.y = angle;
+          scene.add(m);
+          meshesRef.current.push(m);
+        };
+ 
+        if (type === 'multilane') {
+          // Double yellow lines in center
+          addMarking(0.08, 0.04, 0.015, 0.42, yellowMat);
+          addMarking(-0.08, 0.04, 0.015, 0.42, yellowMat);
+ 
+          // Dashed lane lines (alternate)
+          if (i % 3 === 0) {
+            addMarking(0.75, 0.04, 0.015, 0.42, whiteMat);
+            addMarking(-0.75, 0.04, 0.015, 0.42, whiteMat);
+          }
+        } else if (type === 'highway') {
+          // Concrete median jersey barrier
+          addMarking(0, 0.24, 0.5, 0.42, concreteMat);
+ 
+          // Solid yellow inner lines
+          addMarking(0.22, 0.04, 0.015, 0.42, yellowMat);
+          addMarking(-0.22, 0.04, 0.015, 0.42, yellowMat);
+ 
+          // Dashed lane lines (alternate)
+          if (i % 3 === 0) {
+            addMarking(1.05, 0.04, 0.015, 0.42, whiteMat);
+            addMarking(-1.05, 0.04, 0.015, 0.42, whiteMat);
+          }
+ 
+          // Solid white outer shoulders
+          addMarking(1.9, 0.04, 0.015, 0.42, whiteMat);
+          addMarking(-1.9, 0.04, 0.015, 0.42, whiteMat);
+        } else {
+          // Standard center dashes
+          if (i % 2 === 0) {
+            addMarking(0, 0.06, 0.015, 0.4, dashMat);
+          }
+        }
       }
     });
 
@@ -1166,7 +1442,7 @@ function StreetView({ city, onExit }) {
     scene.fog = new THREE.Fog(0x87CEEB, 15, 60);
     scene.background = new THREE.Color(0x87CEEB);
 
-    const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 200);
+    const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 1000);
     let startX = 0;
     let startZ = 0;
     if (city.roads && city.roads.length > 0 && city.roads[0].points.length > 0) {
@@ -1282,7 +1558,9 @@ function StreetView({ city, onExit }) {
     const dir = new THREE.Vector3();
     const animate = () => {
       animRef.current = requestAnimationFrame(animate);
-      const yaw = yawRef.current, pitch = pitchRef.current;
+      const isBirdsEye = birdsEyeRef.current;
+      const yaw = yawRef.current;
+      const pitch = isBirdsEye ? -Math.PI / 3 : pitchRef.current;
       camera.rotation.order = 'YXZ';
       camera.rotation.y = yaw;
       camera.rotation.x = pitch;
@@ -1293,11 +1571,12 @@ function StreetView({ city, onExit }) {
       if (keys.current['KeyA'] || keys.current['ArrowLeft'] || keys.current['a'])  dir.x -= 1;
       if (keys.current['KeyD'] || keys.current['ArrowRight'] || keys.current['d']) dir.x += 1;
       if (dir.lengthSq() > 0) {
-        dir.normalize().multiplyScalar(SPEED);
+        const moveSpeed = SPEED * (isBirdsEye ? 6 : 1);
+        dir.normalize().multiplyScalar(moveSpeed);
         dir.applyEuler(new THREE.Euler(0, yaw, 0));
         camera.position.add(dir);
-        camera.position.y = 1.7;
       }
+      camera.position.y = isBirdsEye ? 40.0 : 1.7;
 
       // Roaming humans update
       humansRef.current.forEach(h => {
@@ -1415,7 +1694,7 @@ function StreetView({ city, onExit }) {
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAssetId]);
+  }, []);
 
   useEffect(() => {
     rebuildStreetScene();
@@ -1431,9 +1710,31 @@ function StreetView({ city, onExit }) {
         Drag: look around<br />
         Click on building to select/edit
       </div>
-      <button className="btn" style={{ position:'absolute', top:12, right:12, zIndex:10 }} onClick={onExit}>
-        🗺️ Back to Map
-      </button>
+      <div style={{ position:'absolute', top:12, right:12, zIndex:10, display: 'flex', gap: 8 }}>
+        <button
+          className={`btn ${birdsEye ? 'primary' : ''}`}
+          onClick={() => setBirdsEye(!birdsEye)}
+          style={{
+            background: birdsEye ? 'rgba(78, 205, 196, 0.2)' : 'rgba(22, 27, 38, 0.85)',
+            color: birdsEye ? '#4ECDC4' : '#fff',
+            border: birdsEye ? '1px solid #4ECDC4' : '1px solid rgba(255,255,255,0.25)',
+            fontWeight: '600'
+          }}
+        >
+          {birdsEye ? '🚶 First-Person View' : '🦅 Bird\'s Eye View'}
+        </button>
+        <button
+          className="btn"
+          onClick={onExit}
+          style={{
+            background: 'rgba(22, 27, 38, 0.85)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.25)'
+          }}
+        >
+          🗺️ Back to Map
+        </button>
+      </div>
 
       {/* Floating Edit Panel in Street View */}
       {selectedAsset && (
@@ -1479,6 +1780,73 @@ function StreetView({ city, onExit }) {
               <span>{Math.min(0.1, getMaxScaleFactor(selectedAsset)).toFixed(2)}x</span>
               <span>Max: {getMaxScaleFactor(selectedAsset).toFixed(2)}x</span>
             </div>
+          </div>
+
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>Position Nudge</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, justifyItems: 'center', alignItems: 'center', width: '100%' }}>
+              <div />
+              <button
+                className="btn sm"
+                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row - 0.2 })}
+                title="Move North"
+              >
+                ▲
+              </button>
+              <div />
+              
+              <button
+                className="btn sm"
+                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col - 0.2 })}
+                title="Move West"
+              >
+                ◀
+              </button>
+              <div style={{ fontSize: 9, color: '#aaa', textAlign: 'center' }}>Move</div>
+              <button
+                className="btn sm"
+                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col + 0.2 })}
+                title="Move East"
+              >
+                ▶
+              </button>
+              
+              <div />
+              <button
+                className="btn sm"
+                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row + 0.2 })}
+                title="Move South"
+              >
+                ▼
+              </button>
+              <div />
+            </div>
+          </div>
+
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 10 }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
+              <span>Rotation</span>
+              <span style={{ fontWeight: 600, color: '#4ECDC4' }}>
+                {Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}°
+              </span>
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="360"
+              step="5"
+              value={Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}
+              onChange={(e) => {
+                const deg = parseInt(e.target.value);
+                const rad = (deg * Math.PI) / 180;
+                updateAsset(selectedAsset.id, { rotation: rad });
+              }}
+              style={{ width: '100%', cursor: 'pointer', accentColor: '#4ECDC4' }}
+            />
           </div>
           
           {selectedAsset.objects && selectedAsset.objects.length > 0 && (
