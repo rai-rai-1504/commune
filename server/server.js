@@ -26,36 +26,47 @@ const state = {
 
 function createInitialCity() {
   const COLS = 20, ROWS = 20;
-  const grid = [];
-  for (let r = 0; r < ROWS; r++) {
-    grid[r] = [];
-    for (let c = 0; c < COLS; c++) {
-      grid[r][c] = { type: 'empty', zoneType: null, buildingId: null, road: false };
-    }
-  }
-  // Seed some roads
-  for (let i = 0; i < COLS; i++) { grid[4][i].road = true; grid[9][i].road = true; grid[14][i].road = true; }
-  for (let i = 0; i < ROWS; i++) { grid[i][4].road = true; grid[i][9].road = true; grid[i][14].road = true; }
-  // Seed some zones
-  const zones = [
-    [1,1,'residential'],[1,2,'residential'],[2,1,'residential'],[2,2,'residential'],
-    [1,5,'commercial'],[2,5,'commercial'],[1,6,'commercial'],
-    [5,1,'industrial'],[5,2,'industrial'],[6,1,'industrial'],
-    [5,5,'green'],[5,6,'green'],[6,5,'green'],
-    [1,10,'residential'],[2,10,'residential'],[3,10,'residential'],
-    [10,1,'commercial'],[10,2,'commercial'],[11,1,'commercial'],
-  ];
-  zones.forEach(([r,c,t]) => { if (grid[r] && grid[r][c]) { grid[r][c].type = t; grid[r][c].zoneType = t; } });
-
   return {
     id: 'nova-arcadia',
     name: 'Nova Arcadia',
     cols: COLS,
     rows: ROWS,
-    grid,
     placedAssets: [], // { id, assetId, name, col, row, rotation, color, placedBy }
-    roads: [],        // separate road segments for metro/highway overlay
-    stats: { population: 4820, happiness: 74, treasury: 980000, traffic: 'low' },
+    roads: [
+      {
+        id: 'road-init-1',
+        points: [
+          { x: 2, z: 5 },
+          { x: 5, z: 8 },
+          { x: 10, z: 5 },
+          { x: 15, z: 8 },
+          { x: 18, z: 5 }
+        ]
+      },
+      {
+        id: 'road-init-2',
+        points: [
+          { x: 5, z: 2 },
+          { x: 10, z: 10 },
+          { x: 15, z: 18 }
+        ]
+      }
+    ],
+    stats: { population: 0, happiness: 100, treasury: 500000, traffic: 'low' },
+    simulationTick: 0,
+  };
+}
+
+function createEmptyCity() {
+  const COLS = 20, ROWS = 20;
+  return {
+    id: 'nova-arcadia',
+    name: 'Nova Arcadia',
+    cols: COLS,
+    rows: ROWS,
+    placedAssets: [],
+    roads: [],
+    stats: { population: 0, happiness: 100, treasury: 500000, traffic: 'low' },
     simulationTick: 0,
   };
 }
@@ -126,17 +137,26 @@ function getOrCreateScene(sceneId) {
 
 function runSimTick() {
   const city = state.city;
-  const grid = city.grid;
   let res = 0, com = 0, ind = 0, green = 0;
-  for (const row of grid) for (const cell of row) {
-    if (cell.zoneType === 'residential') res++;
-    if (cell.zoneType === 'commercial') com++;
-    if (cell.zoneType === 'industrial') ind++;
-    if (cell.zoneType === 'green') green++;
-  }
+  
+  (city.placedAssets || []).forEach(asset => {
+    const name = (asset.name || '').toLowerCase();
+    if (name.includes('home') || name.includes('manor') || name.includes('villa') || name.includes('residential') || name.includes('house')) {
+      res++;
+    } else if (name.includes('mall') || name.includes('diner') || name.includes('commercial') || name.includes('shop')) {
+      com++;
+    } else if (name.includes('refinery') || name.includes('warehouse') || name.includes('industrial') || name.includes('factory')) {
+      ind++;
+    } else if (name.includes('dome') || name.includes('fountain') || name.includes('green') || name.includes('park')) {
+      green++;
+    } else {
+      res++;
+    }
+  });
+
   const assets = city.placedAssets.length;
   const basePop = res * 240 + assets * 80;
-  const happiness = Math.min(95, Math.max(20,
+  const happiness = basePop === 0 ? 100 : Math.min(95, Math.max(20,
     50 + (green * 3) + (com * 2) - (ind * 1.5) + (assets * 2)
   ));
   const revenue = com * 1200 + ind * 800 - (res * 50);
@@ -291,22 +311,15 @@ function handleMessage(ws, client, msg) {
     }
 
     // ── CITY OPS ────────────────────────────────────────────────────────
-    case 'CITY_ZONE': {
-      const { col, row, zoneType } = msg;
-      const cell = state.city.grid[row]?.[col];
-      if (!cell) break;
-      cell.type = zoneType || 'empty';
-      cell.zoneType = zoneType || null;
-      broadcast({ type: 'CITY_ZONE_UPDATE', col, row, cell, by: client.username });
+    case 'CITY_ADD_ROAD': {
+      state.city.roads.push(msg.road);
+      broadcast({ type: 'CITY_ROAD_ADDED', road: msg.road });
       break;
     }
 
-    case 'CITY_ROAD': {
-      const { col, row, value } = msg;
-      const cell = state.city.grid[row]?.[col];
-      if (!cell) break;
-      cell.road = value;
-      broadcast({ type: 'CITY_ROAD_UPDATE', col, row, cell, by: client.username });
+    case 'CITY_REMOVE_ROAD': {
+      state.city.roads = state.city.roads.filter(r => r.id !== msg.roadId);
+      broadcast({ type: 'CITY_ROAD_REMOVED', roadId: msg.roadId });
       break;
     }
 
@@ -332,6 +345,23 @@ function handleMessage(ws, client, msg) {
     case 'CITY_REMOVE_ASSET': {
       state.city.placedAssets = state.city.placedAssets.filter(a => a.id !== msg.assetId);
       broadcast({ type: 'CITY_ASSET_REMOVED', assetId: msg.assetId });
+      break;
+    }
+
+    case 'CITY_UPDATE_ASSET': {
+      const asset = state.city.placedAssets.find(a => a.id === msg.assetId);
+      if (asset) {
+        if (msg.scaleMultiplier !== undefined) asset.scaleMultiplier = msg.scaleMultiplier;
+        if (msg.objects !== undefined) asset.objects = msg.objects;
+        if (msg.color !== undefined) asset.color = msg.color;
+        broadcast({ type: 'CITY_ASSET_UPDATED', asset });
+      }
+      break;
+    }
+
+    case 'CITY_CLEAR': {
+      state.city = createEmptyCity();
+      broadcast({ type: 'CITY_CLEARED', city: state.city });
       break;
     }
 
