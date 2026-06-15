@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { useStore } from '../../store/useStore';
+import { TEMPLATES } from '../../components/AssetLibrary';
 
 const CELL = 34;
 
@@ -84,10 +85,14 @@ export default function CityModule() {
   const [zoom, setZoom] = useState(1.0);
   const [panning, setPanning] = useState(false);
   const panStart = useRef(null);
-  const [hovered, setHovered] = useState(null);
   const [hoveredFloat, setHoveredFloat] = useState(null);
   const [selectedCell, setSelectedCell] = useState(null);
   const [activeRoadPoints, setActiveRoadPoints] = useState([]);
+  const [manualRotation, setManualRotation] = useState(0);
+
+  useEffect(() => {
+    setManualRotation(0);
+  }, [pendingPlacementAsset]);
 
   const cellSize = CELL * zoom;
 
@@ -105,6 +110,47 @@ export default function CityModule() {
     if (!city || !pendingPlacementAsset) return false;
     return col >= 0 && col <= city.cols && row >= 0 && row <= city.rows;
   }, [city, pendingPlacementAsset]);
+
+  const getRoadAlignment = useCallback((col, row) => {
+    if (!city || !city.roads || city.roads.length === 0) return null;
+    let closestDist = Infinity;
+    let closestPt = null;
+    const p = { x: col, z: row };
+
+    city.roads.forEach(road => {
+      if (road.points.length < 2) return;
+      const points3d = road.points.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
+      const curve = new THREE.CatmullRomCurve3(points3d);
+      const samples = curve.getPoints(Math.max(20, road.points.length * 5));
+      for (let i = 0; i < samples.length - 1; i++) {
+        const a = { x: samples[i].x, z: samples[i].z };
+        const b = { x: samples[i+1].x, z: samples[i+1].z };
+        const d = distanceToSegment(p, a, b);
+        if (d < closestDist) {
+          closestDist = d;
+
+          const l2 = (a.x - b.x)**2 + (a.z - b.z)**2;
+          let t = 0;
+          if (l2 > 0) {
+            t = ((p.x - a.x) * (b.x - a.x) + (p.z - a.z) * (b.z - a.z)) / l2;
+            t = Math.max(0, Math.min(1, t));
+          }
+          closestPt = {
+            x: a.x + t * (b.x - a.x),
+            z: a.z + t * (b.z - a.z)
+          };
+        }
+      }
+    });
+
+    if (closestDist < 2.2 && closestPt) {
+      const dx = closestPt.x - col;
+      const dz = closestPt.z - row;
+      const rotation = Math.atan2(dx, dz);
+      return { rotation, distance: closestDist };
+    }
+    return null;
+  }, [city]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -221,9 +267,14 @@ export default function CityModule() {
       const scaleFactor = asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0;
       const aw = (asset.width || 2) * (cellSize / 3.4) * scaleFactor;
       const ah = (asset.height || 2) * (cellSize / 3.4) * scaleFactor;
-      const ax = offset.x + asset.col * cellSize - aw / 2;
-      const ay = offset.y + asset.row * cellSize - ah / 2;
       const isSelected = asset.id === selectedAssetId;
+
+      ctx.save();
+      ctx.translate(offset.x + asset.col * cellSize, offset.y + asset.row * cellSize);
+      ctx.rotate(-(asset.rotation || 0));
+
+      const ax = -aw / 2;
+      const ay = -ah / 2;
 
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.fillRect(ax + 3, ay + 3, aw, ah);
@@ -238,6 +289,8 @@ export default function CityModule() {
       ctx.beginPath();
       ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
       ctx.stroke();
+
+      ctx.restore();
     });
 
     // Hover highlight or pending placement
@@ -247,11 +300,21 @@ export default function CityModule() {
       const hy = offset.y + hoveredFloat.row * cellSize;
       const aw = pendingPlacementAsset.width * (cellSize / 3.4);
       const ah = pendingPlacementAsset.height * (cellSize / 3.4);
+
+      const alignment = getRoadAlignment(hoveredFloat.col, hoveredFloat.row);
+      const rotation = alignment ? alignment.rotation : manualRotation;
+
+      ctx.save();
+      ctx.translate(hx, hy);
+      ctx.rotate(-rotation);
+
       ctx.fillStyle = isValid ? 'rgba(78, 205, 196, 0.25)' : 'rgba(226, 75, 74, 0.25)';
-      ctx.fillRect(hx - aw / 2, hy - ah / 2, aw, ah);
+      ctx.fillRect(-aw / 2, -ah / 2, aw, ah);
       ctx.strokeStyle = isValid ? '#4ECDC4' : '#E24B4A';
       ctx.lineWidth = 2;
-      ctx.strokeRect(hx - aw / 2, hy - ah / 2, aw, ah);
+      ctx.strokeRect(-aw / 2, -ah / 2, aw, ah);
+
+      ctx.restore();
     }
 
     // Selected cell highlight
@@ -264,7 +327,7 @@ export default function CityModule() {
       ctx.strokeRect(sx + 1, sy + 1, cellSize - 2, cellSize - 2);
       ctx.setLineDash([]);
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation]);
 
   // Resize + redraw
   useEffect(() => {
@@ -345,11 +408,15 @@ export default function CityModule() {
         if (cityTool === 'road') {
           setActiveRoadPoints([]);
         }
+      } else if (e.key.toLowerCase() === 'r') {
+        if (pendingPlacementAsset) {
+          setManualRotation(prev => (prev + Math.PI / 2) % (Math.PI * 2));
+        }
       }
     };
     window.addEventListener('keydown', handleGlobalKey);
     return () => window.removeEventListener('keydown', handleGlobalKey);
-  }, [cityTool, activeRoadPoints, addRoadSegment, streetView]);
+  }, [cityTool, activeRoadPoints, addRoadSegment, streetView, pendingPlacementAsset]);
 
   function onMouseDown(e) {
     if (e.button === 1 || (e.button === 0 && e.altKey)) {
@@ -387,7 +454,9 @@ export default function CityModule() {
     if (e.button === 0) {
       if (pendingPlacementAsset) {
         if (isPlacementValid(floatCoords.col, floatCoords.row)) {
-          placePendingAsset(floatCoords.col, floatCoords.row);
+          const alignment = getRoadAlignment(floatCoords.col, floatCoords.row);
+          const rotation = alignment ? alignment.rotation : manualRotation;
+          placePendingAsset(floatCoords.col, floatCoords.row, rotation);
         }
         return;
       }
@@ -446,9 +515,7 @@ export default function CityModule() {
       setOffset({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
       return;
     }
-    const cell = cellFromEvent(e);
     const floatCoords = getFloatCoords(e);
-    setHovered(cell);
     setHoveredFloat(floatCoords);
   }
 
@@ -565,6 +632,38 @@ export default function CityModule() {
               </React.Fragment>
             );
           })}
+        </div>
+
+        {/* Presets Library */}
+        <div className="panel-label" style={{ padding:'10px 12px 4px' }}>Build Presets</div>
+        <div className="tool-group" style={{ paddingTop:2, paddingBottom:6, overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:4 }}>
+          {TEMPLATES.filter(t => [
+            'house', 'suburban', 'apartment', 'villa', 'manor',
+            'skyscraper', 'office', 'mall', 'diner', 'factory', 'refinery', 'warehouse',
+            'park', 'greenhouse', 'fountain',
+            'townhall', 'hospital', 'solar', 'turbine', 'watertower', 'bridge', 'station'
+          ].includes(t.id)).map(t => (
+            <button
+              key={t.id}
+              className={`tool-btn ${pendingPlacementAsset?.name === t.name ? 'active' : ''}`}
+              style={{ padding: '6px 12px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8 }}
+              onClick={() => {
+                useStore.setState({
+                  pendingPlacementAsset: {
+                    name: t.name,
+                    objects: t.objects,
+                    color: t.objects[0]?.color || '#4ECDC4',
+                    width: 2.0,
+                    height: 2.0,
+                  },
+                  cityTool: 'select',
+                });
+              }}
+            >
+              <span style={{ fontSize: 14 }}>{t.icon}</span>
+              {t.name}
+            </button>
+          ))}
         </div>
 
         {/* Footer */}
@@ -877,6 +976,7 @@ function StreetView({ city, onExit }) {
 
       const buildingGroup = new THREE.Group();
       buildingGroup.position.set(centerX, 0, centerZ);
+      buildingGroup.rotation.y = asset.rotation || 0;
       buildingGroup.userData = { assetId: asset.id };
 
       const isSel = asset.id === selectedAssetId;

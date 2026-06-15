@@ -10,21 +10,6 @@ function mergeVC(a, b) {
   return r;
 }
 
-function deepCloneCity(city) {
-  if (!city) return city;
-  return {
-    ...city,
-    placedAssets: (city.placedAssets || []).map(a => ({
-      ...a,
-      objects: a.objects ? a.objects.map(o => ({ ...o })) : []
-    })),
-    roads: (city.roads || []).map(r => ({
-      ...r,
-      points: r.points.map(pt => ({ ...pt }))
-    })),
-    stats: { ...city.stats },
-  };
-}
 
 export const useStore = create((set, get) => ({
   // ── Connection ─────────────────────────────────────────────────────────
@@ -518,7 +503,7 @@ export const useStore = create((set, get) => ({
     get().pushNotif(`Building ready for placement! Click on the city map.`);
   },
 
-  placePendingAsset(col, row) {
+  placePendingAsset(col, row, rotation = 0) {
     const { pendingPlacementAsset } = get();
     if (!pendingPlacementAsset) return;
     get().send({
@@ -527,6 +512,7 @@ export const useStore = create((set, get) => ({
       objects: pendingPlacementAsset.objects,
       col, row, color: pendingPlacementAsset.color,
       width: pendingPlacementAsset.width, height: pendingPlacementAsset.height,
+      rotation,
     });
     set(state => ({
       pendingPlacementAsset: null,
@@ -536,7 +522,7 @@ export const useStore = create((set, get) => ({
   },
 
   // ── City actions ───────────────────────────────────────────────────────
-  setCityTool(t) { set({ cityTool: t }); },
+  setCityTool(t) { set({ cityTool: t, pendingPlacementAsset: null }); },
   setHoveredCell(c) { set({ hoveredCell: c }); },
   setStreetView(v) { set({ streetView: v }); },
   selectAsset(id) { set({ selectedAssetId: id }); },
