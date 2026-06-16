@@ -10,15 +10,6 @@ function mergeVC(a, b) {
   return r;
 }
 
-function deepCloneCity(city) {
-  if (!city) return city;
-  return {
-    ...city,
-    grid: city.grid.map(row => row.map(cell => ({ ...cell }))),
-    placedAssets: [...(city.placedAssets || [])],
-    stats: { ...city.stats },
-  };
-}
 
 export const useStore = create((set, get) => ({
   // ── Connection ─────────────────────────────────────────────────────────
@@ -37,6 +28,8 @@ export const useStore = create((set, get) => ({
   editorObjects: {},
   editorVectorClock: {},
   selectedObjectId: null,
+  selectedObjectIds: [],
+  pendingPlacementAsset: null,
   editorTool: 'select',
   editorCursors: {},      // clientId -> {username, color, position}
   undoStack: [],
@@ -90,7 +83,7 @@ export const useStore = create((set, get) => ({
   },
 
   setActiveModule(mod) {
-    set({ activeModule: mod, streetView: false });
+    set({ activeModule: mod, streetView: false, pendingPlacementAsset: null });
     get().send({ type: 'JOIN_ROOM', room: mod });
   },
 
@@ -135,22 +128,22 @@ export const useStore = create((set, get) => ({
         set(state => ({ editorCursors: { ...state.editorCursors, [msg.clientId]: { username: msg.username, color: msg.color, position: msg.position } } }));
         break;
 
-      case 'CITY_ZONE_UPDATE':
-        set(state => {
-          if (!state.city) return {};
-          const city = deepCloneCity(state.city);
-          if (city.grid[msg.row]?.[msg.col]) city.grid[msg.row][msg.col] = msg.cell;
-          return { city };
-        });
+      case 'CITY_ROAD_ADDED':
+        set(state => ({
+          city: state.city ? {
+            ...state.city,
+            roads: [...(state.city.roads || []), msg.road]
+          } : state.city
+        }));
         break;
 
-      case 'CITY_ROAD_UPDATE':
-        set(state => {
-          if (!state.city) return {};
-          const city = deepCloneCity(state.city);
-          if (city.grid[msg.row]?.[msg.col]) city.grid[msg.row][msg.col] = msg.cell;
-          return { city };
-        });
+      case 'CITY_ROAD_REMOVED':
+        set(state => ({
+          city: state.city ? {
+            ...state.city,
+            roads: (state.city.roads || []).filter(r => r.id !== msg.roadId)
+          } : state.city
+        }));
         break;
 
       case 'CITY_STATS_UPDATE':
@@ -164,6 +157,23 @@ export const useStore = create((set, get) => ({
 
       case 'CITY_ASSET_REMOVED':
         set(state => ({ city: state.city ? { ...state.city, placedAssets: (state.city.placedAssets || []).filter(a => a.id !== msg.assetId) } : state.city }));
+        break;
+
+      case 'CITY_ASSET_UPDATED':
+        set(state => ({
+          city: state.city ? {
+            ...state.city,
+            placedAssets: (state.city.placedAssets || []).map(a => a.id === msg.asset.id ? msg.asset : a)
+          } : state.city
+        }));
+        break;
+
+      case 'CITY_CLEARED':
+        set({
+          city: msg.city,
+          selectedAssetId: null,
+        });
+        get().pushNotif('The city has been cleared!');
         break;
 
       case 'GOV_PROPOSAL_CREATED':
@@ -185,14 +195,16 @@ export const useStore = create((set, get) => ({
   },
 
   // ── Editor actions ─────────────────────────────────────────────────────
-  addObject(geometry) {
+  addObject(geometry, position) {
     const id = uuid();
     const PALETTE = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#F7DC6F','#C8A028','#378ADD','#E24B4A'];
     const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
-    const position = { x: parseFloat(((Math.random() - 0.5) * 6).toFixed(2)), y: 0.5, z: parseFloat(((Math.random() - 0.5) * 6).toFixed(2)) };
+    const pos = position
+      ? { x: Math.max(-20, Math.min(20, position.x)), y: position.y, z: Math.max(-20, Math.min(20, position.z)) }
+      : { x: parseFloat(((Math.random() - 0.5) * 6).toFixed(2)), y: 0.5, z: parseFloat(((Math.random() - 0.5) * 6).toFixed(2)) };
     const op = {
       kind: 'CREATE', objectId: id, geometry, objType: 'mesh',
-      position, rotation: { x:0,y:0,z:0 }, scale: { x:1,y:1,z:1 },
+      position: pos, rotation: { x:0,y:0,z:0 }, scale: { x:1,y:1,z:1 },
       color, name: geometry.charAt(0).toUpperCase() + geometry.slice(1) + '_' + id.slice(0,4),
       vectorClock: { ...get().editorVectorClock },
     };
@@ -200,60 +212,153 @@ export const useStore = create((set, get) => ({
     set(state => ({
       editorObjects: { ...state.editorObjects, [id]: newObj },
       selectedObjectId: id,
+      selectedObjectIds: [id],
       undoStack: [...state.undoStack, { type: 'DELETE', objectId: id }].slice(-30),
       redoStack: [],
     }));
     get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
   },
 
-  updateObjectProp(objectId, property, value) {
+  updateObjectProp(objectId, property, value, skipUndo = false) {
     const ts = Date.now();
     const prev = get().editorObjects[objectId]?.[property];
     const op = { kind: 'UPDATE', objectId, property, value, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
-    set(state => ({
-      editorObjects: {
-        ...state.editorObjects,
-        [objectId]: state.editorObjects[objectId]
-          ? { ...state.editorObjects[objectId], [property]: value, [property + '_ts']: ts }
-          : state.editorObjects[objectId],
-      },
-      undoStack: [...state.undoStack, { type: 'UPDATE', objectId, property, value: prev }].slice(-30),
-      redoStack: [],
-    }));
-    get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
-  },
-
-  deleteObject(objectId) {
-    const snapshot = get().editorObjects[objectId];
-    const op = { kind: 'DELETE', objectId, vectorClock: { ...get().editorVectorClock } };
     set(state => {
-      const objs = { ...state.editorObjects };
-      delete objs[objectId];
+      const nextUndoStack = skipUndo ? state.undoStack : [...state.undoStack, { type: 'UPDATE', objectId, property, value: prev }].slice(-30);
       return {
-        editorObjects: objs,
-        selectedObjectId: state.selectedObjectId === objectId ? null : state.selectedObjectId,
-        undoStack: [...state.undoStack, { type: 'RESTORE', snapshot }].slice(-30),
+        editorObjects: {
+          ...state.editorObjects,
+          [objectId]: state.editorObjects[objectId]
+            ? { ...state.editorObjects[objectId], [property]: value, [property + '_ts']: ts }
+            : state.editorObjects[objectId],
+        },
+        undoStack: nextUndoStack,
         redoStack: [],
       };
     });
     get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
   },
 
-  duplicateObject(objectId) {
-    const obj = get().editorObjects[objectId];
-    if (!obj) return;
-    const newId = uuid();
-    const op = {
-      kind: 'CREATE', objectId: newId, geometry: obj.geometry, objType: 'mesh',
-      position: { x: obj.position.x + 1.2, y: obj.position.y, z: obj.position.z + 1.2 },
-      rotation: { ...obj.rotation }, scale: { ...obj.scale }, color: obj.color,
-      name: obj.name + '_copy', vectorClock: { ...get().editorVectorClock },
-    };
-    set(state => ({
-      editorObjects: { ...state.editorObjects, [newId]: mkObj(op, get().username) },
-      selectedObjectId: newId,
-    }));
+  updateObjectsProp(objectIds, property, value) {
+    const ts = Date.now();
+    const prevValues = {};
+    objectIds.forEach(id => {
+      prevValues[id] = get().editorObjects[id]?.[property];
+    });
+    set(state => {
+      const nextObjs = { ...state.editorObjects };
+      objectIds.forEach(id => {
+        if (nextObjs[id]) {
+          nextObjs[id] = { ...nextObjs[id], [property]: value, [property + '_ts']: ts };
+        }
+      });
+      return {
+        editorObjects: nextObjs,
+        undoStack: [...state.undoStack, { type: 'UPDATE_GROUP', property, values: prevValues }].slice(-30),
+        redoStack: [],
+      };
+    });
+    objectIds.forEach(id => {
+      const op = { kind: 'UPDATE', objectId: id, property, value, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
+      get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+    });
+  },
+
+  deleteObject(objectId, skipUndo = false) {
+    const snapshot = get().editorObjects[objectId];
+    if (!snapshot) return;
+    const op = { kind: 'DELETE', objectId, vectorClock: { ...get().editorVectorClock } };
+    set(state => {
+      const objs = { ...state.editorObjects };
+      delete objs[objectId];
+      const nextIds = state.selectedObjectIds.filter(id => id !== objectId);
+      const primaryId = nextIds.length > 0 ? nextIds[nextIds.length - 1] : null;
+      const nextUndoStack = skipUndo ? state.undoStack : [...state.undoStack, { type: 'RESTORE', snapshot }].slice(-30);
+      return {
+        editorObjects: objs,
+        selectedObjectId: primaryId,
+        selectedObjectIds: nextIds,
+        undoStack: nextUndoStack,
+        redoStack: [],
+      };
+    });
     get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+  },
+
+  deleteObjects(objectIds, skipUndo = false) {
+    const snapshots = objectIds.map(id => get().editorObjects[id]).filter(Boolean);
+    if (!snapshots.length) return;
+    set(state => {
+      const nextObjs = { ...state.editorObjects };
+      objectIds.forEach(id => delete nextObjs[id]);
+      const nextIds = state.selectedObjectIds.filter(id => !objectIds.includes(id));
+      const primaryId = nextIds.length > 0 ? nextIds[nextIds.length - 1] : null;
+      const nextUndoStack = skipUndo ? state.undoStack : [...state.undoStack, { type: 'RESTORE_GROUP', snapshots }].slice(-30);
+      return {
+        editorObjects: nextObjs,
+        selectedObjectId: primaryId,
+        selectedObjectIds: nextIds,
+        undoStack: nextUndoStack,
+        redoStack: [],
+      };
+    });
+    snapshots.forEach(snapshot => {
+      const op = { kind: 'DELETE', objectId: snapshot.id, vectorClock: { ...get().editorVectorClock } };
+      get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+    });
+  },
+
+  duplicateObject(objectId) {
+    get().duplicateObjects([objectId]);
+  },
+
+  duplicateObjects(objectIds) {
+    const nextObjs = { ...get().editorObjects };
+    const newIds = [];
+    const ops = [];
+
+    objectIds.forEach(id => {
+      const obj = get().editorObjects[id];
+      if (!obj) return;
+      const newId = uuid();
+      newIds.push(newId);
+      const op = {
+        kind: 'CREATE', objectId: newId, geometry: obj.geometry, objType: 'mesh',
+        position: {
+          x: Math.max(-20, Math.min(20, obj.position.x + 1.2)),
+          y: obj.position.y,
+          z: Math.max(-20, Math.min(20, obj.position.z + 1.2))
+        },
+        rotation: { ...obj.rotation }, scale: { ...obj.scale }, color: obj.color,
+        name: obj.name + '_copy', vectorClock: { ...get().editorVectorClock },
+      };
+      nextObjs[newId] = mkObj(op, get().username);
+      ops.push({ op, newId });
+    });
+
+    if (newIds.length === 0) return;
+
+    set(state => {
+      const undoAction = { type: 'DELETE_GROUP', objectIds: newIds };
+      return {
+        editorObjects: nextObjs,
+        selectedObjectId: newIds[newIds.length - 1],
+        selectedObjectIds: newIds,
+        undoStack: [...state.undoStack, undoAction].slice(-30),
+        redoStack: [],
+      };
+    });
+
+    ops.forEach(({ op }) => {
+      get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+    });
+  },
+
+  pushUndoAction(action) {
+    set(state => ({
+      undoStack: [...state.undoStack, action].slice(-30),
+      redoStack: [],
+    }));
   },
 
   undo() {
@@ -261,77 +366,177 @@ export const useStore = create((set, get) => ({
     if (!undoStack.length) return;
     const action = undoStack[undoStack.length - 1];
     set(state => ({ undoStack: state.undoStack.slice(0, -1) }));
-    if (action.type === 'DELETE') get().deleteObject(action.objectId);
-    else if (action.type === 'UPDATE') get().updateObjectProp(action.objectId, action.property, action.value);
-    else if (action.type === 'RESTORE') {
+    if (action.type === 'DELETE') {
+      get().deleteObject(action.objectId, true);
+    } else if (action.type === 'UPDATE') {
+      get().updateObjectProp(action.objectId, action.property, action.value, true);
+    } else if (action.type === 'RESTORE') {
       const op = { kind: 'CREATE', objectId: action.snapshot.id, geometry: action.snapshot.geometry, objType: 'mesh', position: action.snapshot.position, rotation: action.snapshot.rotation, scale: action.snapshot.scale, color: action.snapshot.color, name: action.snapshot.name, vectorClock: { ...get().editorVectorClock } };
       set(state => ({ editorObjects: { ...state.editorObjects, [action.snapshot.id]: action.snapshot } }));
       get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+    } else if (action.type === 'MOVE_GROUP') {
+      Object.entries(action.positions).forEach(([id, pos]) => {
+        get().updateObjectProp(id, 'position', pos, true);
+      });
+    } else if (action.type === 'RESTORE_GROUP') {
+      const nextObjs = { ...get().editorObjects };
+      action.snapshots.forEach(snapshot => {
+        nextObjs[snapshot.id] = snapshot;
+        const op = { kind: 'CREATE', objectId: snapshot.id, geometry: snapshot.geometry, objType: 'mesh', position: snapshot.position, rotation: snapshot.rotation, scale: snapshot.scale, color: snapshot.color, name: snapshot.name, vectorClock: { ...get().editorVectorClock } };
+        get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+      });
+      set({ editorObjects: nextObjs });
+    } else if (action.type === 'DELETE_GROUP') {
+      get().deleteObjects(action.objectIds, true);
+    } else if (action.type === 'UPDATE_GROUP') {
+      Object.entries(action.values).forEach(([id, val]) => {
+        get().updateObjectProp(id, action.property, val, true);
+      });
     }
   },
 
   clearScene() {
     const ids = Object.keys(get().editorObjects);
-    ids.forEach(id => get().deleteObject(id));
+    get().deleteObjects(ids);
   },
 
-  selectObject(id) { set({ selectedObjectId: id }); },
+  selectObject(id, ctrlKey = false) {
+    set(state => {
+      let nextIds = [...state.selectedObjectIds];
+      if (ctrlKey) {
+        if (id) {
+          if (nextIds.includes(id)) {
+            nextIds = nextIds.filter(x => x !== id);
+          } else {
+            nextIds.push(id);
+          }
+        }
+      } else {
+        nextIds = id ? [id] : [];
+      }
+      const primaryId = nextIds.length > 0 ? nextIds[nextIds.length - 1] : null;
+      return {
+        selectedObjectIds: nextIds,
+        selectedObjectId: primaryId,
+      };
+    });
+  },
+
+  selectObjects(ids, accumulate = false) {
+    set(state => {
+      let nextIds = accumulate ? [...state.selectedObjectIds] : [];
+      ids.forEach(id => {
+        if (!nextIds.includes(id)) nextIds.push(id);
+      });
+      const primaryId = nextIds.length > 0 ? nextIds[nextIds.length - 1] : null;
+      return {
+        selectedObjectIds: nextIds,
+        selectedObjectId: primaryId,
+      };
+    });
+  },
+
   setEditorTool(t) { set({ editorTool: t }); },
 
   publishToCity(name) {
-    const { editorObjects, username } = get();
-    const keys = Object.keys(editorObjects);
-    if (!keys.length) return;
-    const col = Math.floor(Math.random() * 14) + 2;
-    const row = Math.floor(Math.random() * 14) + 2;
+    const { editorObjects, selectedObjectIds, username } = get();
+    const objectsToPublish = Object.values(editorObjects).filter(obj => selectedObjectIds.includes(obj.id));
+    if (objectsToPublish.length === 0) return;
+
+    // Calculate bounding box in editor units
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+
+    objectsToPublish.forEach(obj => {
+      const sx = obj.scale?.x ?? 1;
+      const sy = obj.scale?.y ?? 1;
+      const sz = obj.scale?.z ?? 1;
+      const px = obj.position?.x ?? 0;
+      const py = obj.position?.y ?? 0;
+      const pz = obj.position?.z ?? 0;
+
+      const hx = sx / 2;
+      const hy = sy / 2;
+      const hz = sz / 2;
+
+      if (px - hx < minX) minX = px - hx;
+      if (px + hx > maxX) maxX = px + hx;
+      if (py - hy < minY) minY = py - hy;
+      if (py + hy > maxY) maxY = py + hy;
+      if (pz - hz < minZ) minZ = pz - hz;
+      if (pz + hz > maxZ) maxZ = pz + hz;
+    });
+
+    if (minX === Infinity) {
+      minX = -1; maxX = 1;
+      minY = 0;  maxY = 1;
+      minZ = -1; maxZ = 1;
+    }
+
+    const width = maxX - minX;
+    const height = maxZ - minZ;
+    const centerX = (minX + maxX) / 2;
+    const centerZ = (minZ + maxZ) / 2;
+
+    // Center the objects around the calculated bounding box center
+    const centeredObjects = objectsToPublish.map(obj => ({
+      ...obj,
+      position: {
+        x: obj.position.x - centerX,
+        y: obj.position.y,
+        z: obj.position.z - centerZ
+      }
+    }));
+
+    set({
+      pendingPlacementAsset: {
+        name: name || `Building by @${username}`,
+        objects: centeredObjects,
+        color: '#4ECDC4',
+        width,
+        height,
+      },
+      activeModule: 'city',
+      streetView: false,
+    });
+    get().pushNotif(`Building ready for placement! Click on the city map.`);
+  },
+
+  placePendingAsset(col, row, rotation = 0) {
+    const { pendingPlacementAsset } = get();
+    if (!pendingPlacementAsset) return;
     get().send({
       type: 'CITY_PLACE_ASSET',
-      name: name || `Building by @${username}`,
-      objects: Object.values(editorObjects),
-      col, row, color: '#4ECDC4', width: 2, height: 2,
+      name: pendingPlacementAsset.name,
+      objects: pendingPlacementAsset.objects,
+      col, row, color: pendingPlacementAsset.color,
+      width: pendingPlacementAsset.width, height: pendingPlacementAsset.height,
+      rotation,
     });
-    set(state => ({
-      city: state.city ? {
-        ...state.city,
-        placedAssets: [...(state.city.placedAssets || []), { id: uuid(), name: name || `Building by @${username}`, objects: Object.values(editorObjects), col, row, color: '#4ECDC4', width: 2, height: 2, placedBy: username, placedAt: Date.now() }],
-      } : state.city,
-    }));
-    get().pushNotif(`Published "${name || 'Building'}" to city!`);
+    get().pushNotif(`Placed "${pendingPlacementAsset.name}" in the city!`);
   },
 
   // ── City actions ───────────────────────────────────────────────────────
-  setCityTool(t) { set({ cityTool: t }); },
+  setCityTool(t) { set({ cityTool: t, pendingPlacementAsset: null }); },
   setHoveredCell(c) { set({ hoveredCell: c }); },
   setStreetView(v) { set({ streetView: v }); },
   selectAsset(id) { set({ selectedAssetId: id }); },
 
-  applyCityTool(col, row) {
-    const { cityTool } = get();
-    if (cityTool === 'select') return;
-    if (cityTool === 'road') {
-      get().send({ type: 'CITY_ROAD', col, row, value: true });
-      set(state => {
-        const city = deepCloneCity(state.city);
-        if (city.grid[row]?.[col]) city.grid[row][col].road = true;
-        return { city };
-      });
-    } else if (cityTool === 'erase') {
-      get().send({ type: 'CITY_ZONE', col, row, zoneType: null });
-      get().send({ type: 'CITY_ROAD', col, row, value: false });
-      set(state => {
-        const city = deepCloneCity(state.city);
-        if (city.grid[row]?.[col]) { city.grid[row][col].type = 'empty'; city.grid[row][col].zoneType = null; city.grid[row][col].road = false; }
-        return { city };
-      });
-    } else {
-      const zoneType = cityTool.replace('zone_', '');
-      get().send({ type: 'CITY_ZONE', col, row, zoneType });
-      set(state => {
-        const city = deepCloneCity(state.city);
-        if (city.grid[row]?.[col]) { city.grid[row][col].type = zoneType; city.grid[row][col].zoneType = zoneType; city.grid[row][col].road = false; }
-        return { city };
-      });
-    }
+  addRoadSegment(points, roadType = 'standard') {
+    const id = uuid();
+    const newRoad = { id, points, roadType };
+    get().send({ type: 'CITY_ADD_ROAD', road: newRoad });
+    set(state => ({
+      city: state.city ? { ...state.city, roads: [...(state.city.roads || []), newRoad] } : state.city
+    }));
+  },
+
+  removeRoadSegment(roadId) {
+    get().send({ type: 'CITY_REMOVE_ROAD', roadId });
+    set(state => ({
+      city: state.city ? { ...state.city, roads: (state.city.roads || []).filter(r => r.id !== roadId) } : state.city
+    }));
   },
 
   removeAsset(assetId) {
@@ -340,6 +545,22 @@ export const useStore = create((set, get) => ({
       city: state.city ? { ...state.city, placedAssets: state.city.placedAssets.filter(a => a.id !== assetId) } : state.city,
       selectedAssetId: state.selectedAssetId === assetId ? null : state.selectedAssetId,
     }));
+  },
+
+  updateAsset(assetId, updates, sendToServer = true) {
+    if (sendToServer) {
+      get().send({ type: 'CITY_UPDATE_ASSET', assetId, ...updates });
+    }
+    set(state => ({
+      city: state.city ? {
+        ...state.city,
+        placedAssets: (state.city.placedAssets || []).map(a => a.id === assetId ? { ...a, ...updates } : a)
+      } : state.city
+    }));
+  },
+
+  clearCity() {
+    get().send({ type: 'CITY_CLEAR' });
   },
 
   // ── Governance ─────────────────────────────────────────────────────────
