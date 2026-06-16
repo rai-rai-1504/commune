@@ -428,8 +428,25 @@ export default function CityModule() {
       const ah = (asset.height || 2) * (cellSize / 3.4) * scaleFactor;
       const isSelected = asset.id === selectedAssetId;
 
+      // 1. Viewport frustum culling check
+      const cx = offset.x + asset.col * cellSize;
+      const cy = offset.y + asset.row * cellSize;
+      const maxDim = Math.max(aw, ah) * 1.5;
+
+      if (canvasRef.current) {
+        const canvas = canvasRef.current;
+        if (
+          cx + maxDim < 0 ||
+          cx - maxDim > canvas.width ||
+          cy + maxDim < 0 ||
+          cy - maxDim > canvas.height
+        ) {
+          return; // Skip rendering this building entirely!
+        }
+      }
+
       ctx.save();
-      ctx.translate(offset.x + asset.col * cellSize, offset.y + asset.row * cellSize);
+      ctx.translate(cx, cy);
       ctx.rotate(-(asset.rotation || 0));
 
       const ax = -aw / 2;
@@ -439,10 +456,11 @@ export default function CityModule() {
       ctx.fillStyle = 'rgba(0,0,0,0.18)';
       ctx.fillRect(ax + 2, ay + 2, aw, ah);
 
-      const objScale = (cellSize / 3.4) * scaleFactor;
-
       // 2. Draw actual constituent 3D primitives in 2D top view
-      if (asset.objects && asset.objects.length > 0) {
+      const drawDetailed = aw >= 16 && ah >= 16 && zoom >= 0.65;
+
+      if (drawDetailed && asset.objects && asset.objects.length > 0) {
+        const objScale = (cellSize / 3.4) * scaleFactor;
         asset.objects.forEach(obj => {
           ctx.save();
           // Position relative to asset center
@@ -473,7 +491,7 @@ export default function CityModule() {
           ctx.restore();
         });
       } else {
-        // Fallback generic bounding box if no sub-objects
+        // Fallback generic bounding box if no sub-objects or zoomed out
         ctx.fillStyle = asset.color || '#4ECDC4';
         ctx.globalAlpha = 0.82;
         ctx.beginPath();
@@ -1403,6 +1421,14 @@ function StreetView({ city, onExit }) {
       scene.add(roadMesh);
       meshesRef.current.push(roadMesh);
  
+      const markingsGroup = new THREE.Group();
+      const midPoint = road.points[Math.floor(road.points.length / 2)];
+      markingsGroup.userData = {
+        isRoadMarkings: true,
+        centerX: midPoint.x * cellS,
+        centerZ: midPoint.z * cellS
+      };
+ 
       const length = curve.getLength();
       const step = 0.4;
       const numSteps = Math.max(10, Math.floor(length / step));
@@ -1430,8 +1456,8 @@ function StreetView({ city, onExit }) {
           const m = new THREE.Mesh(new THREE.BoxGeometry(mWidth, mHeight, mLength), material);
           m.position.copy(markingPos);
           m.rotation.y = angle;
-          scene.add(m);
-          meshesRef.current.push(m);
+          m.receiveShadow = true;
+          markingsGroup.add(m);
         };
  
         if (type === 'multilane') {
@@ -1468,6 +1494,11 @@ function StreetView({ city, onExit }) {
           }
         }
       }
+ 
+      if (markingsGroup.children.length > 0) {
+        scene.add(markingsGroup);
+        meshesRef.current.push(markingsGroup);
+      }
     });
 
     // Render placed assets with exact 3D sub-objects
@@ -1477,18 +1508,22 @@ function StreetView({ city, onExit }) {
       const centerX = wx;
       const centerZ = wz;
 
-      const buildingGroup = new THREE.Group();
-      buildingGroup.position.set(centerX, 0, centerZ);
-      buildingGroup.rotation.y = asset.rotation || 0;
-      buildingGroup.userData = { assetId: asset.id };
-
       const isSel = asset.id === selectedAssetId;
 
       const maxSF = getMaxScaleFactor(asset);
       const defaultSF = Math.min(1.0, maxSF);
       const scaleFactor = asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : defaultSF;
 
+      let buildingMainObject;
+
       if (asset.objects && asset.objects.length > 0) {
+        const lod = new THREE.LOD();
+        lod.position.set(centerX, 0, centerZ);
+        lod.rotation.y = asset.rotation || 0;
+        lod.userData = { assetId: asset.id };
+
+        // Level 0: Detailed model (Group of meshes)
+        const detailedGroup = new THREE.Group();
         asset.objects.forEach(obj => {
           let texture = null;
           if (obj.text) {
@@ -1566,10 +1601,35 @@ function StreetView({ city, onExit }) {
           );
           mesh.castShadow = true;
           mesh.receiveShadow = true;
-          buildingGroup.add(mesh);
+          detailedGroup.add(mesh);
         });
+        lod.addLevel(detailedGroup, 0);
+
+        // Level 1: Low-detail model (Single simplified box mesh)
+        let maxHeight = 2.0;
+        asset.objects.forEach(obj => {
+          const h = (obj.position?.y || 0) + (obj.scale?.y || 1) / 2;
+          if (h > maxHeight) maxHeight = h;
+        });
+
+        const fallbackMat = getCachedMaterial(asset.color || '#4ECDC4', isSel);
+        const lowDetailMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(aw * 0.8, maxHeight * cellS * scaleFactor, ah * 0.8),
+          fallbackMat
+        );
+        lowDetailMesh.position.y = (maxHeight * cellS * scaleFactor) / 2;
+        lowDetailMesh.castShadow = true;
+        lowDetailMesh.receiveShadow = true;
+        lod.addLevel(lowDetailMesh, 75); // Swap to low detail at 75 units distance
+
+        buildingMainObject = lod;
       } else {
         // Fallback simple block
+        const buildingGroup = new THREE.Group();
+        buildingGroup.position.set(centerX, 0, centerZ);
+        buildingGroup.rotation.y = asset.rotation || 0;
+        buildingGroup.userData = { assetId: asset.id };
+
         const fallbackMat = new THREE.MeshStandardMaterial({
           color: asset.color || 0x4ECDC4,
           roughness: 0.7,
@@ -1579,11 +1639,14 @@ function StreetView({ city, onExit }) {
         const fallbackMesh = new THREE.Mesh(new THREE.BoxGeometry(aw * 0.8 * scaleFactor, 3 * scaleFactor, ah * 0.8 * scaleFactor), fallbackMat);
         fallbackMesh.position.y = 1.5 * scaleFactor;
         fallbackMesh.castShadow = true;
+        fallbackMesh.receiveShadow = true;
         buildingGroup.add(fallbackMesh);
+
+        buildingMainObject = buildingGroup;
       }
 
-      scene.add(buildingGroup);
-      meshesRef.current.push(buildingGroup);
+      scene.add(buildingMainObject);
+      meshesRef.current.push(buildingMainObject);
     });
 
     // Spawn roaming humans on roads
@@ -1882,6 +1945,28 @@ function StreetView({ city, onExit }) {
         camera.position.add(dir);
       }
       camera.position.y = isBirdsEye ? 40.0 : 1.7;
+
+      // Distance-based visibility culling for buildings and road markings
+      const camX = camera.position.x;
+      const camZ = camera.position.z;
+      const cullDistSq = isBirdsEye ? 600 * 600 : 180 * 180;
+      const markingsCullDistSq = isBirdsEye ? 150 * 150 : 100 * 100;
+
+      meshesRef.current.forEach(m => {
+        if (m.userData) {
+          if (m.userData.assetId) {
+            const dx = m.position.x - camX;
+            const dz = m.position.z - camZ;
+            const distSq = dx * dx + dz * dz;
+            m.visible = distSq < cullDistSq;
+          } else if (m.userData.isRoadMarkings) {
+            const dx = m.userData.centerX - camX;
+            const dz = m.userData.centerZ - camZ;
+            const distSq = dx * dx + dz * dz;
+            m.visible = distSq < markingsCullDistSq;
+          }
+        }
+      });
 
       // Roaming humans update
       humansRef.current.forEach(h => {
