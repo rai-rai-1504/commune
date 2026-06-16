@@ -514,10 +514,6 @@ export const useStore = create((set, get) => ({
       width: pendingPlacementAsset.width, height: pendingPlacementAsset.height,
       rotation,
     });
-    set(state => ({
-      pendingPlacementAsset: null,
-      cityTool: 'select',
-    }));
     get().pushNotif(`Placed "${pendingPlacementAsset.name}" in the city!`);
   },
 

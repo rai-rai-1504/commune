@@ -435,19 +435,66 @@ export default function CityModule() {
       const ax = -aw / 2;
       const ay = -ah / 2;
 
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(ax + 3, ay + 3, aw, ah);
-      ctx.fillStyle = asset.color || '#4ECDC4';
-      ctx.globalAlpha = 0.82;
-      ctx.beginPath();
-      ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = isSelected ? '#fff' : (asset.color || '#4ECDC4');
-      ctx.lineWidth = isSelected ? 2 : 1.5;
-      ctx.beginPath();
-      ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
-      ctx.stroke();
+      // 1. Draw generic footprint shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(ax + 2, ay + 2, aw, ah);
+
+      const objScale = (cellSize / 3.4) * scaleFactor;
+
+      // 2. Draw actual constituent 3D primitives in 2D top view
+      if (asset.objects && asset.objects.length > 0) {
+        asset.objects.forEach(obj => {
+          ctx.save();
+          // Position relative to asset center
+          const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
+          const oz = (obj.position?.z !== undefined ? obj.position.z : 0) * objScale;
+          ctx.translate(ox, oz);
+          ctx.rotate(-(obj.rotation?.y || 0));
+
+          const sx = (obj.scale?.x !== undefined ? obj.scale.x : 1) * objScale;
+          const sz = (obj.scale?.z !== undefined ? obj.scale.z : 1) * objScale;
+
+          ctx.fillStyle = obj.color || asset.color || '#4ECDC4';
+          ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+          ctx.lineWidth = 1;
+
+          if (obj.geometry === 'cylinder' || obj.geometry === 'sphere' || obj.geometry === 'cone' || obj.geometry === 'torus') {
+            ctx.beginPath();
+            ctx.ellipse(0, 0, sx / 2, sz / 2, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+          } else {
+            // box or wedge
+            ctx.beginPath();
+            ctx.rect(-sx / 2, -sz / 2, sx, sz);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+        });
+      } else {
+        // Fallback generic bounding box if no sub-objects
+        ctx.fillStyle = asset.color || '#4ECDC4';
+        ctx.globalAlpha = 0.82;
+        ctx.beginPath();
+        ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = asset.color || '#4ECDC4';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
+        ctx.stroke();
+      }
+
+      // 3. Draw white select border highlight around building bounds
+      if (isSelected) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
+        ctx.stroke();
+      }
 
       ctx.restore();
     });
@@ -467,8 +514,45 @@ export default function CityModule() {
       ctx.translate(hx, hy);
       ctx.rotate(-rotation);
 
-      ctx.fillStyle = isValid ? 'rgba(78, 205, 196, 0.25)' : 'rgba(226, 75, 74, 0.25)';
+      // Draw background bounding area
+      ctx.fillStyle = isValid ? 'rgba(78, 205, 196, 0.12)' : 'rgba(226, 75, 74, 0.12)';
       ctx.fillRect(-aw / 2, -ah / 2, aw, ah);
+      
+      // Draw actual preview sub-objects
+      if (pendingPlacementAsset.objects && pendingPlacementAsset.objects.length > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.55; // semi-transparent for preview
+        const objScale = cellSize / 3.4;
+        pendingPlacementAsset.objects.forEach(obj => {
+          ctx.save();
+          const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
+          const oz = (obj.position?.z !== undefined ? obj.position.z : 0) * objScale;
+          ctx.translate(ox, oz);
+          ctx.rotate(-(obj.rotation?.y || 0));
+
+          const sx = (obj.scale?.x !== undefined ? obj.scale.x : 1) * objScale;
+          const sz = (obj.scale?.z !== undefined ? obj.scale.z : 1) * objScale;
+
+          ctx.fillStyle = obj.color || pendingPlacementAsset.color || '#4ECDC4';
+          ctx.strokeStyle = isValid ? 'rgba(78, 205, 196, 0.4)' : 'rgba(226, 75, 74, 0.4)';
+          ctx.lineWidth = 1;
+
+          if (obj.geometry === 'cylinder' || obj.geometry === 'sphere' || obj.geometry === 'cone' || obj.geometry === 'torus') {
+            ctx.beginPath();
+            ctx.ellipse(0, 0, sx / 2, sz / 2, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+          } else {
+            ctx.beginPath();
+            ctx.rect(-sx / 2, -sz / 2, sx, sz);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+        });
+        ctx.restore();
+      }
+
       ctx.strokeStyle = isValid ? '#4ECDC4' : '#E24B4A';
       ctx.lineWidth = 2;
       ctx.strokeRect(-aw / 2, -ah / 2, aw, ah);
@@ -602,6 +686,13 @@ export default function CityModule() {
     }
 
     const floatCoords = getFloatCoords(e);
+
+    // Right click cancels pending building placement
+    if (e.button === 2 && pendingPlacementAsset) {
+      e.preventDefault();
+      useStore.setState({ pendingPlacementAsset: null, cityTool: 'select' });
+      return;
+    }
 
     // Right click completes the road segment
     if (e.button === 2 && cityTool === 'road') {
@@ -1194,6 +1285,8 @@ function StreetView({ city, onExit }) {
 
   const { selectedAssetId, selectAsset, removeAsset, updateAsset } = useStore();
   const materialCacheRef = useRef({});
+  const draggingAssetIdRef = useRef(null);
+  const dragOffset3D = useRef({ x: 0, z: 0 });
 
   const rebuildStreetScene = useCallback(() => {
     const scene = sceneRef.current;
@@ -1608,14 +1701,91 @@ function StreetView({ city, onExit }) {
     window.addEventListener('blur', onBlur);
     window.addEventListener('contextmenu', onBlur);
 
+    const cellS = 3.4;
     const mouseDownPos = { x: 0, y: 0 };
     const onMouseDown = (e) => {
+      if (e.target !== renderer.domElement) return;
+
       isDraggingMouse.current = true;
       lastMouse.current = { x: e.clientX, y: e.clientY };
       mouseDownPos.x = e.clientX;
       mouseDownPos.y = e.clientY;
+
+      // Check if we clicked on an asset
+      const rect = renderer.domElement.getBoundingClientRect();
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      const raycaster = new THREE.Raycaster();
+      const mouseVec = new THREE.Vector2(mouseX, mouseY);
+      raycaster.setFromCamera(mouseVec, camera);
+      
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      let clickedAssetId = null;
+      for (let i = 0; i < intersects.length; i++) {
+        let obj = intersects[i].object;
+        while (obj) {
+          if (obj.userData && obj.userData.assetId) {
+            clickedAssetId = obj.userData.assetId;
+            break;
+          }
+          obj = obj.parent;
+        }
+        if (clickedAssetId) break;
+      }
+
+      const currentSelectedAssetId = useStore.getState().selectedAssetId;
+      if (clickedAssetId && clickedAssetId === currentSelectedAssetId) {
+        // Start dragging asset in 3D instead of rotating camera
+        isDraggingMouse.current = false;
+        draggingAssetIdRef.current = clickedAssetId;
+
+        const intersectionPoint = new THREE.Vector3();
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        raycaster.ray.intersectPlane(groundPlane, intersectionPoint);
+
+        const currentCity = useStore.getState().city;
+        const asset = (currentCity?.placedAssets || []).find(a => a.id === clickedAssetId);
+        if (asset) {
+          const assetX = asset.col * cellS;
+          const assetZ = asset.row * cellS;
+          dragOffset3D.current = {
+            x: intersectionPoint.x - assetX,
+            z: intersectionPoint.z - assetZ
+          };
+        }
+      }
     };
+
     const onMouseMove = (e) => {
+      if (draggingAssetIdRef.current) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        const raycaster = new THREE.Raycaster();
+        const mouseVec = new THREE.Vector2(mouseX, mouseY);
+        raycaster.setFromCamera(mouseVec, camera);
+
+        const intersectionPoint = new THREE.Vector3();
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        raycaster.ray.intersectPlane(groundPlane, intersectionPoint);
+
+        const targetX = intersectionPoint.x - dragOffset3D.current.x;
+        const targetZ = intersectionPoint.z - dragOffset3D.current.z;
+
+        const newCol = targetX / cellS;
+        const newRow = targetZ / cellS;
+
+        const buildingGroup = scene.children.find(c => c.userData && c.userData.assetId === draggingAssetIdRef.current);
+        if (buildingGroup) {
+          buildingGroup.position.set(targetX, 0, targetZ);
+        }
+
+        updateAsset(draggingAssetIdRef.current, { col: newCol, row: newRow }, false);
+        return;
+      }
+
       if (!isDraggingMouse.current) return;
       const dx = e.clientX - lastMouse.current.x;
       const dy = e.clientY - lastMouse.current.y;
@@ -1623,8 +1793,21 @@ function StreetView({ city, onExit }) {
       yawRef.current -= dx * 0.004;
       pitchRef.current = Math.max(-1.2, Math.min(0.8, pitchRef.current - dy * 0.004));
     };
+
     const onMouseUp = (e) => {
+      if (draggingAssetIdRef.current) {
+        const latestCity = useStore.getState().city;
+        const asset = (latestCity?.placedAssets || []).find(a => a.id === draggingAssetIdRef.current);
+        if (asset) {
+          updateAsset(draggingAssetIdRef.current, { col: asset.col, row: asset.row }, true);
+        }
+        draggingAssetIdRef.current = null;
+        return;
+      }
+
       isDraggingMouse.current = false;
+      if (e.target !== renderer.domElement) return;
+
       const dx = e.clientX - mouseDownPos.x;
       const dy = e.clientY - mouseDownPos.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
