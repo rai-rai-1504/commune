@@ -118,6 +118,10 @@ export default function CityModule() {
   const [manualRotation, setManualRotation] = useState(0);
   const [activeRoadType, setActiveRoadType] = useState('standard');
   const [draggingAssetId, setDraggingAssetId] = useState(null);
+  const [selectedRoadId, setSelectedRoadId] = useState(null);
+  const [marqueeStart, setMarqueeStart] = useState(null);
+  const [marqueeEnd, setMarqueeEnd] = useState(null);
+  const dragOffset = useRef({ col: 0, row: 0 });
 
   useEffect(() => {
     setManualRotation(0);
@@ -266,7 +270,7 @@ export default function CityModule() {
       ctx.stroke();
     }
 
-    const drawRoad = (roadPoints, type, isPreview) => {
+    const drawRoad = (roadPoints, type, isPreview, isSelected) => {
       if (roadPoints.length < 2) return;
       
       const points3d = roadPoints.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
@@ -288,6 +292,16 @@ export default function CityModule() {
         });
         ctx.stroke();
       };
+
+      if (isSelected) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.lineWidth = (type === 'highway' ? 52 : type === 'multilane' ? 36 : 24) * zoom;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        drawCurvePoints(screenPoints);
+        ctx.restore();
+      }
 
       if (type === 'multilane') {
         // Main pavement
@@ -364,7 +378,8 @@ export default function CityModule() {
 
     // Render placed curvy roads
     (city.roads || []).forEach(road => {
-      drawRoad(road.points, road.roadType || 'standard', false);
+      const isSel = road.id === selectedRoadId;
+      drawRoad(road.points, road.roadType || 'standard', false, isSel);
     });
 
     // Render active road under construction
@@ -373,7 +388,7 @@ export default function CityModule() {
       if (hoveredFloat) {
         pts.push({ x: hoveredFloat.col, z: hoveredFloat.row });
       }
-      drawRoad(pts, activeRoadType, true);
+      drawRoad(pts, activeRoadType, true, false);
 
       // Node circles
       ctx.fillStyle = '#4ECDC4';
@@ -385,6 +400,23 @@ export default function CityModule() {
         ctx.lineWidth = 1.5;
         ctx.stroke();
       });
+    }
+
+    // Render marquee selection box
+    if (marqueeStart && marqueeEnd) {
+      const sx = offset.x + marqueeStart.col * cellSize;
+      const sy = offset.y + marqueeStart.row * cellSize;
+      const ex = offset.x + marqueeEnd.col * cellSize;
+      const ey = offset.y + marqueeEnd.row * cellSize;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+      ctx.fillRect(sx, sy, ex - sx, ey - sy);
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.5 * zoom;
+      ctx.setLineDash([4 * zoom, 4 * zoom]);
+      ctx.strokeRect(sx, sy, ex - sx, ey - sy);
+      ctx.restore();
     }
 
     // Placed assets are rendered below
@@ -445,7 +477,7 @@ export default function CityModule() {
     }
 
     // Selected cell highlight
-    if (selectedCell) {
+    if (selectedCell && !selectedAssetId && !selectedRoadId) {
       const sx = offset.x + selectedCell.col * cellSize;
       const sy = offset.y + selectedCell.row * cellSize;
       ctx.strokeStyle = 'rgba(255,255,255,0.6)';
@@ -454,7 +486,7 @@ export default function CityModule() {
       ctx.strokeRect(sx + 1, sy + 1, cellSize - 2, cellSize - 2);
       ctx.setLineDash([]);
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd]);
 
   // Resize + redraw
   useEffect(() => {
@@ -486,10 +518,18 @@ export default function CityModule() {
   function assetAtCell(col, row) {
     return (city?.placedAssets || []).find(a => {
       const scaleFactor = a.scaleMultiplier !== undefined ? a.scaleMultiplier : 1.0;
-      const hw = ((a.width || 2) * scaleFactor) / 2;
-      const hh = ((a.height || 2) * scaleFactor) / 2;
-      return col >= a.col - hw && col <= a.col + hw &&
-             row >= a.row - hh && row <= a.row + hh;
+      const hw = ((a.width || 2) * scaleFactor) / (2 * 3.4);
+      const hh = ((a.height || 2) * scaleFactor) / (2 * 3.4);
+
+      // Project click coordinates into the building's local rotated coordinate space
+      const dx = col - a.col;
+      const dy = row - a.row;
+      const rot = a.rotation || 0;
+      const localX = dx * Math.cos(rot) + dy * Math.sin(rot);
+      const localY = -dx * Math.sin(rot) + dy * Math.cos(rot);
+
+      return localX >= -hw && localX <= hw &&
+             localY >= -hh && localY <= hh;
     });
   }
 
@@ -501,7 +541,8 @@ export default function CityModule() {
       for (let i = 0; i < road.points.length - 1; i++) {
         const a = road.points[i];
         const b = road.points[i+1];
-        if (distanceToSegment(p, a, b) < 0.6) {
+        // Wider distance threshold (1.2 units instead of 0.6) for easy selection/erasing of curvy roads
+        if (distanceToSegment(p, a, b) < 1.2) {
           return road;
         }
       }
@@ -539,11 +580,19 @@ export default function CityModule() {
         if (pendingPlacementAsset) {
           setManualRotation(prev => (prev + Math.PI / 2) % (Math.PI * 2));
         }
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedAssetId) {
+          removeAsset(selectedAssetId);
+          selectAsset(null);
+        } else if (selectedRoadId) {
+          removeRoadSegment(selectedRoadId);
+          setSelectedRoadId(null);
+        }
       }
     };
     window.addEventListener('keydown', handleGlobalKey);
     return () => window.removeEventListener('keydown', handleGlobalKey);
-  }, [cityTool, activeRoadPoints, addRoadSegment, streetView, pendingPlacementAsset, activeRoadType]);
+  }, [cityTool, activeRoadPoints, addRoadSegment, streetView, pendingPlacementAsset, activeRoadType, selectedAssetId, selectedRoadId, removeAsset, selectAsset, removeRoadSegment]);
 
   function onMouseDown(e) {
     if (e.button === 1 || (e.button === 0 && e.altKey)) {
@@ -589,11 +638,26 @@ export default function CityModule() {
       }
       if (cityTool === 'select') {
         const cell = cellFromEvent(e);
-        setSelectedCell(cell);
         const asset = assetAtCell(floatCoords.col, floatCoords.row);
-        selectAsset(asset ? asset.id : null);
         if (asset) {
+          e.preventDefault();
+          selectAsset(asset.id);
+          setSelectedRoadId(null);
+          setSelectedCell(null); // Clear confusing grid selection box
           setDraggingAssetId(asset.id);
+          dragOffset.current = {
+            col: floatCoords.col - asset.col,
+            row: floatCoords.row - asset.row
+          };
+        } else {
+          selectAsset(null);
+          const road = roadAtCoords(floatCoords.col, floatCoords.row);
+          setSelectedRoadId(road ? road.id : null);
+          if (road) {
+            setSelectedCell(null); // Clear confusing grid selection box
+          } else {
+            setSelectedCell(cell); // Show grid selection box only on empty tile click
+          }
         }
         return;
       }
@@ -605,19 +669,10 @@ export default function CityModule() {
         return;
       }
       if (cityTool === 'erase') {
-        // First try to erase asset
-        const asset = assetAtCell(floatCoords.col, floatCoords.row);
-        if (asset) {
-          removeAsset(asset.id);
-          selectAsset(null);
-          return;
-        }
-        // Then try to erase road
-        const road = roadAtCoords(floatCoords.col, floatCoords.row);
-        if (road) {
-          removeRoadSegment(road.id);
-          return;
-        }
+        // Start marquee erase selection immediately
+        setMarqueeStart(floatCoords);
+        setMarqueeEnd(floatCoords);
+        return;
       }
     }
   }
@@ -658,7 +713,13 @@ export default function CityModule() {
     setHoveredFloat(floatCoords);
 
     if (draggingAssetId) {
-      updateAsset(draggingAssetId, { col: floatCoords.col, row: floatCoords.row });
+      const newCol = floatCoords.col - dragOffset.current.col;
+      const newRow = floatCoords.row - dragOffset.current.row;
+      updateAsset(draggingAssetId, { col: newCol, row: newRow }, false); // local-only update during drag
+    }
+
+    if (marqueeStart) {
+      setMarqueeEnd(floatCoords);
     }
   }
 
@@ -666,7 +727,52 @@ export default function CityModule() {
     setPanning(false);
     panStart.current = null;
     if (draggingAssetId) {
+      const asset = (city?.placedAssets || []).find(a => a.id === draggingAssetId);
+      if (asset) {
+        updateAsset(draggingAssetId, { col: asset.col, row: asset.row }, true); // save final to server
+      }
       setDraggingAssetId(null);
+    }
+    if (marqueeStart && marqueeEnd) {
+      const minCol = Math.min(marqueeStart.col, marqueeEnd.col);
+      const maxCol = Math.max(marqueeStart.col, marqueeEnd.col);
+      const minRow = Math.min(marqueeStart.row, marqueeEnd.row);
+      const maxRow = Math.max(marqueeStart.row, marqueeEnd.row);
+
+      const width = maxCol - minCol;
+      const height = maxRow - minRow;
+
+      if (width > 0.1 || height > 0.1) {
+        // Marquee drag: Delete assets inside marquee box
+        const assetsToDelete = (city?.placedAssets || []).filter(a => {
+          return a.col >= minCol && a.col <= maxCol &&
+                 a.row >= minRow && a.row <= maxRow;
+        });
+        assetsToDelete.forEach(a => removeAsset(a.id));
+
+        // Delete roads inside marquee box
+        const roadsToDelete = (city?.roads || []).filter(road => {
+          return road.points.some(pt => pt.x >= minCol && pt.x <= maxCol && pt.z >= minRow && pt.z <= maxRow);
+        });
+        roadsToDelete.forEach(r => removeRoadSegment(r.id));
+      } else {
+        // Single click: delete whatever was clicked
+        const clickCol = marqueeStart.col;
+        const clickRow = marqueeStart.row;
+        const asset = assetAtCell(clickCol, clickRow);
+        if (asset) {
+          removeAsset(asset.id);
+          selectAsset(null);
+        } else {
+          const road = roadAtCoords(clickCol, clickRow);
+          if (road) {
+            removeRoadSegment(road.id);
+          }
+        }
+      }
+
+      setMarqueeStart(null);
+      setMarqueeEnd(null);
     }
   }
 
@@ -679,20 +785,23 @@ export default function CityModule() {
   const stats = city?.stats;
   const popTarget = 30000;
   const selectedAsset = selectedAssetId ? (city?.placedAssets || []).find(a => a.id === selectedAssetId) : null;
+  const selectedRoad = selectedRoadId ? (city?.roads || []).find(r => r.id === selectedRoadId) : null;
 
   // Zone counts
   const zoneCounts = { residential:0, commercial:0, industrial:0, green:0, civic:0 };
   if (city) {
     (city.placedAssets || []).forEach(asset => {
       const name = (asset.name || '').toLowerCase();
-      if (name.includes('home') || name.includes('manor') || name.includes('villa') || name.includes('residential') || name.includes('house')) {
+      if (name.includes('home') || name.includes('manor') || name.includes('villa') || name.includes('residential') || name.includes('house') || name.includes('resort') || name.includes('sky')) {
         zoneCounts.residential++;
-      } else if (name.includes('mall') || name.includes('diner') || name.includes('commercial') || name.includes('shop')) {
+      } else if (name.includes('mall') || name.includes('diner') || name.includes('commercial') || name.includes('shop') || name.includes('hq') || name.includes('office')) {
         zoneCounts.commercial++;
-      } else if (name.includes('refinery') || name.includes('warehouse') || name.includes('industrial') || name.includes('factory')) {
+      } else if (name.includes('refinery') || name.includes('warehouse') || name.includes('industrial') || name.includes('factory') || name.includes('nuclear') || name.includes('port')) {
         zoneCounts.industrial++;
-      } else if (name.includes('dome') || name.includes('fountain') || name.includes('green') || name.includes('park')) {
+      } else if (name.includes('dome') || name.includes('fountain') || name.includes('green') || name.includes('park') || name.includes('greenhouse')) {
         zoneCounts.green++;
+      } else if (name.includes('townhall') || name.includes('hospital') || name.includes('solar') || name.includes('turbine') || name.includes('watertower') || name.includes('bridge') || name.includes('station') || name.includes('cathedral') || name.includes('university') || name.includes('hyperloop') || name.includes('civic')) {
+        zoneCounts.civic++;
       } else {
         zoneCounts.residential++;
       }
@@ -813,7 +922,8 @@ export default function CityModule() {
             'house', 'suburban', 'apartment', 'villa', 'manor',
             'skyscraper', 'office', 'mall', 'diner', 'factory', 'refinery', 'warehouse',
             'park', 'greenhouse', 'fountain',
-            'townhall', 'hospital', 'solar', 'turbine', 'watertower', 'bridge', 'station'
+            'townhall', 'hospital', 'solar', 'turbine', 'watertower', 'bridge', 'station',
+            'cathedral', 'megamall', 'techhq', 'resort', 'nuclear', 'skygarden', 'cargoport', 'university', 'ecodome', 'hyperloop'
           ].includes(t.id)).map(t => (
             <button
               key={t.id}
@@ -825,8 +935,8 @@ export default function CityModule() {
                     name: t.name,
                     objects: t.objects,
                     color: t.objects[0]?.color || '#4ECDC4',
-                    width: 2.0,
-                    height: 2.0,
+                    width: t.width || 2.0,
+                    height: t.height || 2.0,
                   },
                   cityTool: 'select',
                 });
@@ -1104,6 +1214,20 @@ export default function CityModule() {
             )}
 
             <button className="btn sm danger full" style={{ marginTop: 4 }} onClick={() => { removeAsset(selectedAsset.id); selectAsset(null); }}>Remove Building</button>
+          </div>
+        )}
+        {selectedRoad && (
+          <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:8 }}>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:'var(--text)' }}>Selected Road</div>
+              <div style={{ fontSize:10, color:'var(--text3)', marginTop:2, textTransform: 'capitalize' }}>
+                Type: {selectedRoad.roadType || 'standard'}<br />
+                Nodes: {selectedRoad.points?.length || 0}
+              </div>
+            </div>
+            <button className="btn sm danger full" style={{ marginTop: 4 }} onClick={() => { removeRoadSegment(selectedRoad.id); setSelectedRoadId(null); }}>
+              Delete Road
+            </button>
           </div>
         )}
       </div>

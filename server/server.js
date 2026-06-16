@@ -173,14 +173,16 @@ function runSimTick() {
   
   (city.placedAssets || []).forEach(asset => {
     const name = (asset.name || '').toLowerCase();
-    if (name.includes('home') || name.includes('manor') || name.includes('villa') || name.includes('residential') || name.includes('house')) {
+    if (name.includes('home') || name.includes('manor') || name.includes('villa') || name.includes('residential') || name.includes('house') || name.includes('resort') || name.includes('sky')) {
       res++;
-    } else if (name.includes('mall') || name.includes('diner') || name.includes('commercial') || name.includes('shop')) {
+    } else if (name.includes('mall') || name.includes('diner') || name.includes('commercial') || name.includes('shop') || name.includes('hq') || name.includes('office')) {
       com++;
-    } else if (name.includes('refinery') || name.includes('warehouse') || name.includes('industrial') || name.includes('factory')) {
+    } else if (name.includes('refinery') || name.includes('warehouse') || name.includes('industrial') || name.includes('factory') || name.includes('nuclear') || name.includes('port')) {
       ind++;
     } else if (name.includes('dome') || name.includes('fountain') || name.includes('green') || name.includes('park')) {
       green++;
+    } else if (name.includes('townhall') || name.includes('hospital') || name.includes('solar') || name.includes('turbine') || name.includes('watertower') || name.includes('bridge') || name.includes('station') || name.includes('cathedral') || name.includes('university') || name.includes('hyperloop') || name.includes('civic')) {
+      // Civic structures, counted as general assets
     } else {
       res++;
     }

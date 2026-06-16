@@ -551,8 +551,10 @@ export const useStore = create((set, get) => ({
     }));
   },
 
-  updateAsset(assetId, updates) {
-    get().send({ type: 'CITY_UPDATE_ASSET', assetId, ...updates });
+  updateAsset(assetId, updates, sendToServer = true) {
+    if (sendToServer) {
+      get().send({ type: 'CITY_UPDATE_ASSET', assetId, ...updates });
+    }
     set(state => ({
       city: state.city ? {
         ...state.city,

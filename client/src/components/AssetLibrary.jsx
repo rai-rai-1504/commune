@@ -2,6 +2,537 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { v4 as uuid } from 'uuid';
 
+// ── 10 Sophisticated Template Generators (50-60 shapes each) ─────────────────
+function makeCathedral() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#7d8a99', name = 'Cath') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  add('box', 0, 1.2, 0, 1.8, 2.4, 4.5, 0, 0, 0, '#7d8a99', 'Nave');
+  add('box', -1.3, 0.8, 0, 0.8, 1.6, 3.6, 0, 0, 0, '#6c7987', 'AisleL');
+  add('box', 1.3, 0.8, 0, 0.8, 1.6, 3.6, 0, 0, 0, '#6c7987', 'AisleR');
+  add('box', -1.1, 1.2, -0.6, 0.8, 2.4, 1.2, 0, 0, 0, '#7d8a99', 'TranseptL');
+  add('box', 1.1, 1.2, -0.6, 0.8, 2.4, 1.2, 0, 0, 0, '#7d8a99', 'TranseptR');
+
+  add('wedge', 0, 2.9, -1.12, 1.8, 1.0, 2.25, 0, 0, 0, '#3d4a59', 'RoofL');
+  add('wedge', 0, 2.9, 1.12, 1.8, 1.0, 2.25, 0, Math.PI, 0, '#3d4a59', 'RoofR');
+
+  add('box', -0.9, 2.2, 2.35, 0.8, 4.4, 0.8, 0, 0, 0, '#6c7987', 'TowerL');
+  add('box', 0.9, 2.2, 2.35, 0.8, 4.4, 0.8, 0, 0, 0, '#6c7987', 'TowerR');
+  add('cone', -0.9, 5.2, 2.35, 0.9, 1.6, 0.9, 0, 0, 0, '#cda250', 'SpireL');
+  add('cone', 0.9, 5.2, 2.35, 0.9, 1.6, 0.9, 0, 0, 0, '#cda250', 'SpireR');
+
+  add('box', -0.9, 6.2, 2.35, 0.08, 0.5, 0.08, 0, 0, 0, '#cda250', 'CrossVL');
+  add('box', -0.9, 6.1, 2.35, 0.3, 0.08, 0.08, 0, 0, 0, '#cda250', 'CrossHL');
+  add('box', 0.9, 6.2, 2.35, 0.08, 0.5, 0.08, 0, 0, 0, '#cda250', 'CrossVR');
+  add('box', 0.9, 6.1, 2.35, 0.3, 0.08, 0.08, 0, 0, 0, '#cda250', 'CrossHR');
+
+  add('torus', 0, 2.4, 2.26, 1.0, 1.0, 0.1, 0, 0, 0, '#cda250', 'RoseWin');
+  add('box', 0, 0.5, 2.26, 0.6, 1.0, 0.05, 0, 0, 0, '#7d8a99', 'DoorArch');
+  add('box', 0, 0.45, 2.28, 0.4, 0.9, 0.05, 0, 0, 0, '#4a3525', 'DoorLeft');
+  add('box', -0.9, 0.4, 2.76, 0.4, 0.8, 0.05, 0, 0, 0, '#4a3525', 'DoorL');
+  add('box', 0.9, 0.4, 2.76, 0.4, 0.8, 0.05, 0, 0, 0, '#4a3525', 'DoorR');
+
+  for (let i = 0; i < 5; i++) {
+    const z = -1.8 + i * 0.9;
+    add('wedge', -1.75, 0.7, z, 0.3, 1.4, 0.3, 0, -Math.PI/2, 0, '#6c7987', `ButtressL_${i}`);
+    add('wedge', 1.75, 0.7, z, 0.3, 1.4, 0.3, 0, Math.PI/2, 0, '#6c7987', `ButtressR_${i}`);
+  }
+
+  for (let i = 0; i < 6; i++) {
+    const z = -1.5 + i * 0.6;
+    add('box', -1.71, 0.9, z, 0.05, 0.6, 0.25, 0, 0, 0, '#add8e6', `WinL_${i}`);
+    add('box', 1.71, 0.9, z, 0.05, 0.6, 0.25, 0, 0, 0, '#add8e6', `WinR_${i}`);
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const x = -0.75 + i * 0.5;
+    add('cylinder', x, 0.5, 2.6, 0.08, 1.0, 0.08, 0, 0, 0, '#d1d5db', `FrontPill_${i}`);
+    add('box', x, 1.0, 2.6, 0.12, 0.05, 0.12, 0, 0, 0, '#9ca3af', `FrontPillCap_${i}`);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const z = -1.2 + i * 1.2;
+    add('cone', -0.9, 2.6, z, 0.2, 0.8, 0.2, 0, 0, 0, '#cda250', `SpireSmallL_${i}`);
+    add('cone', 0.9, 2.6, z, 0.2, 0.8, 0.2, 0, 0, 0, '#cda250', `SpireSmallR_${i}`);
+  }
+
+  return o;
+}
+
+function makeMegamall() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#edf2f7', name = 'Mall') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  add('box', 0, 0.4, 0, 5.0, 0.8, 5.0, 0, 0, 0, '#e2e8f0', 'MainBody');
+  add('box', 0, 1.1, 0, 4.0, 0.6, 4.0, 0, 0, 0, '#cbd5e0', 'UpperBody');
+  add('sphere', 0, 1.3, 0, 2.0, 1.2, 2.0, 0, 0, 0, '#63b3ed', 'GlassDome');
+
+  add('box', 0, 0.4, 2.6, 1.6, 0.8, 0.4, 0, 0, 0, '#4fd1c5', 'EntrLobby');
+  add('box', 0, 0.85, 2.7, 2.0, 0.1, 0.8, 0.2, 0, 0, '#319795', 'EntrCanopy');
+  add('cylinder', -0.9, 0.4, 2.9, 0.1, 0.8, 0.1, 0, 0, 0, '#718096', 'EntrPillarL');
+  add('cylinder', 0.9, 0.4, 2.9, 0.1, 0.8, 0.1, 0, 0, 0, '#718096', 'EntrPillarR');
+  add('box', 0, 1.2, 2.6, 1.2, 0.4, 0.1, 0, 0, 0, '#e53e3e', 'LogoSign');
+
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 4; j++) {
+      const x = -1.5 + i * 1.5;
+      const z = -1.6 + j * 0.7;
+      add('box', x, 1.45, z, 0.8, 0.05, 0.5, 0.3, 0, 0, '#1a365d', `Solar_${i}_${j}`);
+    }
+  }
+
+  const carColors = ['#e53e3e', '#3182ce', '#38a169', '#dd6b20', '#718096', '#319795'];
+  for (let i = 0; i < 6; i++) {
+    const x = -2.0 + i * 0.8;
+    add('box', x, 0.1, -2.2, 0.4, 0.18, 0.7, 0, 0, 0, carColors[i % carColors.length], `CarA_${i}`);
+    add('box', x, 0.1, -2.6, 0.4, 0.18, 0.7, 0, 0, 0, carColors[(i+2) % carColors.length], `CarB_${i}`);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const z = -1.5 + i * 1.5;
+    add('cylinder', -2.7, 0.4, z, 0.1, 0.8, 0.1, 0, 0, 0, '#744210', `TreeTrunkL_${i}`);
+    add('sphere', -2.7, 0.9, z, 0.6, 0.6, 0.6, 0, 0, 0, '#276749', `TreeCanopyL_${i}`);
+    add('cylinder', 2.7, 0.4, z, 0.1, 0.8, 0.1, 0, 0, 0, '#744210', `TreeTrunkR_${i}`);
+    add('sphere', 2.7, 0.9, z, 0.6, 0.6, 0.6, 0, 0, 0, '#276749', `TreeCanopyR_${i}`);
+  }
+
+  for (let i = 0; i < 12; i++) {
+    const angle = (i * Math.PI) / 6;
+    const x = Math.cos(angle) * 1.0;
+    const z = Math.sin(angle) * 1.0;
+    add('cylinder', x, 1.4, z, 0.04, 0.4, 0.04, 0, angle, Math.PI/2, '#4a5568', `DomeBeam_${i}`);
+  }
+
+  return o;
+}
+
+function makeTechHQ() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#1a202c', name = 'Tech') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  add('box', -0.5, 0.6, -0.5, 2.8, 1.2, 2.2, 0, 0.1, 0, '#2d3748', 'BlockA');
+  add('box', 0.8, 1.1, 0.6, 2.2, 1.0, 2.2, 0, -0.2, 0, '#4a5568', 'BlockB');
+  add('box', -0.2, 1.8, 0.2, 2.0, 0.8, 2.0, 0, 0.3, 0, '#718096', 'BlockC');
+  add('box', 0.4, 2.5, -0.4, 1.4, 0.6, 1.4, 0, -0.1, 0, '#cbd5e0', 'BlockD');
+
+  add('cylinder', 0.4, 2.81, -0.4, 1.1, 0.02, 1.1, 0, 0, 0, '#718096', 'Helipad');
+  add('box', 0.4, 2.82, -0.4, 0.1, 0.02, 0.8, 0, 0, 0, '#ffffff', 'HLineV');
+  add('box', 0.4, 2.82, -0.4, 0.5, 0.02, 0.1, 0, 0, 0, '#ffffff', 'HLineH');
+  add('cylinder', 0.4, 2.82, -0.4, 0.95, 0.02, 0.95, 0, 0, 0, '#e53e3e', 'HelipadRing');
+
+  for (let i = 0; i < 10; i++) {
+    const angle = (i * Math.PI) / 4.5;
+    const xA = -0.5 + Math.cos(angle) * 1.45;
+    const zA = -0.5 + Math.sin(angle) * 1.15;
+    add('box', xA, 0.6, zA, 0.06, 1.0, 0.2, 0, angle, 0, '#3182ce', `GlassA_${i}`);
+
+    const xB = 0.8 + Math.cos(angle) * 1.15;
+    const zB = 0.6 + Math.sin(angle) * 1.15;
+    add('box', xB, 1.1, zB, 0.06, 0.8, 0.2, 0, angle, 0, '#3182ce', `GlassB_${i}`);
+  }
+
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * Math.PI) / 3;
+    const px = Math.cos(angle) * 2.2;
+    const pz = Math.sin(angle) * 2.2;
+    add('cylinder', px, 0.6, pz, 0.05, 1.2, 0.05, 0, 0, 0, '#a0aec0', `LightPole_${i}`);
+    add('sphere', px, 1.25, pz, 0.16, 0.16, 0.16, 0, 0, 0, '#fff', `LightSphere_${i}`);
+  }
+
+  for (let i = 0; i < 5; i++) {
+    const angle = (i * Math.PI) / 2;
+    const tx = -0.2 + Math.cos(angle) * 0.8;
+    const tz = 0.2 + Math.sin(angle) * 0.8;
+    add('cylinder', tx, 2.3, tz, 0.06, 0.4, 0.06, 0, 0, 0, '#744210', `GardenTrunk_${i}`);
+    add('sphere', tx, 2.6, tz, 0.35, 0.35, 0.35, 0, 0, 0, '#48bb78', `GardenCanopy_${i}`);
+  }
+
+  add('cylinder', -0.1, 2.9, -0.9, 0.04, 1.0, 0.04, 0, 0, 0, '#fff', `Antenna1`);
+  add('sphere', -0.1, 3.4, -0.9, 0.12, 0.12, 0.12, 0, 0, 0, '#e53e3e', `AntennaBall1`);
+  add('cylinder', 0.9, 2.9, 0.1, 0.04, 0.8, 0.04, 0, 0, 0, '#fff', `Antenna2`);
+  add('box', -0.8, 2.3, 0.8, 0.4, 0.3, 0.4, 0, 0.3, 0, '#a0aec0', `HVAC1`);
+  add('box', -0.5, 2.3, 0.8, 0.3, 0.25, 0.3, 0, 0.3, 0, '#718096', `HVAC2`);
+  add('box', 0.7, 1.7, -0.7, 0.5, 0.3, 0.5, 0, -0.2, 0, '#a0aec0', `HVAC3`);
+  add('box', 1.0, 1.7, -0.5, 0.3, 0.25, 0.3, 0, -0.2, 0, '#718096', `HVAC4`);
+  add('cylinder', 0.7, 1.9, -0.7, 0.2, 0.1, 0.2, 0, 0, 0, '#4a5568', `HVACFan1`);
+  add('cylinder', 1.0, 1.85, -0.5, 0.12, 0.1, 0.12, 0, 0, 0, '#4a5568', `HVACFan2`);
+  add('box', 0, 0.4, 1.8, 1.0, 0.8, 0.1, 0, 0.3, 0, '#ecc94b', `LogoBanner`);
+
+  return o;
+}
+
+function makeResort() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#f7fafc', name = 'Resort') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  add('box', -2.0, 0.7, -1.0, 1.2, 1.4, 2.6, 0, 0, 0, '#f7fafc', 'WingLeft');
+  add('box', 2.0, 0.7, -1.0, 1.2, 1.4, 2.6, 0, 0, 0, '#f7fafc', 'WingRight');
+  add('box', 0, 0.8, -1.8, 3.2, 1.6, 1.0, 0, 0, 0, '#edf2f7', 'WingCenter');
+
+  add('box', 0, 0.05, 0.4, 2.4, 0.1, 1.8, 0, 0, 0, '#3182ce', 'PoolWater');
+  add('box', 0, 0.02, 0.4, 2.6, 0.08, 2.0, 0, 0, 0, '#e2e8f0', 'PoolBorder');
+
+  for (let i = 0; i < 4; i++) {
+    const z = -0.3 + i * 0.5;
+    add('wedge', -1.5, 0.12, z, 0.25, 0.15, 0.4, 0, Math.PI/2, 0, '#ffffff', `LoungerL_${i}`);
+    add('cylinder', -1.8, 0.3, z, 0.03, 0.6, 0.03, 0, 0, 0, '#a0aec0', `UmbrellaPoleL_${i}`);
+    add('cone', -1.8, 0.6, z, 0.4, 0.18, 0.4, 0, 0, 0, '#ecc94b', `UmbrellaTopL_${i}`);
+
+    add('wedge', 1.5, 0.12, z, 0.25, 0.15, 0.4, 0, -Math.PI/2, 0, '#ffffff', `LoungerR_${i}`);
+    add('cylinder', 1.8, 0.3, z, 0.03, 0.6, 0.03, 0, 0, 0, '#a0aec0', `UmbrellaPoleR_${i}`);
+    add('cone', 1.8, 0.6, z, 0.4, 0.18, 0.4, 0, 0, 0, '#ecc94b', `UmbrellaTopR_${i}`);
+  }
+
+  for (let i = 0; i < 8; i++) {
+    const angle = (i * Math.PI) / 3.5;
+    const px = Math.cos(angle) * 2.5;
+    const pz = 0.5 + Math.sin(angle) * 1.6;
+    add('cylinder', px, 0.6, pz, 0.08, 1.2, 0.08, 0.15, angle, 0, '#744210', `PalmTrunk_${i}`);
+    add('cone', px, 1.25, pz, 0.7, 0.25, 0.7, 0, angle, 0, '#276749', `PalmLeaves_${i}`);
+  }
+
+  add('box', -2.0, 0.3, 1.2, 0.8, 0.6, 0.8, 0, 0, 0, '#e2e8f0', 'VillaL');
+  add('wedge', -2.0, 0.7, 1.2, 0.9, 0.3, 0.9, 0, Math.PI/2, 0, '#9b2c2c', 'VillaRoofL');
+  add('box', 2.0, 0.3, 1.2, 0.8, 0.6, 0.8, 0, 0, 0, '#e2e8f0', 'VillaR');
+  add('wedge', 2.0, 0.7, 1.2, 0.9, 0.3, 0.9, 0, -Math.PI/2, 0, '#9b2c2c', 'VillaRoofR');
+
+  add('cylinder', 0, 0.3, -1.0, 0.6, 0.6, 0.6, 0, 0, 0, '#744210', 'GazeboBase');
+  add('cylinder', -0.25, 0.6, -1.0, 0.04, 0.6, 0.04, 0, 0, 0, '#a0aec0', 'GazeboPill1');
+  add('cylinder', 0.25, 0.6, -1.0, 0.04, 0.6, 0.04, 0, 0, 0, '#a0aec0', 'GazeboPill2');
+  add('cone', 0, 1.05, -1.0, 0.7, 0.3, 0.7, 0, 0, 0, '#dd6b20', 'GazeboRoof');
+
+  add('box', 0, 0.7, -2.4, 1.2, 0.1, 0.6, 0.1, 0, 0, '#4fd1c5', 'LobbyCanopy');
+  add('cylinder', -0.55, 0.35, -2.6, 0.06, 0.7, 0.06, 0, 0, 0, '#cbd5e0', 'LobbyPillL');
+  add('cylinder', 0.55, 0.35, -2.6, 0.06, 0.7, 0.06, 0, 0, 0, '#cbd5e0', 'LobbyPillR');
+
+  return o;
+}
+
+function makeNuclear() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#cbd5e0', name = 'Nuke') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  const buildTower = (tx, tz, suffix) => {
+    add('cylinder', tx, 0.3, tz, 1.6, 0.6, 1.6, 0, 0, 0, '#a0aec0', `TowerBase_${suffix}`);
+    add('cylinder', tx, 0.8, tz, 1.3, 0.4, 1.3, 0, 0, 0, '#a0aec0', `TowerMid1_${suffix}`);
+    add('cylinder', tx, 1.2, tz, 1.1, 0.4, 1.1, 0, 0, 0, '#718096', `TowerMid2_${suffix}`);
+    add('cylinder', tx, 1.6, tz, 1.05, 0.4, 1.05, 0, 0, 0, '#718096', `TowerThroat_${suffix}`);
+    add('cylinder', tx, 2.0, tz, 1.25, 0.4, 1.25, 0, 0, 0, '#a0aec0', `TowerRim_${suffix}`);
+    add('torus', tx, 2.2, tz, 1.2, 1.2, 0.1, Math.PI/2, 0, 0, '#e53e3e', `TowerBand_${suffix}`);
+  };
+  buildTower(-1.5, -1.0, 'A');
+  buildTower(1.5, -1.0, 'B');
+
+  add('cylinder', -1.5, 0.4, 1.5, 1.4, 0.8, 1.4, 0, 0, 0, '#cbd5e0', 'ReactorA_Base');
+  add('sphere', -1.5, 0.8, 1.5, 1.35, 1.0, 1.35, 0, 0, 0, '#a0aec0', 'ReactorA_Dome');
+  add('cylinder', 1.5, 0.4, 1.5, 1.4, 0.8, 1.4, 0, 0, 0, '#cbd5e0', 'ReactorB_Base');
+  add('sphere', 1.5, 0.8, 1.5, 1.35, 1.0, 1.35, 0, 0, 0, '#a0aec0', 'ReactorB_Dome');
+
+  add('box', 0, 0.6, 0.4, 1.8, 1.2, 2.2, 0, 0, 0, '#cbd5e0', 'TurbineHall');
+  add('wedge', 0, 1.35, 0.4, 1.9, 0.3, 2.3, 0, 0, 0, '#4a5568', 'TurbineRoof');
+  add('box', 0, 0.4, 1.6, 1.2, 0.8, 0.2, 0, 0, 0, '#718096', 'TurbineAnnex');
+
+  add('cylinder', -0.5, 1.5, 1.8, 0.22, 3.0, 0.22, 0, 0, 0, '#e2e8f0', 'ChimneyA');
+  add('torus', -0.5, 2.8, 1.8, 0.23, 0.23, 0.08, Math.PI/2, 0, 0, '#e53e3e', 'ChimneyA_Band1');
+  add('torus', -0.5, 2.2, 1.8, 0.23, 0.23, 0.08, Math.PI/2, 0, 0, '#e53e3e', 'ChimneyA_Band2');
+
+  add('cylinder', 0.5, 1.5, 1.8, 0.22, 3.0, 0.22, 0, 0, 0, '#e2e8f0', 'ChimneyB');
+  add('torus', 0.5, 2.8, 1.8, 0.23, 0.23, 0.08, Math.PI/2, 0, 0, '#e53e3e', 'ChimneyB_Band1');
+  add('torus', 0.5, 2.2, 1.8, 0.23, 0.23, 0.08, Math.PI/2, 0, 0, '#e53e3e', 'ChimneyB_Band2');
+
+  for (let i = 0; i < 4; i++) {
+    const x = -1.2 + i * 0.8;
+    add('box', x, 0.25, -2.3, 0.5, 0.5, 0.5, 0, 0, 0, '#4a5568', `Transformer_${i}`);
+    add('cylinder', x - 0.15, 0.6, -2.3, 0.04, 0.4, 0.04, 0, 0, 0, '#718096', `SubPoleA_${i}`);
+    add('cylinder', x + 0.15, 0.6, -2.3, 0.04, 0.4, 0.04, 0, 0, 0, '#718096', `SubPoleB_${i}`);
+  }
+
+  add('cylinder', -0.7, 0.6, 0.4, 0.15, 0.8, 0.15, 0, 0, Math.PI/2, '#4fd1c5', 'PipeA_Horiz');
+  add('cylinder', 0.7, 0.6, 0.4, 0.15, 0.8, 0.15, 0, 0, Math.PI/2, '#4fd1c5', 'PipeB_Horiz');
+  add('cylinder', -1.5, 0.6, 0.4, 0.15, 1.0, 0.15, Math.PI/2, 0, 0, '#4fd1c5', 'PipeA_ToReactor');
+  add('cylinder', 1.5, 0.6, 0.4, 0.15, 1.0, 0.15, Math.PI/2, 0, 0, '#4fd1c5', 'PipeB_ToReactor');
+  add('cylinder', -1.5, 0.5, -0.2, 0.12, 0.8, 0.12, Math.PI/2, 0, 0, '#a0aec0', 'PipeA_ToTower');
+  add('cylinder', 1.5, 0.5, -0.2, 0.12, 0.8, 0.12, Math.PI/2, 0, 0, '#a0aec0', 'PipeB_ToTower');
+
+  return o;
+}
+
+function makeSkyGarden() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#2b6cb0', name = 'Sky') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  add('box', 0, 0.8, 0, 2.2, 1.6, 2.2, 0, 0, 0, '#3182ce', 'Lvl1');
+  add('box', 0, 2.2, 0, 1.8, 1.2, 1.8, 0, 0.1, 0, '#2b6cb0', 'Lvl2');
+  add('box', 0, 3.2, 0, 1.5, 0.8, 1.5, 0, -0.1, 0, '#2b6cb0', 'Lvl3');
+  add('box', 0, 4.0, 0, 1.2, 0.8, 1.2, 0, 0.2, 0, '#1a365d', 'Lvl4');
+  add('box', 0, 4.7, 0, 0.9, 0.6, 0.9, 0, -0.2, 0, '#1a365d', 'Lvl5');
+
+  add('box', 1.15, 0.8, 0, 0.2, 1.6, 0.6, 0, 0, 0, 'rgba(79,209,197,0.8)', 'Elevator1');
+  add('box', 0.95, 2.2, 0, 0.2, 1.2, 0.5, 0, 0.1, 0, 'rgba(79,209,197,0.8)', 'Elevator2');
+  add('box', 0.8, 3.2, 0, 0.2, 0.8, 0.4, 0, -0.1, 0, 'rgba(79,209,197,0.8)', 'Elevator3');
+  add('box', 0.65, 4.0, 0, 0.2, 0.8, 0.35, 0, 0.2, 0, 'rgba(79,209,197,0.8)', 'Elevator4');
+  add('box', 0.5, 4.7, 0, 0.2, 0.6, 0.3, 0, -0.2, 0, 'rgba(79,209,197,0.8)', 'Elevator5');
+
+  const gardenPositions = [
+    { x: -0.9, y: 1.6, z: -0.9, r: 0 },
+    { x: 0.9, y: 1.6, z: 0.9, r: 0 },
+    { x: -0.7, y: 2.8, z: 0.7, r: 0.1 },
+    { x: 0.7, y: 2.8, z: -0.7, r: 0.1 },
+    { x: -0.5, y: 3.6, z: -0.5, r: -0.1 },
+    { x: 0.5, y: 4.4, z: 0.5, r: 0.2 },
+  ];
+  gardenPositions.forEach((g, idx) => {
+    add('box', g.x, g.y + 0.05, g.z, 0.5, 0.1, 0.5, 0, g.r, 0, '#38a169', `GardenBase_${idx}`);
+    add('sphere', g.x, g.y + 0.25, g.z, 0.4, 0.4, 0.4, 0, 0, 0, '#2f855a', `GardenCanopy_${idx}`);
+  });
+
+  add('cylinder', 0, 5.3, 0, 0.06, 0.8, 0.06, 0, 0, 0, '#cbd5e0', 'MainAntenna');
+  add('sphere', 0, 5.7, 0, 0.12, 0.12, 0.12, 0, 0, 0, '#e53e3e', 'AntennaRedDot');
+  add('cylinder', -0.2, 5.1, -0.2, 0.03, 0.5, 0.03, 0, 0, 0, '#cbd5e0', 'SideAntenna');
+
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI) / 2;
+    const s = 1.11;
+    const wx = Math.cos(angle) * s;
+    const wz = Math.sin(angle) * s;
+    add('box', wx, 0.6, wz, angle % Math.PI === 0 ? 0.04 : 2.22, 0.2, angle % Math.PI === 0 ? 2.22 : 0.04, 0, 0, 0, '#63b3ed', `Ribbon1_${i}`);
+    add('box', wx, 1.1, wz, angle % Math.PI === 0 ? 0.04 : 2.22, 0.2, angle % Math.PI === 0 ? 2.22 : 0.04, 0, 0, 0, '#63b3ed', `Ribbon2_${i}`);
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI) / 2 + 0.1;
+    const s = 0.91;
+    const wx = Math.cos(angle) * s;
+    const wz = Math.sin(angle) * s;
+    add('box', wx, 2.0, wz, angle % Math.PI === 0 ? 0.04 : 1.82, 0.15, angle % Math.PI === 0 ? 1.82 : 0.04, 0, 0.1, 0, '#63b3ed', `Ribbon3_${i}`);
+    add('box', wx, 2.4, wz, angle % Math.PI === 0 ? 0.04 : 1.82, 0.15, angle % Math.PI === 0 ? 1.82 : 0.04, 0, 0.1, 0, '#63b3ed', `Ribbon4_${i}`);
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI) / 2 - 0.1;
+    const s = 0.76;
+    const wx = Math.cos(angle) * s;
+    const wz = Math.sin(angle) * s;
+    add('box', wx, 3.1, wz, angle % Math.PI === 0 ? 0.04 : 1.52, 0.12, angle % Math.PI === 0 ? 1.52 : 0.04, 0, -0.1, 0, '#63b3ed', `Ribbon5_${i}`);
+    add('box', wx, 3.4, wz, angle % Math.PI === 0 ? 0.04 : 1.52, 0.12, angle % Math.PI === 0 ? 1.52 : 0.04, 0, -0.1, 0, '#63b3ed', `Ribbon6_${i}`);
+  }
+
+  return o;
+}
+
+function makeCargoPort() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#718096', name = 'Port') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  add('box', 0, 0.05, 0, 5.0, 0.1, 3.6, 0, 0, 0, '#4a5568', 'DockPier');
+
+  add('cylinder', -1.8, 0.8, -1.0, 0.08, 1.5, 0.08, 0.2, 0, 0, '#dd6b20', 'CraneLegFL');
+  add('cylinder', -1.8, 0.8, -0.4, 0.08, 1.5, 0.08, -0.2, 0, 0, '#dd6b20', 'CraneLegFR');
+  add('cylinder', -1.0, 0.8, -1.0, 0.08, 1.5, 0.08, 0.2, 0, 0, '#dd6b20', 'CraneLegBL');
+  add('cylinder', -1.0, 0.8, -0.4, 0.08, 1.5, 0.08, -0.2, 0, 0, '#dd6b20', 'CraneLegBR');
+  add('box', -1.4, 1.5, -0.7, 1.0, 0.1, 0.8, 0, 0, 0, '#ed8936', 'CranePlatform');
+  add('box', -1.4, 1.55, 0.1, 0.2, 0.1, 2.2, 0, 0, 0, '#ed8936', 'CraneBoom');
+  add('box', -1.4, 1.75, -0.7, 0.5, 0.4, 0.5, 0, 0, 0, '#4a5568', 'CraneCab');
+  add('box', -1.4, 1.85, 0.2, 0.15, 0.2, 0.15, 0, 0, 0, '#ecc94b', 'CraneTrolley');
+  add('cylinder', -1.4, 1.1, 0.2, 0.02, 1.3, 0.02, 0, 0, 0, '#ffffff', 'CraneCable');
+  add('box', -1.4, 0.4, 0.2, 0.3, 0.15, 0.6, 0, 0, 0, '#3182ce', 'CraneHookContainer');
+
+  add('wedge', 2.3, 0.1, 0, 0.8, 0.3, 3.2, 0, 0, Math.PI, '#1a202c', 'ShipHullBack');
+  add('wedge', 2.3, 0.1, 1.6, 0.8, 0.3, 0.8, 0, 0, 0, '#1a202c', 'ShipHullFront');
+  add('box', 2.3, 0.25, -0.8, 0.7, 0.4, 0.8, 0, 0, 0, '#e2e8f0', 'ShipCabin1');
+  add('box', 2.3, 0.55, -0.8, 0.5, 0.3, 0.6, 0, 0, 0, '#cbd5e0', 'ShipCabin2');
+  add('cylinder', 2.3, 0.8, -0.8, 0.05, 0.4, 0.05, 0, 0, 0, '#718096', 'ShipAntenna');
+  add('box', 2.3, 0.28, 0.1, 0.5, 0.3, 0.8, 0, 0, 0, '#e53e3e', 'ShipContainerRed');
+  add('box', 2.3, 0.28, 0.9, 0.5, 0.3, 0.8, 0, 0, 0, '#319795', 'ShipContainerTeal');
+  add('box', 2.3, 0.58, 0.1, 0.5, 0.3, 0.8, 0, 0, 0, '#d69e2e', 'ShipContainerYellow');
+
+  const containerColors = ['#e53e3e', '#3182ce', '#38a169', '#d69e2e', '#805ad5', '#dd6b20'];
+  let cIdx = 0;
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 2; j++) {
+      const x = -0.4 + i * 0.75;
+      const z = -1.2 + j * 1.4;
+      add('box', x, 0.25, z, 0.6, 0.4, 1.2, 0, 0, 0, containerColors[cIdx++ % containerColors.length], `YardContainer_${i}_${j}_L1`);
+      if ((i+j) % 2 === 0) {
+        add('box', x, 0.65, z + 0.1, 0.6, 0.4, 1.2, 0, 0.08, 0, containerColors[cIdx++ % containerColors.length], `YardContainer_${i}_${j}_L2`);
+      }
+    }
+  }
+
+  add('box', -1.2, 0.2, 1.2, 0.3, 0.3, 0.4, 0, Math.PI/2, 0, '#e53e3e', 'TruckCab');
+  add('box', -0.6, 0.22, 1.2, 0.28, 0.28, 0.8, 0, Math.PI/2, 0, '#718096', 'TruckTrailer');
+  add('cylinder', -1.2, 0.1, 1.05, 0.1, 0.1, 0.1, 0, 0, Math.PI/2, '#111', 'WheelF1');
+  add('cylinder', -1.2, 0.1, 1.35, 0.1, 0.1, 0.1, 0, 0, Math.PI/2, '#111', 'WheelF2');
+  add('cylinder', -0.7, 0.1, 1.05, 0.1, 0.1, 0.1, 0, 0, Math.PI/2, '#111', 'WheelB1');
+  add('cylinder', -0.7, 0.1, 1.35, 0.1, 0.1, 0.1, 0, 0, Math.PI/2, '#111', 'WheelB2');
+
+  return o;
+}
+
+function makeUniversity() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#a28a6f', name = 'Uni') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  add('box', 0, 0.8, -1.8, 2.0, 1.6, 1.4, 0, 0, 0, '#a28a6f', 'Library');
+  add('sphere', 0, 1.6, -1.8, 1.4, 1.0, 1.4, 0, 0, 0, '#ecc94b', 'LibraryDome');
+  add('box', 0, 0.5, -1.05, 0.8, 1.0, 0.2, 0, 0, 0, '#d1d5db', 'LibraryPortico');
+  add('cylinder', -0.3, 0.5, -0.92, 0.08, 1.0, 0.08, 0, 0, 0, '#ffffff', 'LibPill1');
+  add('cylinder', 0.3, 0.5, -0.92, 0.08, 1.0, 0.08, 0, 0, 0, '#ffffff', 'LibPill2');
+  add('cone', 0, 1.1, -1.05, 0.9, 0.3, 0.3, 0, 0, 0, '#9b2c2c', 'LibPediment');
+
+  add('box', -2.0, 0.6, -0.5, 1.0, 1.2, 2.2, 0, 0, 0, '#a28a6f', 'HallLeft');
+  add('wedge', -2.0, 1.35, -0.5, 1.1, 0.3, 2.3, 0, 0, 0, '#9b2c2c', 'HallLeftRoof');
+
+  add('box', 2.0, 0.6, -0.5, 1.0, 1.2, 2.2, 0, 0, 0, '#a28a6f', 'HallRight');
+  add('wedge', 2.0, 1.35, -0.5, 1.1, 0.3, 2.3, 0, 0, 0, '#9b2c2c', 'HallRightRoof');
+
+  add('box', 0, 0.15, 0.5, 0.6, 0.3, 0.6, 0, 0, 0, '#cbd5e0', 'ObeliskBase');
+  add('cylinder', 0, 1.0, 0.5, 0.15, 1.4, 0.15, 0, 0, 0, '#a0aec0', 'ObeliskShaft');
+  add('cone', 0, 1.8, 0.5, 0.18, 0.25, 0.18, 0, 0, 0, '#ecc94b', 'ObeliskTip');
+
+  for (let i = 0; i < 4; i++) {
+    const xL = -1.7 + i * 0.4;
+    const xR = 1.7 - i * 0.4;
+    add('cylinder', xL, 0.45, -1.3, 0.05, 0.9, 0.05, 0, 0, 0, '#cbd5e0', `ColonnadeL_Pill_${i}`);
+    add('box', xL, 0.92, -1.3, 0.42, 0.05, 0.1, 0, 0, 0, '#718096', `ColonnadeL_Arch_${i}`);
+    add('cylinder', xR, 0.45, -1.3, 0.05, 0.9, 0.05, 0, 0, 0, '#cbd5e0', `ColonnadeR_Pill_${i}`);
+    add('box', xR, 0.92, -1.3, 0.42, 0.05, 0.1, 0, 0, 0, '#718096', `ColonnadeR_Arch_${i}`);
+  }
+
+  add('box', 0, 0.02, 0.5, 2.6, 0.04, 2.2, 0, 0, 0, '#48bb78', 'QuadGrass');
+  add('box', 0, 0.03, 0.5, 0.4, 0.02, 2.2, 0, 0, 0, '#cbd5e0', 'QuadPathV');
+  add('box', 0, 0.03, 0.5, 2.6, 0.02, 0.4, 0, 0, 0, '#cbd5e0', 'QuadPathH');
+
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI) / 2;
+    const bx = Math.cos(angle) * 1.0;
+    const bz = 0.5 + Math.sin(angle) * 0.8;
+    add('box', bx, 0.12, bz, 0.3, 0.12, 0.15, 0, angle, 0, '#744210', `Bench_${i}`);
+    add('box', bx, 0.06, bz - 0.12 * Math.sin(angle), 0.02, 0.12, 0.15, 0, angle, 0, '#4a5568', `BenchLeg_${i}`);
+  }
+
+  for (let i = 0; i < 6; i++) {
+    const x = -2.3 + i * 0.92;
+    add('cylinder', x, 0.4, 1.2, 0.06, 0.8, 0.06, 0, 0, 0, '#744210', `CampusTreeTrunk_${i}`);
+    add('sphere', x, 0.9, 1.2, 0.5, 0.5, 0.5, 0, 0, 0, '#276749', `CampusTreeCanopy_${i}`);
+  }
+
+  return o;
+}
+
+function makeEcoDome() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = 'rgba(72,187,120,0.3)', name = 'Dome') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  add('cylinder', 0, 0.05, 0, 3.2, 0.1, 3.2, 0, 0, 0, '#a0aec0', 'MainBase');
+  add('sphere', 0, 0.5, 0, 2.8, 2.0, 2.8, 0, 0, 0, 'rgba(72,187,120,0.3)', 'CentralGlassDome');
+  add('torus', 0, 0.1, 0, 2.8, 2.8, 0.1, Math.PI/2, 0, 0, '#319795', 'MainDomeRim');
+
+  for (let i = 0; i < 3; i++) {
+    const angle = (i * Math.PI * 2) / 3;
+    const px = Math.cos(angle) * 1.9;
+    const pz = Math.sin(angle) * 1.9;
+    add('cylinder', px, 0.05, pz, 1.1, 0.1, 1.1, 0, 0, 0, '#a0aec0', `SatBase_${i}`);
+    add('sphere', px, 0.35, pz, 0.9, 0.7, 0.9, 0, 0, 0, 'rgba(56,161,105,0.4)', `SatDome_${i}`);
+    add('cylinder', px / 2, 0.15, pz / 2, 0.25, 0.9, 0.25, Math.PI/2, -angle, 0, '#cbd5e0', `Tunnel_${i}`);
+  }
+
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * Math.PI) / 3;
+    const dist = 0.5 + (i % 2) * 0.4;
+    const tx = Math.cos(angle) * dist;
+    const tz = Math.sin(angle) * dist;
+    add('cylinder', tx, 0.4, tz, 0.06, 0.8, 0.06, 0, 0, 0, '#5a3a1a', `DomeTreeTrunk_${i}`);
+    add('sphere', tx, 0.9, tz, 0.45, 0.45, 0.45, 0, 0, 0, '#2d7a2d', `DomeTreeCanopy_${i}`);
+  }
+
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * Math.PI) / 3 + 0.5;
+    const px = Math.cos(angle) * 2.3;
+    const pz = Math.sin(angle) * 2.3;
+    add('cylinder', px, 0.4, pz, 0.05, 0.8, 0.05, 0, 0, 0, '#718096', `SolarPole_${i}`);
+    add('box', px, 0.8, pz, 0.4, 0.02, 0.4, 0.3, angle, 0, '#2b6cb0', `SolarPanel_${i}`);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const angle = (i * Math.PI * 2) / 3 - 0.5;
+    const wx = Math.cos(angle) * 2.1;
+    const wz = Math.sin(angle) * 2.1;
+    add('cylinder', wx, 0.7, wz, 0.06, 1.4, 0.06, 0, 0, 0, '#cbd5e0', `TurbinePole_${i}`);
+    add('sphere', wx, 1.4, wz, 0.12, 0.12, 0.15, 0, 0, 0, '#ffffff', `TurbineHub_${i}`);
+    add('wedge', wx, 1.7, wz, 0.08, 0.6, 0.03, 0, 0, 0, '#ffffff', `Blade1_${i}`);
+    add('wedge', wx - 0.25, 1.25, wz, 0.08, 0.6, 0.03, 0, 0, (Math.PI * 2) / 3, '#ffffff', `Blade2_${i}`);
+    add('wedge', wx + 0.25, 1.25, wz, 0.08, 0.6, 0.03, 0, 0, -(Math.PI * 2) / 3, '#ffffff', `Blade3_${i}`);
+  }
+
+  return o;
+}
+
+function makeHyperloop() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#2d3748', name = 'Loop') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+
+  add('box', 0, 0.1, 0, 4.4, 0.2, 2.4, 0, 0, 0, '#718096', 'StationBase');
+
+  for (let i = 0; i < 6; i++) {
+    const x = -1.5 + i * 0.6;
+    add('torus', x, 0.6, 0, 1.8, 1.8, 0.08, 0, Math.PI/2, 0, '#cbd5e0', `RoofArch_${i}`);
+    add('box', x, 1.5, 0, 0.1, 0.02, 1.8, 0, 0, 0, 'rgba(79,209,197,0.4)', `GlassArch_${i}`);
+  }
+
+  add('cylinder', 0, 0.8, -0.6, 0.24, 5.0, 0.24, 0, 0, Math.PI/2, 'rgba(79,209,197,0.8)', 'TubeLeft');
+  add('cylinder', 0, 0.8, 0.6, 0.24, 5.0, 0.24, 0, 0, Math.PI/2, 'rgba(79,209,197,0.8)', 'TubeRight');
+
+  for (let i = 0; i < 4; i++) {
+    const x = -1.8 + i * 1.2;
+    add('cylinder', x, 0.4, -0.6, 0.08, 0.8, 0.08, 0, 0, 0, '#4a5568', `PylonL_${i}`);
+    add('cylinder', x, 0.4, 0.6, 0.08, 0.8, 0.08, 0, 0, 0, '#4a5568', `PylonR_${i}`);
+  }
+
+  add('cylinder', -0.6, 0.8, -0.6, 0.16, 0.8, 0.16, 0, 0, Math.PI/2, '#e53e3e', 'PodRed');
+  add('cone', -0.15, 0.8, -0.6, 0.16, 0.2, 0.16, 0, 0, -Math.PI/2, '#e53e3e', 'PodRedCone');
+  add('cylinder', 0.6, 0.8, 0.6, 0.16, 0.8, 0.16, 0, 0, Math.PI/2, '#3182ce', 'PodBlue');
+  add('cone', 1.05, 0.8, 0.6, 0.16, 0.2, 0.16, 0, 0, -Math.PI/2, '#3182ce', 'PodBlueCone');
+
+  add('box', 0, 0.3, 1.5, 2.0, 0.6, 0.6, 0, 0, 0, '#2d3748', 'LobbyBody');
+  add('box', 0, 0.65, 1.5, 2.2, 0.1, 0.8, 0, 0, 0, '#cbd5e0', 'LobbyRoof');
+  for (let i = 0; i < 4; i++) {
+    const x = -0.75 + i * 0.5;
+    add('box', x, 0.12, 2.1, 0.15, 0.22, 0.15, 0, 0, 0, '#38a169', `ChargingPost_${i}`);
+    add('box', x, 0.02, 1.9, 0.3, 0.02, 0.4, 0, 0, 0, '#a0aec0', `ChargingLine_${i}`);
+    add('cylinder', x, 0.2, 2.1, 0.02, 0.2, 0.02, 0, 0, 0, '#e53e3e', `ChargerCable_${i}`);
+    add('sphere', x, 0.25, 2.1, 0.06, 0.06, 0.06, 0, 0, 0, '#48bb78', `ChargerIndicator_${i}`);
+  }
+
+  add('box', -2.2, 0.1, 1.2, 0.4, 0.2, 0.4, 0, 0.3, 0, '#cbd5e0', 'SculptureBase');
+  add('torus', -2.2, 0.45, 1.2, 0.3, 0.3, 0.06, 0, 0.3, Math.PI/2, '#ecc94b', 'SculptureRing1');
+  add('torus', -2.2, 0.45, 1.2, 0.2, 0.2, 0.06, Math.PI/2, 0.3, 0, '#e53e3e', 'SculptureRing2');
+  add('sphere', -2.2, 0.45, 1.2, 0.1, 0.1, 0.1, 0, 0, 0, '#4fd1c5', 'SculptureCore');
+  add('box', 0, 0.8, 1.21, 0.8, 0.4, 0.02, 0, 0, 0, '#ed8936', 'HyperloopSign');
+
+  return o;
+}
+
 // Prebuilt building templates — collections of primitives
 export const TEMPLATES = [
   {
@@ -313,6 +844,96 @@ export const TEMPLATES = [
       { geometry: 'cylinder', position: {x:1.4,y:0.25,z:1.1}, scale: {x:0.06,y:0.5,z:0.06}, color: '#a0aec0', name: 'Hospital_CanopyPillarL' },
       { geometry: 'cylinder', position: {x:2.2,y:0.25,z:1.1}, scale: {x:0.06,y:0.5,z:0.06}, color: '#a0aec0', name: 'Hospital_CanopyPillarR' },
     ],
+  },
+  {
+    id: 'cathedral',
+    name: 'Gothic Cathedral',
+    icon: '⛪',
+    category: 'civic',
+    width: 4.5,
+    height: 6.0,
+    objects: makeCathedral(),
+  },
+  {
+    id: 'megamall',
+    name: 'Mega Mall',
+    icon: '🛍️',
+    category: 'commercial',
+    width: 6.0,
+    height: 6.0,
+    objects: makeMegamall(),
+  },
+  {
+    id: 'techhq',
+    name: 'Tech HQ',
+    icon: '🏢',
+    category: 'commercial',
+    width: 5.0,
+    height: 5.0,
+    objects: makeTechHQ(),
+  },
+  {
+    id: 'resort',
+    name: 'Luxury Resort',
+    icon: '🏨',
+    category: 'residential',
+    width: 6.0,
+    height: 5.0,
+    objects: makeResort(),
+  },
+  {
+    id: 'nuclear',
+    name: 'Nuclear Plant',
+    icon: '⚛️',
+    category: 'industrial',
+    width: 5.5,
+    height: 5.5,
+    objects: makeNuclear(),
+  },
+  {
+    id: 'skygarden',
+    name: 'Sky Garden Tower',
+    icon: '🏙️',
+    category: 'residential',
+    width: 4.0,
+    height: 4.0,
+    objects: makeSkyGarden(),
+  },
+  {
+    id: 'cargoport',
+    name: 'Cargo Port',
+    icon: '⚓',
+    category: 'industrial',
+    width: 6.0,
+    height: 4.5,
+    objects: makeCargoPort(),
+  },
+  {
+    id: 'university',
+    name: 'Grand University',
+    icon: '🎓',
+    category: 'civic',
+    width: 5.5,
+    height: 5.5,
+    objects: makeUniversity(),
+  },
+  {
+    id: 'ecodome',
+    name: 'Eco-Dome Biosphere',
+    icon: '🌴',
+    category: 'green',
+    width: 5.0,
+    height: 5.0,
+    objects: makeEcoDome(),
+  },
+  {
+    id: 'hyperloop',
+    name: 'Hyperloop Hub',
+    icon: '🚀',
+    category: 'civic',
+    width: 6.0,
+    height: 3.5,
+    objects: makeHyperloop(),
   },
 ];
 
