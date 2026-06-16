@@ -113,6 +113,7 @@ export default function CityModule() {
 
   const targetZoomRef = useRef(1.0);
   const targetOffsetRef = useRef({ x: 16, y: 16 });
+  const mapKeysRef = useRef({});
 
   useEffect(() => {
     targetZoomRef.current = zoom;
@@ -121,10 +122,64 @@ export default function CityModule() {
   }, []);
 
   useEffect(() => {
+    if (streetView) return;
+    const handleKeyDown = (e) => {
+      if (document.activeElement && (
+        document.activeElement.tagName === 'INPUT' || 
+        document.activeElement.tagName === 'TEXTAREA' || 
+        document.activeElement.isContentEditable
+      )) {
+        return;
+      }
+      const k = e.key;
+      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k.toLowerCase())) {
+        mapKeysRef.current[k] = true;
+        e.preventDefault();
+      }
+    };
+    const handleKeyUp = (e) => {
+      const k = e.key;
+      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k.toLowerCase())) {
+        mapKeysRef.current[k] = false;
+        e.preventDefault();
+      }
+    };
+    const handleBlur = () => {
+      mapKeysRef.current = {};
+    };
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    window.addEventListener('keyup', handleKeyUp, { passive: false });
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [streetView]);
+
+  useEffect(() => {
     let animFrame;
     const lerpFactor = 0.15; // Smooth interpolation speed
     
     const tick = () => {
+      // Check keyboard panning
+      const panSpeed = 7.0;
+      let dxKey = 0;
+      let dyKey = 0;
+      const k = mapKeysRef.current;
+      
+      if (k['ArrowUp'] || k['w'] || k['W']) dyKey += panSpeed;
+      if (k['ArrowDown'] || k['s'] || k['S']) dyKey -= panSpeed;
+      if (k['ArrowLeft'] || k['a'] || k['A']) dxKey += panSpeed;
+      if (k['ArrowRight'] || k['d'] || k['D']) dxKey -= panSpeed;
+      
+      if (dxKey !== 0 || dyKey !== 0) {
+        targetOffsetRef.current = {
+          x: targetOffsetRef.current.x + dxKey,
+          y: targetOffsetRef.current.y + dyKey
+        };
+      }
+
       setZoom(currentZoom => {
         const targetZoom = targetZoomRef.current;
         if (Math.abs(currentZoom - targetZoom) > 0.001) {
