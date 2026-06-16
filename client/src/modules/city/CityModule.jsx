@@ -784,31 +784,8 @@ export default function CityModule() {
     setZoom(z => Math.max(0.35, Math.min(3.5, z * delta)));
   }
 
-  const stats = city?.stats;
-  const popTarget = 30000;
   const selectedAsset = selectedAssetId ? (city?.placedAssets || []).find(a => a.id === selectedAssetId) : null;
   const selectedRoad = selectedRoadId ? (city?.roads || []).find(r => r.id === selectedRoadId) : null;
-
-  // Zone counts
-  const zoneCounts = { residential:0, commercial:0, industrial:0, green:0, civic:0 };
-  if (city) {
-    (city.placedAssets || []).forEach(asset => {
-      const name = (asset.name || '').toLowerCase();
-      if (name.includes('home') || name.includes('manor') || name.includes('villa') || name.includes('residential') || name.includes('house') || name.includes('resort') || name.includes('sky')) {
-        zoneCounts.residential++;
-      } else if (name.includes('mall') || name.includes('diner') || name.includes('commercial') || name.includes('shop') || name.includes('hq') || name.includes('office')) {
-        zoneCounts.commercial++;
-      } else if (name.includes('refinery') || name.includes('warehouse') || name.includes('industrial') || name.includes('factory') || name.includes('nuclear') || name.includes('port')) {
-        zoneCounts.industrial++;
-      } else if (name.includes('dome') || name.includes('fountain') || name.includes('green') || name.includes('park') || name.includes('greenhouse') || name.includes('tree') || name.includes('willow') || name.includes('blossom') || name.includes('pine')) {
-        zoneCounts.green++;
-      } else if (name.includes('townhall') || name.includes('hospital') || name.includes('solar') || name.includes('turbine') || name.includes('watertower') || name.includes('bridge') || name.includes('station') || name.includes('cathedral') || name.includes('university') || name.includes('hyperloop') || name.includes('civic')) {
-        zoneCounts.civic++;
-      } else {
-        zoneCounts.residential++;
-      }
-    });
-  }
 
   return (
     <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
@@ -825,55 +802,7 @@ export default function CityModule() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="stat-grid">
-          <div className="stat-card">
-            <div className="stat-label">Population</div>
-            <div className="stat-val">{stats?.population?.toLocaleString() || '–'}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Happiness</div>
-            <div className={`stat-val ${(stats?.happiness||0)>70?'green':(stats?.happiness||0)>45?'amber':'red'}`}>
-              {stats?.happiness || '–'}%
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Treasury</div>
-            <div className={`stat-val ${(stats?.treasury||0)>300000?'green':'amber'}`}>
-              ₡{stats?.treasury ? (stats.treasury>=1000000 ? (stats.treasury/1000000).toFixed(1)+'M' : Math.round(stats.treasury/1000)+'k') : '–'}
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Traffic</div>
-            <div className={`stat-val ${stats?.traffic==='low'?'green':stats?.traffic==='medium'?'amber':'red'}`}>
-              {stats?.traffic || '–'}
-            </div>
-          </div>
-        </div>
 
-        {/* Progress */}
-        {stats && (
-          <div style={{ padding:'8px 12px', borderBottom:'1px solid var(--border)' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'var(--text3)', marginBottom:3 }}>
-              <span>Next unlock</span><span>{stats.population?.toLocaleString()} / 30k</span>
-            </div>
-            <div className="progress-bar">
-              <div className="progress-fill" style={{ width:`${Math.min(100,(stats.population/popTarget)*100)}%` }} />
-            </div>
-          </div>
-        )}
-
-        {/* Zone summary */}
-        <div style={{ padding:'8px 12px', borderBottom:'1px solid var(--border)' }}>
-          <div className="panel-label">Zone Breakdown</div>
-          {Object.entries(zoneCounts).map(([type, count]) => (
-            <div key={type} style={{ display:'flex', alignItems:'center', gap:7, marginBottom:3 }}>
-              <div style={{ width:8, height:8, borderRadius:2, background:ZONE_META[type].color, flexShrink:0 }} />
-              <span style={{ flex:1, fontSize:11, color:'var(--text2)' }}>{ZONE_META[type].label}</span>
-              <span style={{ fontSize:11, color:'var(--text3)' }}>{count}</span>
-            </div>
-          ))}
-        </div>
 
         {/* Tools */}
         <div className="panel-label" style={{ padding:'10px 12px 4px' }}>Tools</div>

@@ -5293,8 +5293,8 @@
           "name": "Park_Path"
         }
       ],
-      "col": 25.149445768158273,
-      "row": 18.14908476155291,
+      "col": 25.06912528404815,
+      "row": 18.109135781293837,
       "rotation": -3.005975624070837,
       "color": "#5a3a1a",
       "placedBy": "asasa",
@@ -8968,8 +8968,8 @@
           "name": "Ribbon6_3"
         }
       ],
-      "col": 40.59396278240978,
-      "row": 22.2405846599545,
+      "col": 40.183611569427455,
+      "row": 22.123341456245264,
       "rotation": 1.0197634561704652,
       "color": "#3182ce",
       "placedBy": "asasa",
@@ -10573,10 +10573,10 @@
     }
   ],
   "stats": {
-    "population": 13120,
+    "population": 9520,
     "happiness": 95,
-    "treasury": 1219800,
+    "treasury": 1233488,
     "traffic": "medium"
   },
-  "simulationTick": 7025
+  "simulationTick": 7084
 }
