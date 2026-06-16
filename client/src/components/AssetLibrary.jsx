@@ -3,6 +3,187 @@ import { useStore } from '../store/useStore';
 import { v4 as uuid } from 'uuid';
 
 // ── 10 Sophisticated Template Generators (50-60 shapes each) ─────────────────
+function makeOakTree() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#5C4033', name = 'Oak') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  add('cylinder', 0, 0.5, 0, 0.35, 1.0, 0.35, 0, 0, 0, '#5C4033', 'OakTrunk');
+  add('cylinder', -0.3, 0.9, 0.2, 0.15, 0.6, 0.15, 0.5, 0.2, -0.3, '#5C4033', 'OakBranch1');
+  add('cylinder', 0.3, 1.0, -0.2, 0.15, 0.6, 0.15, -0.4, -0.3, 0.4, '#5C4033', 'OakBranch2');
+  add('cylinder', 0.1, 1.1, 0.3, 0.12, 0.5, 0.12, 0.3, 0.5, 0.2, '#5C4033', 'OakBranch3');
+  add('box', 0.3, 0.05, 0.1, 0.5, 0.1, 0.2, 0, 0, -0.1, '#4d3326', 'OakRoot1');
+  add('box', -0.2, 0.05, -0.3, 0.4, 0.1, 0.2, 0.1, 0, 0.1, '#4d3326', 'OakRoot2');
+  add('box', -0.1, 0.05, 0.35, 0.2, 0.1, 0.5, -0.1, 0, 0, '#4d3326', 'OakRoot3');
+  add('sphere', 0, 1.5, 0, 1.2, 1.0, 1.2, 0, 0, 0, '#2e5c1e', 'OakLeavesMain');
+  add('sphere', -0.4, 1.6, 0.3, 0.9, 0.8, 0.9, 0, 0, 0, '#3f7a2d', 'OakLeavesL');
+  add('sphere', 0.4, 1.7, -0.3, 0.8, 0.8, 0.8, 0, 0, 0, '#3f7a2d', 'OakLeavesR');
+  add('sphere', 0.2, 1.8, 0.4, 0.75, 0.75, 0.75, 0, 0, 0, '#4c8c35', 'OakLeavesT1');
+  add('sphere', -0.3, 1.9, -0.4, 0.7, 0.7, 0.7, 0, 0, 0, '#4c8c35', 'OakLeavesT2');
+  add('sphere', 0, 2.2, 0, 0.9, 0.8, 0.9, 0, 0, 0, '#3f7a2d', 'OakLeavesTop');
+  add('box', 0.7, 0.2, 0.5, 0.8, 0.08, 0.35, 0, 0.5, 0, '#a0522d', 'OakBenchSeat');
+  add('cylinder', 0.5, 0.1, 0.4, 0.06, 0.2, 0.06, 0, 0, 0, '#4d4d4d', 'OakBenchLeg1');
+  add('cylinder', 0.9, 0.1, 0.6, 0.06, 0.2, 0.06, 0, 0, 0, '#4d4d4d', 'OakBenchLeg2');
+  return o;
+}
+
+function makePineTree() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#4A2F13', name = 'Pine') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  add('cylinder', 0, 0.6, 0, 0.25, 1.2, 0.25, 0, 0, 0, '#4A2F13', 'PineTrunk');
+  add('cone', 0, 0.9, 0, 1.6, 0.9, 1.6, 0, 0, 0, '#1B4D3E', 'PineLayer1');
+  add('cone', 0, 1.4, 0, 1.3, 0.8, 1.3, 0, 0, 0, '#1B4D3E', 'PineLayer2');
+  add('cone', 0, 1.85, 0, 1.0, 0.7, 1.0, 0, 0, 0, '#225E4D', 'PineLayer3');
+  add('cone', 0, 2.25, 0, 0.75, 0.6, 0.75, 0, 0, 0, '#225E4D', 'PineLayer4');
+  add('cone', 0, 2.65, 0, 0.45, 0.5, 0.45, 0, 0, 0, '#2D725F', 'PineLayer5');
+  add('cylinder', -0.5, 0.75, 0.3, 0.08, 0.16, 0.08, 0.2, 0, 0, '#5C4033', 'Pinecone1');
+  add('cylinder', 0.6, 1.1, -0.2, 0.08, 0.16, 0.08, -0.3, 0, 0, '#5C4033', 'Pinecone2');
+  add('cylinder', -0.4, 1.5, -0.4, 0.07, 0.14, 0.07, 0, 0, 0.2, '#5C4033', 'Pinecone3');
+  add('cylinder', 0.4, 1.6, 0.4, 0.07, 0.14, 0.07, 0, 0, -0.2, '#5C4033', 'Pinecone4');
+  return o;
+}
+
+function makeBirchTree() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#EBEBEB', name = 'Birch') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  add('cylinder', 0, 1.1, 0, 0.2, 2.2, 0.2, 0, 0, 0, '#EBEBEB', 'BirchTrunk');
+  add('box', 0, 0.4, 0.1, 0.22, 0.04, 0.02, 0, 0.1, 0, '#1A1A1A', 'BirchStripe1');
+  add('box', 0.1, 0.7, -0.05, 0.02, 0.04, 0.22, 0, -0.3, 0, '#1A1A1A', 'BirchStripe2');
+  add('box', -0.1, 1.0, -0.08, 0.22, 0.04, 0.02, 0, 0.5, 0, '#1A1A1A', 'BirchStripe3');
+  add('box', 0.05, 1.3, 0.08, 0.02, 0.05, 0.22, 0, 1.2, 0, '#1A1A1A', 'BirchStripe4');
+  add('box', -0.08, 1.6, 0.05, 0.22, 0.04, 0.02, 0, -0.8, 0, '#1A1A1A', 'BirchStripe5');
+  add('box', 0, 1.9, -0.1, 0.02, 0.04, 0.22, 0, 0.2, 0, '#1A1A1A', 'BirchStripe6');
+  add('cylinder', -0.2, 1.6, 0.15, 0.08, 0.8, 0.08, 0.4, 0, -0.3, '#EBEBEB', 'BirchBranch1');
+  add('cylinder', 0.2, 1.8, -0.15, 0.08, 0.8, 0.08, -0.4, 0, 0.3, '#EBEBEB', 'BirchBranch2');
+  add('sphere', -0.4, 2.1, 0.3, 0.8, 0.7, 0.8, 0, 0, 0, '#559C55', 'BirchLeaves1');
+  add('sphere', 0.4, 2.3, -0.3, 0.8, 0.7, 0.8, 0, 0, 0, '#559C55', 'BirchLeaves2');
+  add('sphere', -0.1, 2.5, -0.1, 0.7, 0.7, 0.7, 0, 0, 0, '#68B268', 'BirchLeaves3');
+  add('sphere', 0.2, 2.6, 0.2, 0.6, 0.6, 0.6, 0, 0, 0, '#7CC77C', 'BirchLeaves4');
+  return o;
+}
+
+function makeMapleTree() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#5C3E26', name = 'Maple') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  add('cylinder', 0, 0.7, 0, 0.3, 1.4, 0.3, 0, 0, 0, '#5C3E26', 'MapleTrunk');
+  add('cylinder', -0.2, 1.1, 0.1, 0.12, 0.6, 0.12, 0, 0, -0.4, '#5C3E26', 'MapleBranch1');
+  add('cylinder', 0.2, 1.2, -0.1, 0.12, 0.6, 0.12, 0, 0, 0.4, '#5C3E26', 'MapleBranch2');
+  add('sphere', 0, 1.7, 0, 1.2, 1.0, 1.2, 0, 0, 0, '#D35400', 'MapleLeavesMain');
+  add('sphere', -0.5, 1.8, 0.4, 0.85, 0.8, 0.85, 0, 0, 0, '#C0392B', 'MapleLeavesL');
+  add('sphere', 0.5, 1.9, -0.4, 0.85, 0.8, 0.85, 0, 0, 0, '#E67E22', 'MapleLeavesR');
+  add('sphere', 0.3, 2.1, 0.3, 0.75, 0.75, 0.75, 0, 0, 0, '#F39C12', 'MapleLeavesT1');
+  add('sphere', -0.3, 2.2, -0.3, 0.75, 0.75, 0.75, 0, 0, 0, '#C0392B', 'MapleLeavesT2');
+  add('box', 0.5, 0.02, 0.5, 0.25, 0.01, 0.15, 0, 0.2, 0, '#D35400', 'MapleFallen1');
+  add('box', -0.6, 0.02, -0.3, 0.2, 0.01, 0.2, 0, 0.8, 0, '#C0392B', 'MapleFallen2');
+  add('box', 0.2, 0.02, -0.7, 0.15, 0.01, 0.25, 0, -0.4, 0, '#E67E22', 'MapleFallen3');
+  add('box', -0.4, 0.02, 0.6, 0.2, 0.01, 0.2, 0, 1.1, 0, '#F39C12', 'MapleFallen4');
+  return o;
+}
+
+function makeCherryTree() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#3A2E2B', name = 'Cherry') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  add('cylinder', 0, 0.5, 0, 0.28, 1.0, 0.28, 0, 0, 0, '#3A2E2B', 'CherryTrunk');
+  add('cylinder', -0.3, 0.9, 0.2, 0.16, 0.8, 0.16, 0.4, 0.3, -0.4, '#3A2E2B', 'CherryBranch1');
+  add('cylinder', 0.3, 1.0, -0.2, 0.16, 0.8, 0.16, -0.4, -0.3, 0.4, '#3A2E2B', 'CherryBranch2');
+  add('cylinder', -0.1, 1.2, -0.3, 0.12, 0.6, 0.12, -0.5, 0.2, -0.2, '#3A2E2B', 'CherryBranch3');
+  add('sphere', -0.5, 1.4, 0.4, 0.9, 0.8, 0.9, 0, 0, 0, '#FFB7C5', 'CherryBlossoms1');
+  add('sphere', 0.5, 1.5, -0.4, 0.9, 0.8, 0.9, 0, 0, 0, '#FFA0B4', 'CherryBlossoms2');
+  add('sphere', -0.2, 1.7, -0.5, 0.8, 0.8, 0.8, 0, 0, 0, '#FFB7C5', 'CherryBlossoms3');
+  add('sphere', 0.3, 1.8, 0.3, 0.8, 0.8, 0.8, 0, 0, 0, '#FFC0CB', 'CherryBlossoms4');
+  add('sphere', 0.0, 2.0, 0.0, 0.9, 0.8, 0.9, 0, 0, 0, '#FFA0B4', 'CherryBlossomsTop');
+  add('box', 0.4, 0.02, 0.4, 0.15, 0.01, 0.15, 0, 0.4, 0, '#FFB7C5', 'CherryPetal1');
+  add('box', -0.5, 0.02, -0.4, 0.12, 0.01, 0.12, 0, 1.1, 0, '#FFA0B4', 'CherryPetal2');
+  add('box', 0.1, 0.02, -0.5, 0.18, 0.01, 0.12, 0, -0.5, 0, '#FFC0CB', 'CherryPetal3');
+  add('box', -0.3, 0.02, 0.5, 0.14, 0.01, 0.14, 0, 0.8, 0, '#FFB7C5', 'CherryPetal4');
+  return o;
+}
+
+function makePalmTree() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#8b7a6a', name = 'Palm') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  add('cylinder', 0, 0.2, 0, 0.2, 0.4, 0.2, 0, 0, 0, '#8b7a6a', 'PalmTrunk1');
+  add('cylinder', 0.05, 0.6, 0.02, 0.19, 0.4, 0.19, 0.05, 0, 0, '#8b7a6a', 'PalmTrunk2');
+  add('cylinder', 0.12, 1.0, 0.05, 0.18, 0.4, 0.18, 0.1, 0, 0, '#7a6a5a', 'PalmTrunk3');
+  add('cylinder', 0.22, 1.38, 0.1, 0.17, 0.4, 0.17, 0.15, 0, 0, '#7a6a5a', 'PalmTrunk4');
+  add('cylinder', 0.35, 1.75, 0.17, 0.16, 0.4, 0.16, 0.2, 0, 0, '#6a5a4a', 'PalmTrunk5');
+  add('sphere', 0.3, 1.85, 0.2, 0.18, 0.18, 0.18, 0, 0, 0, '#4d3319', 'Coconut1');
+  add('sphere', 0.4, 1.88, 0.1, 0.18, 0.18, 0.18, 0, 0, 0, '#4d3319', 'Coconut2');
+  add('wedge', 0.35, 2.0, 0.17, 0.3, 1.2, 0.08, 0.4, 0, 0, '#2e7a3c', 'PalmFrond1');
+  add('wedge', 0.35, 2.0, 0.17, 0.3, 1.2, 0.08, -0.4, Math.PI, 0, '#2e7a3c', 'PalmFrond2');
+  add('wedge', 0.35, 2.0, 0.17, 0.3, 1.2, 0.08, 0, Math.PI/2, 0.4, '#2d6d37', 'PalmFrond3');
+  add('wedge', 0.35, 2.0, 0.17, 0.3, 1.2, 0.08, 0, -Math.PI/2, -0.4, '#2d6d37', 'PalmFrond4');
+  add('wedge', 0.35, 2.0, 0.17, 0.3, 1.2, 0.08, 0.28, Math.PI/4, 0.28, '#388e4c', 'PalmFrond5');
+  add('wedge', 0.35, 2.0, 0.17, 0.3, 1.2, 0.08, -0.28, -Math.PI*3/4, -0.28, '#388e4c', 'PalmFrond6');
+  add('wedge', 0.35, 2.0, 0.17, 0.3, 1.2, 0.08, 0.28, -Math.PI/4, -0.28, '#388e4c', 'PalmFrond7');
+  add('wedge', 0.35, 2.0, 0.17, 0.3, 1.2, 0.08, -0.28, Math.PI*3/4, 0.28, '#388e4c', 'PalmFrond8');
+  return o;
+}
+
+function makeBaobabTree() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#7a6a5a', name = 'Baobab') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  add('cylinder', 0, 0.7, 0, 0.9, 1.4, 0.9, 0, 0, 0, '#7a6a5a', 'BaobabTrunk');
+  add('cylinder', -0.5, 1.3, 0.3, 0.35, 0.8, 0.35, 0.4, 0, -0.3, '#7a6a5a', 'BaobabBranch1');
+  add('cylinder', 0.5, 1.3, -0.3, 0.35, 0.8, 0.35, -0.4, 0, 0.3, '#7a6a5a', 'BaobabBranch2');
+  add('cylinder', 0.2, 1.4, 0.5, 0.3, 0.7, 0.3, 0.5, 0.4, 0, '#7a6a5a', 'BaobabBranch3');
+  add('cylinder', -0.3, 1.4, -0.5, 0.3, 0.7, 0.3, -0.5, -0.4, 0, '#7a6a5a', 'BaobabBranch4');
+  add('sphere', -0.7, 1.8, 0.4, 0.9, 0.5, 0.9, 0, 0, 0, '#2d6a4f', 'BaobabFoliage1');
+  add('sphere', 0.7, 1.8, -0.4, 0.9, 0.5, 0.9, 0, 0, 0, '#2d6a4f', 'BaobabFoliage2');
+  add('sphere', 0.3, 1.9, 0.7, 0.8, 0.45, 0.8, 0, 0, 0, '#40916c', 'BaobabFoliage3');
+  add('sphere', -0.4, 1.9, -0.7, 0.8, 0.45, 0.8, 0, 0, 0, '#40916c', 'BaobabFoliage4');
+  add('sphere', 0.0, 2.0, 0.0, 1.2, 0.6, 1.2, 0, 0, 0, '#1b4332', 'BaobabFoliageTop');
+  return o;
+}
+
+function makeCypressTree() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#4d3b2c', name = 'Cypress') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  add('cylinder', 0, 0.5, 0, 0.18, 1.0, 0.18, 0, 0, 0, '#4d3b2c', 'CypressTrunk');
+  add('cylinder', 0, 1.4, 0, 0.55, 1.8, 0.55, 0, 0, 0, '#1b3a24', 'CypressCol1');
+  add('cylinder', 0, 2.3, 0, 0.4, 1.2, 0.4, 0, 0, 0, '#224d30', 'CypressCol2');
+  add('cone', 0, 3.0, 0, 0.25, 0.8, 0.25, 0, 0, 0, '#2a5e3b', 'CypressCone');
+  add('cylinder', 0.1, 1.3, 0.1, 0.25, 0.8, 0.25, 0, 0, 0, '#1b3a24', 'CypressDet1');
+  add('cylinder', -0.1, 1.6, -0.1, 0.22, 0.8, 0.22, 0, 0, 0, '#224d30', 'CypressDet2');
+  add('cylinder', 0.08, 2.0, -0.08, 0.2, 0.6, 0.2, 0, 0, 0, '#2a5e3b', 'CypressDet3');
+  add('cylinder', -0.08, 1.1, 0.08, 0.24, 0.6, 0.24, 0, 0, 0, '#1b3a24', 'CypressDet4');
+  return o;
+}
+
+function makeWillowTree() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#4A3B32', name = 'Willow') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  add('cylinder', 0, 0.6, 0, 0.35, 1.2, 0.35, 0, 0, 0, '#4A3B32', 'WillowTrunk');
+  add('cylinder', -0.3, 1.1, 0.2, 0.18, 0.8, 0.18, 0.5, 0, -0.3, '#4A3B32', 'WillowBranch1');
+  add('cylinder', 0.3, 1.1, -0.2, 0.18, 0.8, 0.18, -0.5, 0, 0.3, '#4A3B32', 'WillowBranch2');
+  add('sphere', -0.4, 1.7, 0.3, 1.1, 0.8, 1.1, 0, 0, 0, '#6B8E23', 'WillowCanopyL');
+  add('sphere', 0.4, 1.7, -0.3, 1.1, 0.8, 1.1, 0, 0, 0, '#6B8E23', 'WillowCanopyR');
+  add('sphere', 0, 2.0, 0, 1.2, 0.9, 1.2, 0, 0, 0, '#8FBC8F', 'WillowCanopyTop');
+  add('cylinder', -0.8, 1.1, 0.4, 0.06, 0.9, 0.06, 0, 0, 0, '#9ACD32', 'WillowVine1');
+  add('cylinder', -0.4, 1.0, 0.8, 0.06, 0.8, 0.06, 0, 0, 0, '#9ACD32', 'WillowVine2');
+  add('cylinder', 0.8, 1.1, -0.4, 0.06, 0.9, 0.06, 0, 0, 0, '#8FBC8F', 'WillowVine3');
+  add('cylinder', 0.4, 1.0, -0.8, 0.06, 0.8, 0.06, 0, 0, 0, '#8FBC8F', 'WillowVine4');
+  add('cylinder', -0.2, 1.0, -0.6, 0.05, 1.0, 0.05, 0, 0, 0, '#9ACD32', 'WillowVine5');
+  add('cylinder', 0.6, 1.0, 0.6, 0.05, 1.0, 0.05, 0, 0, 0, '#9ACD32', 'WillowVine6');
+  return o;
+}
+
 function makeCathedral() {
   const o = [];
   const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#7d8a99', name = 'Cath') => {
@@ -934,6 +1115,87 @@ export const TEMPLATES = [
     width: 6.0,
     height: 3.5,
     objects: makeHyperloop(),
+  },
+  {
+    id: 'tree_oak',
+    name: 'Oak Tree',
+    icon: '🌳',
+    category: 'green',
+    width: 1.5,
+    height: 1.5,
+    objects: makeOakTree(),
+  },
+  {
+    id: 'tree_pine',
+    name: 'Pine Tree',
+    icon: '🌲',
+    category: 'green',
+    width: 1.5,
+    height: 1.5,
+    objects: makePineTree(),
+  },
+  {
+    id: 'tree_birch',
+    name: 'Birch Tree',
+    icon: '🌳',
+    category: 'green',
+    width: 1.5,
+    height: 1.5,
+    objects: makeBirchTree(),
+  },
+  {
+    id: 'tree_maple',
+    name: 'Maple Tree',
+    icon: '🍁',
+    category: 'green',
+    width: 1.5,
+    height: 1.5,
+    objects: makeMapleTree(),
+  },
+  {
+    id: 'tree_cherry',
+    name: 'Cherry Blossom Tree',
+    icon: '🌸',
+    category: 'green',
+    width: 1.5,
+    height: 1.5,
+    objects: makeCherryTree(),
+  },
+  {
+    id: 'tree_palm',
+    name: 'Palm Tree',
+    icon: '🌴',
+    category: 'green',
+    width: 1.5,
+    height: 1.5,
+    objects: makePalmTree(),
+  },
+  {
+    id: 'tree_baobab',
+    name: 'Baobab Tree',
+    icon: '🌳',
+    category: 'green',
+    width: 1.5,
+    height: 1.5,
+    objects: makeBaobabTree(),
+  },
+  {
+    id: 'tree_cypress',
+    name: 'Cypress Tree',
+    icon: '🌲',
+    category: 'green',
+    width: 1.5,
+    height: 1.5,
+    objects: makeCypressTree(),
+  },
+  {
+    id: 'tree_willow',
+    name: 'Willow Tree',
+    icon: '🌿',
+    category: 'green',
+    width: 1.5,
+    height: 1.5,
+    objects: makeWillowTree(),
   },
 ];
 

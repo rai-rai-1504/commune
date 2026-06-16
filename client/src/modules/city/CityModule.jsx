@@ -669,6 +669,7 @@ export default function CityModule() {
         return;
       }
       if (cityTool === 'erase') {
+        e.preventDefault();
         // Start marquee erase selection immediately
         setMarqueeStart(floatCoords);
         setMarqueeEnd(floatCoords);
@@ -727,7 +728,8 @@ export default function CityModule() {
     setPanning(false);
     panStart.current = null;
     if (draggingAssetId) {
-      const asset = (city?.placedAssets || []).find(a => a.id === draggingAssetId);
+      const latestCity = useStore.getState().city;
+      const asset = (latestCity?.placedAssets || []).find(a => a.id === draggingAssetId);
       if (asset) {
         updateAsset(draggingAssetId, { col: asset.col, row: asset.row }, true); // save final to server
       }
@@ -798,7 +800,7 @@ export default function CityModule() {
         zoneCounts.commercial++;
       } else if (name.includes('refinery') || name.includes('warehouse') || name.includes('industrial') || name.includes('factory') || name.includes('nuclear') || name.includes('port')) {
         zoneCounts.industrial++;
-      } else if (name.includes('dome') || name.includes('fountain') || name.includes('green') || name.includes('park') || name.includes('greenhouse')) {
+      } else if (name.includes('dome') || name.includes('fountain') || name.includes('green') || name.includes('park') || name.includes('greenhouse') || name.includes('tree') || name.includes('willow') || name.includes('blossom') || name.includes('pine')) {
         zoneCounts.green++;
       } else if (name.includes('townhall') || name.includes('hospital') || name.includes('solar') || name.includes('turbine') || name.includes('watertower') || name.includes('bridge') || name.includes('station') || name.includes('cathedral') || name.includes('university') || name.includes('hyperloop') || name.includes('civic')) {
         zoneCounts.civic++;
@@ -923,7 +925,8 @@ export default function CityModule() {
             'skyscraper', 'office', 'mall', 'diner', 'factory', 'refinery', 'warehouse',
             'park', 'greenhouse', 'fountain',
             'townhall', 'hospital', 'solar', 'turbine', 'watertower', 'bridge', 'station',
-            'cathedral', 'megamall', 'techhq', 'resort', 'nuclear', 'skygarden', 'cargoport', 'university', 'ecodome', 'hyperloop'
+            'cathedral', 'megamall', 'techhq', 'resort', 'nuclear', 'skygarden', 'cargoport', 'university', 'ecodome', 'hyperloop',
+            'tree_oak', 'tree_pine', 'tree_birch', 'tree_maple', 'tree_cherry', 'tree_palm', 'tree_baobab', 'tree_cypress', 'tree_willow'
           ].includes(t.id)).map(t => (
             <button
               key={t.id}
@@ -1261,6 +1264,7 @@ function StreetView({ city, onExit }) {
   }, [city]);
 
   const { selectedAssetId, selectAsset, removeAsset, updateAsset } = useStore();
+  const materialCacheRef = useRef({});
 
   const rebuildStreetScene = useCallback(() => {
     const scene = sceneRef.current;
@@ -1269,38 +1273,88 @@ function StreetView({ city, onExit }) {
     // Clear old meshes
     meshesRef.current.forEach(m => {
       scene.remove(m);
-      if (m.geometry) m.geometry.dispose();
+      if (m.geometry && !Object.values(STREET_GEO).includes(m.geometry)) {
+        m.geometry.dispose();
+      }
       if (m.material) {
-        if (Array.isArray(m.material)) {
-          m.material.forEach(mat => {
+        const mats = Array.isArray(m.material) ? m.material : [m.material];
+        mats.forEach(mat => {
+          const isCached = materialCacheRef.current && Object.values(materialCacheRef.current).includes(mat);
+          if (!isCached) {
             if (mat.map) mat.map.dispose();
             mat.dispose();
-          });
-        } else {
-          if (m.material.map) m.material.map.dispose();
-          m.material.dispose();
-        }
+          }
+        });
       }
       if (m.children) m.children.forEach(child => {
-        if (child.geometry) child.geometry.dispose();
+        if (child.geometry && !Object.values(STREET_GEO).includes(child.geometry)) {
+          child.geometry.dispose();
+        }
         if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach(mat => {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(mat => {
+            const isCached = materialCacheRef.current && Object.values(materialCacheRef.current).includes(mat);
+            if (!isCached) {
               if (mat.map) mat.map.dispose();
               mat.dispose();
-            });
-          } else {
-            if (child.material) {
-              if (child.material.map) child.material.map.dispose();
-              child.material.dispose();
             }
-          }
+          });
         }
       });
     });
     meshesRef.current = [];
 
     const cellS = 3.4;
+
+    const getCachedMaterial = (colorHex, isSelected) => {
+      const key = `${colorHex}_${isSelected}`;
+      if (!materialCacheRef.current) materialCacheRef.current = {};
+      if (!materialCacheRef.current[key]) {
+        const mat = new THREE.MeshStandardMaterial({
+          color: colorHex,
+          roughness: 0.65,
+          metalness: 0.08
+        });
+        if (isSelected) {
+          mat.emissive.set(0x4ECDC4);
+          mat.emissiveIntensity = 0.28;
+        }
+        materialCacheRef.current[key] = mat;
+      }
+      return materialCacheRef.current[key];
+    };
+
+    const roadCurves = (city.roads || []).map(r => {
+      if (r.points.length < 2) return null;
+      const pts = r.points.map(pt => new THREE.Vector3(pt.x * cellS, 0.01, pt.z * cellS));
+      const cv = new THREE.CatmullRomCurve3(pts);
+      const rad = r.roadType === 'highway' ? 2.2 : r.roadType === 'multilane' ? 1.5 : 0.9;
+      const samples = cv.getPoints(100);
+      return { id: r.id, curve: cv, radius: rad, samples };
+    }).filter(Boolean);
+
+    const isPointInIntersection = (pos, currentRoadId, currentRadius) => {
+      for (const other of roadCurves) {
+        if (other.id === currentRoadId) continue;
+        const hasHigherPriority = other.radius > currentRadius || 
+          (Math.abs(other.radius - currentRadius) < 0.01 && other.id < currentRoadId);
+        if (!hasHigherPriority) continue;
+
+        let minDistSq = Infinity;
+        for (let j = 0; j < other.samples.length; j++) {
+          const distSq = pos.distanceToSquared(other.samples[j]);
+          if (distSq < minDistSq) {
+            minDistSq = distSq;
+          }
+        }
+        const intersectionRadius = other.radius * 1.05;
+        if (minDistSq < intersectionRadius * intersectionRadius) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     const roadMat = new THREE.MeshStandardMaterial({ color: 0x1c1e22, roughness: 0.85 });
     const dashMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
     const yellowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.8 });
@@ -1342,8 +1396,16 @@ function StreetView({ city, onExit }) {
         const nz = tangent.x / len;
  
         const addMarking = (offsetDist, mWidth, mHeight, mLength, material) => {
+          const markingPos = new THREE.Vector3(
+            pos.x + nx * offsetDist,
+            pos.y + mHeight / 2 + 0.005,
+            pos.z + nz * offsetDist
+          );
+          if (isPointInIntersection(markingPos, road.id, radius)) {
+            return;
+          }
           const m = new THREE.Mesh(new THREE.BoxGeometry(mWidth, mHeight, mLength), material);
-          m.position.set(pos.x + nx * offsetDist, pos.y + mHeight / 2 + 0.005, pos.z + nz * offsetDist);
+          m.position.copy(markingPos);
           m.rotation.y = angle;
           scene.add(m);
           meshesRef.current.push(m);
@@ -1444,14 +1506,10 @@ function StreetView({ city, onExit }) {
               });
             }
           } else {
-            materials = new THREE.MeshStandardMaterial({
-              color: obj.color,
-              roughness: 0.65,
-              metalness: 0.08
-            });
+            materials = getCachedMaterial(obj.color, isSel);
           }
 
-          if (isSel) {
+          if (isSel && texture) {
             if (Array.isArray(materials)) {
               materials.forEach(mat => {
                 mat.emissive.set(0x4ECDC4);
@@ -1678,7 +1736,7 @@ function StreetView({ city, onExit }) {
     };
     window.addEventListener('resize', onResize);
 
-    const SPEED = 0.08;
+    const SPEED = 0.25;
     const dir = new THREE.Vector3();
     const animate = () => {
       animRef.current = requestAnimationFrame(animate);
@@ -1689,13 +1747,27 @@ function StreetView({ city, onExit }) {
       camera.rotation.y = yaw;
       camera.rotation.x = pitch;
 
+      if (scene.fog) {
+        if (isBirdsEye) {
+          scene.fog.near = 100;
+          scene.fog.far = 400;
+        } else {
+          scene.fog.near = 15;
+          scene.fog.far = 60;
+        }
+      }
+
       dir.set(0, 0, 0);
       if (keys.current['KeyW'] || keys.current['ArrowUp'] || keys.current['w'])    dir.z -= 1;
       if (keys.current['KeyS'] || keys.current['ArrowDown'] || keys.current['s'])  dir.z += 1;
       if (keys.current['KeyA'] || keys.current['ArrowLeft'] || keys.current['a'])  dir.x -= 1;
       if (keys.current['KeyD'] || keys.current['ArrowRight'] || keys.current['d']) dir.x += 1;
       if (dir.lengthSq() > 0) {
-        const moveSpeed = SPEED * (isBirdsEye ? 6 : 1);
+        const isSprinting = keys.current['ShiftLeft'] || keys.current['ShiftRight'] || keys.current['shift'];
+        let moveSpeed = SPEED * (isBirdsEye ? 6 : 1);
+        if (isSprinting) {
+          moveSpeed *= 2.5;
+        }
         dir.normalize().multiplyScalar(moveSpeed);
         dir.applyEuler(new THREE.Euler(0, yaw, 0));
         camera.position.add(dir);
@@ -1816,6 +1888,11 @@ function StreetView({ city, onExit }) {
       
       renderer.dispose();
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+
+      if (materialCacheRef.current) {
+        Object.values(materialCacheRef.current).forEach(mat => mat.dispose());
+        materialCacheRef.current = {};
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -179,7 +179,7 @@ function runSimTick() {
       com++;
     } else if (name.includes('refinery') || name.includes('warehouse') || name.includes('industrial') || name.includes('factory') || name.includes('nuclear') || name.includes('port')) {
       ind++;
-    } else if (name.includes('dome') || name.includes('fountain') || name.includes('green') || name.includes('park')) {
+    } else if (name.includes('dome') || name.includes('fountain') || name.includes('green') || name.includes('park') || name.includes('tree') || name.includes('willow') || name.includes('blossom') || name.includes('pine')) {
       green++;
     } else if (name.includes('townhall') || name.includes('hospital') || name.includes('solar') || name.includes('turbine') || name.includes('watertower') || name.includes('bridge') || name.includes('station') || name.includes('cathedral') || name.includes('university') || name.includes('hyperloop') || name.includes('civic')) {
       // Civic structures, counted as general assets
