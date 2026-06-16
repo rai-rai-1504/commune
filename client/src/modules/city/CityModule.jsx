@@ -110,6 +110,68 @@ export default function CityModule() {
   const canvasRef = useRef(null);
   const [offset, setOffset] = useState({ x: 16, y: 16 });
   const [zoom, setZoom] = useState(1.0);
+
+  const targetZoomRef = useRef(1.0);
+  const targetOffsetRef = useRef({ x: 16, y: 16 });
+
+  useEffect(() => {
+    targetZoomRef.current = zoom;
+    targetOffsetRef.current = offset;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let animFrame;
+    const lerpFactor = 0.15; // Smooth interpolation speed
+    
+    const tick = () => {
+      setZoom(currentZoom => {
+        const targetZoom = targetZoomRef.current;
+        if (Math.abs(currentZoom - targetZoom) > 0.001) {
+          return currentZoom + (targetZoom - currentZoom) * lerpFactor;
+        }
+        return currentZoom;
+      });
+
+      setOffset(currentOffset => {
+        const targetOffset = targetOffsetRef.current;
+        const dx = targetOffset.x - currentOffset.x;
+        const dy = targetOffset.y - currentOffset.y;
+        
+        if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
+          return {
+            x: currentOffset.x + dx * lerpFactor,
+            y: currentOffset.y + dy * lerpFactor
+          };
+        }
+        return currentOffset;
+      });
+
+      animFrame = requestAnimationFrame(tick);
+    };
+
+    animFrame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animFrame);
+  }, []);
+
+  const handleZoomButton = (zoomIn) => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    
+    const delta = zoomIn ? 1.25 : 0.8;
+    const currentTargetZoom = targetZoomRef.current;
+    const nextZoom = Math.max(0.35, Math.min(3.5, currentTargetZoom * delta));
+    
+    if (currentTargetZoom !== nextZoom) {
+      targetZoomRef.current = nextZoom;
+      targetOffsetRef.current = {
+        x: cx - (cx - targetOffsetRef.current.x) * (nextZoom / currentTargetZoom),
+        y: cy - (cy - targetOffsetRef.current.y) * (nextZoom / currentTargetZoom)
+      };
+    }
+  };
   const [panning, setPanning] = useState(false);
   const panStart = useRef(null);
   const [hoveredFloat, setHoveredFloat] = useState(null);
@@ -811,7 +873,10 @@ export default function CityModule() {
 
   function onMouseMove(e) {
     if (panning && panStart.current) {
-      setOffset({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
+      const nextX = e.clientX - panStart.current.x;
+      const nextY = e.clientY - panStart.current.y;
+      targetOffsetRef.current = { x: nextX, y: nextY };
+      setOffset({ x: nextX, y: nextY });
       return;
     }
     let floatCoords = getFloatCoords(e);
@@ -890,8 +955,23 @@ export default function CityModule() {
 
   function onWheel(e) {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.88 : 1.13;
-    setZoom(z => Math.max(0.35, Math.min(3.5, z * delta)));
+    if (!canvasRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    const delta = e.deltaY > 0 ? 0.82 : 1.22;
+    const currentTargetZoom = targetZoomRef.current;
+    const nextZoom = Math.max(0.35, Math.min(3.5, currentTargetZoom * delta));
+
+    if (currentTargetZoom !== nextZoom) {
+      targetZoomRef.current = nextZoom;
+      targetOffsetRef.current = {
+        x: mx - (mx - targetOffsetRef.current.x) * (nextZoom / currentTargetZoom),
+        y: my - (my - targetOffsetRef.current.y) * (nextZoom / currentTargetZoom)
+      };
+    }
   }
 
   const selectedAsset = selectedAssetId ? (city?.placedAssets || []).find(a => a.id === selectedAssetId) : null;
@@ -1070,9 +1150,9 @@ export default function CityModule() {
         {/* Zoom controls */}
         {!streetView && (
           <div style={{ position:'absolute', top:10, right:10, display:'flex', flexDirection:'column', gap:4 }}>
-            <button className="btn sm" onClick={() => setZoom(z=>Math.min(3.5,z*1.25))}>＋</button>
-            <button className="btn sm" onClick={() => setZoom(z=>Math.max(0.35,z*0.8))}>－</button>
-            <button className="btn sm" onClick={() => { setZoom(1); setOffset({x:16,y:16}); }}>⟳</button>
+            <button className="btn sm" onClick={() => handleZoomButton(true)}>＋</button>
+            <button className="btn sm" onClick={() => handleZoomButton(false)}>－</button>
+            <button className="btn sm" onClick={() => { targetZoomRef.current = 1.0; targetOffsetRef.current = {x:16,y:16}; }}>⟳</button>
           </div>
         )}
 
