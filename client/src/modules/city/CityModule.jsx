@@ -577,6 +577,7 @@ export default function CityModule() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const resize = () => {
+      if (!canvas || !canvas.parentElement) return;
       canvas.width = canvas.parentElement.offsetWidth;
       canvas.height = canvas.parentElement.offsetHeight;
       draw();
@@ -1774,15 +1775,10 @@ function StreetView({ city, onExit }) {
         const targetX = intersectionPoint.x - dragOffset3D.current.x;
         const targetZ = intersectionPoint.z - dragOffset3D.current.z;
 
-        const newCol = targetX / cellS;
-        const newRow = targetZ / cellS;
-
         const buildingGroup = scene.children.find(c => c.userData && c.userData.assetId === draggingAssetIdRef.current);
         if (buildingGroup) {
           buildingGroup.position.set(targetX, 0, targetZ);
         }
-
-        updateAsset(draggingAssetIdRef.current, { col: newCol, row: newRow }, false);
         return;
       }
 
@@ -1796,10 +1792,11 @@ function StreetView({ city, onExit }) {
 
     const onMouseUp = (e) => {
       if (draggingAssetIdRef.current) {
-        const latestCity = useStore.getState().city;
-        const asset = (latestCity?.placedAssets || []).find(a => a.id === draggingAssetIdRef.current);
-        if (asset) {
-          updateAsset(draggingAssetIdRef.current, { col: asset.col, row: asset.row }, true);
+        const buildingGroup = scene.children.find(c => c.userData && c.userData.assetId === draggingAssetIdRef.current);
+        if (buildingGroup) {
+          const finalCol = buildingGroup.position.x / cellS;
+          const finalRow = buildingGroup.position.z / cellS;
+          updateAsset(draggingAssetIdRef.current, { col: finalCol, row: finalRow }, true);
         }
         draggingAssetIdRef.current = null;
         return;
