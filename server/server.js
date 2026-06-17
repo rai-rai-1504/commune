@@ -362,7 +362,7 @@ function handleMessage(ws, client, msg) {
 
     case 'CITY_PLACE_ASSET': {
       const asset = {
-        id: uuid(),
+        id: msg.id || uuid(),
         name: msg.name || 'Building',
         objects: msg.objects || [],
         col: msg.col,
@@ -373,6 +373,8 @@ function handleMessage(ws, client, msg) {
         placedAt: Date.now(),
         width: msg.width || 1,
         height: msg.height || 1,
+        scaleMultiplier: msg.scaleMultiplier !== undefined ? msg.scaleMultiplier : undefined,
+        locked: msg.locked !== undefined ? msg.locked : undefined,
       };
       state.city.placedAssets.push(asset);
       broadcast({ type: 'CITY_ASSET_PLACED', asset });
@@ -396,7 +398,18 @@ function handleMessage(ws, client, msg) {
         if (msg.col !== undefined) asset.col = msg.col;
         if (msg.row !== undefined) asset.row = msg.row;
         if (msg.rotation !== undefined) asset.rotation = msg.rotation;
+        if (msg.locked !== undefined) asset.locked = msg.locked;
         broadcast({ type: 'CITY_ASSET_UPDATED', asset });
+        saveCity();
+      }
+      break;
+    }
+
+    case 'CITY_UPDATE_ROAD': {
+      const road = state.city.roads.find(r => r.id === msg.roadId);
+      if (road) {
+        if (msg.locked !== undefined) road.locked = msg.locked;
+        broadcast({ type: 'CITY_ROAD_UPDATED', road });
         saveCity();
       }
       break;

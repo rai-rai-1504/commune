@@ -41,6 +41,9 @@ export const useStore = create((set, get) => ({
   hoveredCell: null,
   streetView: false,      // toggle ground-level preview
   selectedAssetId: null,  // selected placed asset
+  selectedAssetIds: [],   // multi-selected placed assets
+  cityUndoStack: [],      // city actions undo stack
+  publishedBuildings: JSON.parse(localStorage.getItem('commune_published_buildings') || '[]'),
 
   // ── Governance ─────────────────────────────────────────────────────────
   proposals: [],
@@ -142,6 +145,15 @@ export const useStore = create((set, get) => ({
           city: state.city ? {
             ...state.city,
             roads: (state.city.roads || []).filter(r => r.id !== msg.roadId)
+          } : state.city
+        }));
+        break;
+
+      case 'CITY_ROAD_UPDATED':
+        set(state => ({
+          city: state.city ? {
+            ...state.city,
+            roads: (state.city.roads || []).map(r => r.id === msg.road.id ? msg.road : r)
           } : state.city
         }));
         break;
@@ -489,9 +501,23 @@ export const useStore = create((set, get) => ({
       }
     }));
 
+    const finalName = name || `Building by @${username}`;
+    const newPublishedAsset = {
+      id: uuid(),
+      name: finalName,
+      objects: centeredObjects,
+      color: '#4ECDC4',
+      width,
+      height,
+      publishedAt: Date.now(),
+    };
+
+    const publishedBuildings = [newPublishedAsset, ...(get().publishedBuildings || [])];
+
     set({
+      publishedBuildings,
       pendingPlacementAsset: {
-        name: name || `Building by @${username}`,
+        name: finalName,
         objects: centeredObjects,
         color: '#4ECDC4',
         width,
@@ -500,20 +526,30 @@ export const useStore = create((set, get) => ({
       activeModule: 'city',
       streetView: false,
     });
+    localStorage.setItem('commune_published_buildings', JSON.stringify(publishedBuildings));
     get().pushNotif(`Building ready for placement! Click on the city map.`);
+  },
+
+  deletePublishedBuilding(id) {
+    const publishedBuildings = (get().publishedBuildings || []).filter(b => b.id !== id);
+    set({ publishedBuildings });
+    localStorage.setItem('commune_published_buildings', JSON.stringify(publishedBuildings));
   },
 
   placePendingAsset(col, row, rotation = 0) {
     const { pendingPlacementAsset } = get();
     if (!pendingPlacementAsset) return;
+    const id = uuid();
     get().send({
       type: 'CITY_PLACE_ASSET',
+      id,
       name: pendingPlacementAsset.name,
       objects: pendingPlacementAsset.objects,
       col, row, color: pendingPlacementAsset.color,
       width: pendingPlacementAsset.width, height: pendingPlacementAsset.height,
       rotation,
     });
+    get().pushCityUndo({ type: 'REMOVE_ASSET', assetId: id });
     get().pushNotif(`Placed "${pendingPlacementAsset.name}" in the city!`);
   },
 
@@ -521,33 +557,109 @@ export const useStore = create((set, get) => ({
   setCityTool(t) { set({ cityTool: t, pendingPlacementAsset: null }); },
   setHoveredCell(c) { set({ hoveredCell: c }); },
   setStreetView(v) { set({ streetView: v }); },
-  selectAsset(id) { set({ selectedAssetId: id }); },
+  selectAsset(id) { set({ selectedAssetId: id, selectedAssetIds: id ? [id] : [] }); },
+  selectAssets(ids) {
+    set(state => {
+      const nextIds = ids || [];
+      const primaryId = nextIds.length > 0 ? nextIds[nextIds.length - 1] : null;
+      return {
+        selectedAssetIds: nextIds,
+        selectedAssetId: primaryId,
+      };
+    });
+  },
 
-  addRoadSegment(points, roadType = 'standard') {
+  addRoadSegment(points, roadType = 'standard', skipUndo = false) {
     const id = uuid();
     const newRoad = { id, points, roadType };
+    if (!skipUndo) {
+      get().pushCityUndo({ type: 'REMOVE_ROAD', roadId: id });
+    }
     get().send({ type: 'CITY_ADD_ROAD', road: newRoad });
     set(state => ({
       city: state.city ? { ...state.city, roads: [...(state.city.roads || []), newRoad] } : state.city
     }));
   },
 
-  removeRoadSegment(roadId) {
+  removeRoadSegment(roadId, skipUndo = false) {
+    const road = (get().city?.roads || []).find(r => r.id === roadId);
+    if (road && !skipUndo) {
+      get().pushCityUndo({ type: 'ADD_ROAD', road });
+    }
     get().send({ type: 'CITY_REMOVE_ROAD', roadId });
     set(state => ({
       city: state.city ? { ...state.city, roads: (state.city.roads || []).filter(r => r.id !== roadId) } : state.city
     }));
   },
 
-  removeAsset(assetId) {
+  updateRoad(roadId, updates, sendToServer = true, skipUndo = false) {
+    const road = (get().city?.roads || []).find(r => r.id === roadId);
+    if (road && !skipUndo) {
+      const prevUpdates = {};
+      Object.keys(updates).forEach(k => {
+        prevUpdates[k] = road[k];
+      });
+      get().pushCityUndo({ type: 'UPDATE_ROAD', roadId, updates: prevUpdates, timestamp: Date.now() });
+    }
+    if (sendToServer) {
+      get().send({ type: 'CITY_UPDATE_ROAD', roadId, ...updates });
+    }
+    set(state => ({
+      city: state.city ? {
+        ...state.city,
+        roads: (state.city.roads || []).map(r => r.id === roadId ? { ...r, ...updates } : r)
+      } : state.city
+    }));
+  },
+
+  removeAsset(assetId, skipUndo = false) {
+    const asset = (get().city?.placedAssets || []).find(a => a.id === assetId);
+    if (asset && !skipUndo) {
+      get().pushCityUndo({ type: 'PLACE_ASSET', asset });
+    }
     get().send({ type: 'CITY_REMOVE_ASSET', assetId });
     set(state => ({
       city: state.city ? { ...state.city, placedAssets: state.city.placedAssets.filter(a => a.id !== assetId) } : state.city,
       selectedAssetId: state.selectedAssetId === assetId ? null : state.selectedAssetId,
+      selectedAssetIds: (state.selectedAssetIds || []).filter(id => id !== assetId),
     }));
   },
 
-  updateAsset(assetId, updates, sendToServer = true) {
+  removeAssets(assetIds, skipUndo = false) {
+    const assets = (get().city?.placedAssets || []).filter(a => assetIds.includes(a.id));
+    if (assets.length === 0) return;
+    if (!skipUndo) {
+      const compoundActions = assets.map(asset => ({ type: 'PLACE_ASSET', asset }));
+      get().pushCityUndo({ type: 'COMPOUND', actions: compoundActions });
+    }
+    assetIds.forEach(id => {
+      get().send({ type: 'CITY_REMOVE_ASSET', assetId: id });
+    });
+    set(state => ({
+      city: state.city ? { ...state.city, placedAssets: state.city.placedAssets.filter(a => !assetIds.includes(a.id)) } : state.city,
+      selectedAssetId: assetIds.includes(state.selectedAssetId) ? null : state.selectedAssetId,
+      selectedAssetIds: (state.selectedAssetIds || []).filter(id => !assetIds.includes(id)),
+    }));
+  },
+
+  updateAsset(assetId, updates, sendToServer = true, skipUndo = false) {
+    const asset = (get().city?.placedAssets || []).find(a => a.id === assetId);
+    if (asset && !skipUndo) {
+      const prevUpdates = {};
+      Object.keys(updates).forEach(k => {
+        prevUpdates[k] = asset[k];
+      });
+      const now = Date.now();
+      const lastAction = get().cityUndoStack[get().cityUndoStack.length - 1];
+      if (lastAction && lastAction.type === 'UPDATE_ASSET' && lastAction.assetId === assetId && (now - (lastAction.timestamp || 0) < 3000)) {
+        const mergedUpdates = { ...prevUpdates, ...lastAction.updates };
+        const cityUndoStack = [...get().cityUndoStack.slice(0, -1), { type: 'UPDATE_ASSET', assetId, updates: mergedUpdates, timestamp: lastAction.timestamp || now }];
+        set({ cityUndoStack });
+      } else {
+        get().pushCityUndo({ type: 'UPDATE_ASSET', assetId, updates: prevUpdates, timestamp: now });
+      }
+    }
+
     if (sendToServer) {
       get().send({ type: 'CITY_UPDATE_ASSET', assetId, ...updates });
     }
@@ -557,6 +669,105 @@ export const useStore = create((set, get) => ({
         placedAssets: (state.city.placedAssets || []).map(a => a.id === assetId ? { ...a, ...updates } : a)
       } : state.city
     }));
+  },
+
+  pushCityUndo(action) {
+    const cityUndoStack = [...get().cityUndoStack, action].slice(-10);
+    set({ cityUndoStack });
+  },
+
+  undoCity() {
+    const { cityUndoStack } = get();
+    if (!cityUndoStack.length) return;
+    const action = cityUndoStack[cityUndoStack.length - 1];
+    set({ cityUndoStack: cityUndoStack.slice(0, -1) });
+
+    const executeAction = (act) => {
+      switch (act.type) {
+        case 'REMOVE_ASSET':
+          get().removeAsset(act.assetId, true);
+          break;
+        case 'PLACE_ASSET': {
+          const asset = act.asset;
+          get().send({
+            type: 'CITY_PLACE_ASSET',
+            id: asset.id,
+            name: asset.name,
+            objects: asset.objects,
+            col: asset.col,
+            row: asset.row,
+            color: asset.color,
+            width: asset.width,
+            height: asset.height,
+            rotation: asset.rotation,
+            scaleMultiplier: asset.scaleMultiplier,
+            locked: asset.locked,
+          });
+          set(state => ({
+            city: state.city ? { ...state.city, placedAssets: [...(state.city.placedAssets || []), asset] } : state.city
+          }));
+          break;
+        }
+        case 'UPDATE_ASSET':
+          get().updateAsset(act.assetId, act.updates, true, true);
+          break;
+        case 'UPDATE_ROAD':
+          get().updateRoad(act.roadId, act.updates, true);
+          break;
+        case 'ADD_ROAD':
+          get().send({ type: 'CITY_ADD_ROAD', road: act.road });
+          set(state => ({
+            city: state.city ? { ...state.city, roads: [...(state.city.roads || []), act.road] } : state.city
+          }));
+          break;
+        case 'REMOVE_ROAD':
+          get().send({ type: 'CITY_REMOVE_ROAD', roadId: act.roadId });
+          set(state => ({
+            city: state.city ? { ...state.city, roads: (state.city.roads || []).filter(r => r.id !== act.roadId) } : state.city
+          }));
+          break;
+        case 'COMPOUND':
+          for (let i = act.actions.length - 1; i >= 0; i--) {
+            executeAction(act.actions[i]);
+          }
+          break;
+        default:
+          break;
+      }
+    };
+
+    executeAction(action);
+  },
+
+  lockAllAssets(lock = true) {
+    const { city } = get();
+    const assets = city?.placedAssets || [];
+    const roads = city?.roads || [];
+    if (assets.length === 0 && roads.length === 0) return;
+    const compoundActions = [];
+    assets.forEach(asset => {
+      if (!!asset.locked !== lock) {
+        compoundActions.push({ type: 'UPDATE_ASSET', assetId: asset.id, updates: { locked: !!asset.locked } });
+      }
+    });
+    roads.forEach(road => {
+      if (!!road.locked !== lock) {
+        compoundActions.push({ type: 'UPDATE_ROAD', roadId: road.id, updates: { locked: !!road.locked } });
+      }
+    });
+    if (compoundActions.length > 0) {
+      get().pushCityUndo({ type: 'COMPOUND', actions: compoundActions });
+    }
+    assets.forEach(asset => {
+      get().updateAsset(asset.id, { locked: lock }, true, true); // skipUndo = true
+    });
+    roads.forEach(road => {
+      get().updateRoad(road.id, { locked: lock }, true, true); // skipUndo = true
+    });
+    if (lock) {
+      set({ selectedAssetId: null, selectedAssetIds: [] });
+    }
+    get().pushNotif(lock ? "All objects and roads locked! 🔒" : "All objects and roads unlocked! 🔓");
   },
 
   clearCity() {

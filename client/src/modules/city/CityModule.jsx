@@ -105,15 +105,20 @@ export default function CityModule() {
     selectedAssetId, selectAsset, removeAsset, updateAsset,
     pendingPlacementAsset, placePendingAsset, clearCity,
     addRoadSegment, removeRoadSegment,
+    selectedAssetIds, selectAssets, removeAssets, undoCity,
+    publishedBuildings, deletePublishedBuilding, lockAllAssets,
+    updateRoad
   } = useStore();
 
   const canvasRef = useRef(null);
   const [offset, setOffset] = useState({ x: 16, y: 16 });
   const [zoom, setZoom] = useState(1.0);
+  const [leftTab, setLeftTab] = useState('presets');
 
   const targetZoomRef = useRef(1.0);
   const targetOffsetRef = useRef({ x: 16, y: 16 });
   const mapKeysRef = useRef({});
+  const dragStartPos = useRef(null);
 
   useEffect(() => {
     targetZoomRef.current = zoom;
@@ -156,6 +161,54 @@ export default function CityModule() {
       window.removeEventListener('blur', handleBlur);
     };
   }, [streetView]);
+
+  useEffect(() => {
+    const handleUndoShortcut = (e) => {
+      if (document.activeElement && (
+        document.activeElement.tagName === 'INPUT' || 
+        document.activeElement.tagName === 'TEXTAREA' || 
+        document.activeElement.isContentEditable
+      )) {
+        return;
+      }
+      const k = e.key.toLowerCase();
+      if ((e.metaKey || e.ctrlKey) && k === 'z') {
+        e.preventDefault();
+        undoCity();
+      } else if (k === 'u') {
+        e.preventDefault();
+        lockAllAssets(false);
+      } else if (k === 'l') {
+        e.preventDefault();
+        lockAllAssets(true);
+        setSelectedRoadId(null);
+      } else if (k === 'q') {
+        if (selectedAssetId) {
+          const latestCity = useStore.getState().city;
+          const asset = (latestCity?.placedAssets || []).find(a => a.id === selectedAssetId);
+          if (asset && !asset.locked) {
+            e.preventDefault();
+            let nextRot = (asset.rotation || 0) - Math.PI / 180;
+            nextRot = (nextRot % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+            updateAsset(selectedAssetId, { rotation: nextRot });
+          }
+        }
+      } else if (k === 'e') {
+        if (selectedAssetId) {
+          const latestCity = useStore.getState().city;
+          const asset = (latestCity?.placedAssets || []).find(a => a.id === selectedAssetId);
+          if (asset && !asset.locked) {
+            e.preventDefault();
+            let nextRot = (asset.rotation || 0) + Math.PI / 180;
+            nextRot = (nextRot % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+            updateAsset(selectedAssetId, { rotation: nextRot });
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleUndoShortcut);
+    return () => window.removeEventListener('keydown', handleUndoShortcut);
+  }, [undoCity, lockAllAssets, selectedAssetId, updateAsset]);
 
   useEffect(() => {
     let animFrame;
@@ -527,9 +580,14 @@ export default function CityModule() {
       const ey = offset.y + marqueeEnd.row * cellSize;
 
       ctx.save();
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+      if (cityTool === 'erase') {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+        ctx.strokeStyle = '#ef4444';
+      } else {
+        ctx.fillStyle = 'rgba(78, 205, 196, 0.15)';
+        ctx.strokeStyle = '#4ECDC4';
+      }
       ctx.fillRect(sx, sy, ex - sx, ey - sy);
-      ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 1.5 * zoom;
       ctx.setLineDash([4 * zoom, 4 * zoom]);
       ctx.strokeRect(sx, sy, ex - sx, ey - sy);
@@ -543,7 +601,7 @@ export default function CityModule() {
       const scaleFactor = asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0;
       const aw = (asset.width || 2) * (cellSize / 3.4) * scaleFactor;
       const ah = (asset.height || 2) * (cellSize / 3.4) * scaleFactor;
-      const isSelected = asset.id === selectedAssetId;
+      const isSelected = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
 
       // 1. Viewport frustum culling check
       const cx = offset.x + asset.col * cellSize;
@@ -705,7 +763,7 @@ export default function CityModule() {
       ctx.strokeRect(sx + 1, sy + 1, cellSize - 2, cellSize - 2);
       ctx.setLineDash([]);
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds]);
 
   // Resize + redraw
   useEffect(() => {
@@ -801,7 +859,9 @@ export default function CityModule() {
           setManualRotation(prev => (prev + Math.PI / 2) % (Math.PI * 2));
         }
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedAssetId) {
+        if (selectedAssetIds && selectedAssetIds.length > 0) {
+          removeAssets(selectedAssetIds);
+        } else if (selectedAssetId) {
           removeAsset(selectedAssetId);
           selectAsset(null);
         } else if (selectedRoadId) {
@@ -812,7 +872,7 @@ export default function CityModule() {
     };
     window.addEventListener('keydown', handleGlobalKey);
     return () => window.removeEventListener('keydown', handleGlobalKey);
-  }, [cityTool, activeRoadPoints, addRoadSegment, streetView, pendingPlacementAsset, activeRoadType, selectedAssetId, selectedRoadId, removeAsset, selectAsset, removeRoadSegment]);
+  }, [cityTool, activeRoadPoints, addRoadSegment, streetView, pendingPlacementAsset, activeRoadType, selectedAssetId, selectedRoadId, removeAsset, selectAsset, removeRoadSegment, selectedAssetIds, removeAssets]);
 
   function onMouseDown(e) {
     if (e.button === 1 || (e.button === 0 && e.altKey)) {
@@ -866,7 +926,7 @@ export default function CityModule() {
       if (cityTool === 'select') {
         const cell = cellFromEvent(e);
         const asset = assetAtCell(floatCoords.col, floatCoords.row);
-        if (asset) {
+        if (asset && !asset.locked) {
           e.preventDefault();
           selectAsset(asset.id);
           setSelectedRoadId(null);
@@ -876,15 +936,20 @@ export default function CityModule() {
             col: floatCoords.col - asset.col,
             row: floatCoords.row - asset.row
           };
+          dragStartPos.current = { col: asset.col, row: asset.row };
         } else {
           selectAsset(null);
           const road = roadAtCoords(floatCoords.col, floatCoords.row);
-          setSelectedRoadId(road ? road.id : null);
-          if (road) {
+          if (road && !road.locked) {
+            setSelectedRoadId(road.id);
             setSelectedCell(null); // Clear confusing grid selection box
           } else {
+            setSelectedRoadId(null);
             setSelectedCell(cell); // Show grid selection box only on empty tile click
           }
+          // Start marquee selection on empty space
+          setMarqueeStart(floatCoords);
+          setMarqueeEnd(floatCoords);
         }
         return;
       }
@@ -961,7 +1026,14 @@ export default function CityModule() {
       const latestCity = useStore.getState().city;
       const asset = (latestCity?.placedAssets || []).find(a => a.id === draggingAssetId);
       if (asset) {
-        updateAsset(draggingAssetId, { col: asset.col, row: asset.row }, true); // save final to server
+        if (dragStartPos.current && (dragStartPos.current.col !== asset.col || dragStartPos.current.row !== asset.row)) {
+          useStore.getState().pushCityUndo({
+            type: 'UPDATE_ASSET',
+            assetId: draggingAssetId,
+            updates: { col: dragStartPos.current.col, row: dragStartPos.current.row }
+          });
+        }
+        updateAsset(draggingAssetId, { col: asset.col, row: asset.row }, true, true); // save final to server, skipUndo = true
       }
       setDraggingAssetId(null);
     }
@@ -974,31 +1046,65 @@ export default function CityModule() {
       const width = maxCol - minCol;
       const height = maxRow - minRow;
 
-      if (width > 0.1 || height > 0.1) {
-        // Marquee drag: Delete assets inside marquee box
-        const assetsToDelete = (city?.placedAssets || []).filter(a => {
-          return a.col >= minCol && a.col <= maxCol &&
-                 a.row >= minRow && a.row <= maxRow;
-        });
-        assetsToDelete.forEach(a => removeAsset(a.id));
+      if (cityTool === 'erase') {
+        if (width > 0.1 || height > 0.1) {
+          // Marquee drag: Delete assets inside marquee box
+          const assetsToDelete = (city?.placedAssets || []).filter(a => {
+            return a.col >= minCol && a.col <= maxCol &&
+                   a.row >= minRow && a.row <= maxRow;
+          });
+          const roadsToDelete = (city?.roads || []).filter(road => {
+            return road.points.some(pt => pt.x >= minCol && pt.x <= maxCol && pt.z >= minRow && pt.z <= maxRow);
+          });
+          if (assetsToDelete.length > 0 || roadsToDelete.length > 0) {
+            const compoundActions = [];
+            assetsToDelete.forEach(a => compoundActions.push({ type: 'PLACE_ASSET', asset: a }));
+            roadsToDelete.forEach(r => compoundActions.push({ type: 'ADD_ROAD', road: r }));
+            useStore.getState().pushCityUndo({ type: 'COMPOUND', actions: compoundActions });
 
-        // Delete roads inside marquee box
-        const roadsToDelete = (city?.roads || []).filter(road => {
-          return road.points.some(pt => pt.x >= minCol && pt.x <= maxCol && pt.z >= minRow && pt.z <= maxRow);
-        });
-        roadsToDelete.forEach(r => removeRoadSegment(r.id));
-      } else {
-        // Single click: delete whatever was clicked
-        const clickCol = marqueeStart.col;
-        const clickRow = marqueeStart.row;
-        const asset = assetAtCell(clickCol, clickRow);
-        if (asset) {
-          removeAsset(asset.id);
-          selectAsset(null);
+            assetsToDelete.forEach(a => removeAsset(a.id, true));
+            roadsToDelete.forEach(r => removeRoadSegment(r.id, true));
+          }
         } else {
+          // Single click: delete whatever was clicked
+          const clickCol = marqueeStart.col;
+          const clickRow = marqueeStart.row;
+          const asset = assetAtCell(clickCol, clickRow);
+          if (asset) {
+            removeAsset(asset.id);
+            selectAsset(null);
+          } else {
+            const road = roadAtCoords(clickCol, clickRow);
+            if (road) {
+              removeRoadSegment(road.id);
+            }
+          }
+        }
+      } else if (cityTool === 'select') {
+        if (width > 0.1 || height > 0.1) {
+          // Marquee select
+          const assetsToSelect = (city?.placedAssets || []).filter(a => {
+            const w = a.width || 1;
+            const h = a.height || 1;
+            return !a.locked && !(a.col + w < minCol || a.col > maxCol || a.row + h < minRow || a.row > maxRow);
+          });
+          const ids = assetsToSelect.map(a => a.id);
+          selectAssets(ids);
+          setSelectedRoadId(null);
+          setSelectedCell(null);
+        } else {
+          // Single click
+          const clickCol = marqueeStart.col;
+          const clickRow = marqueeStart.row;
           const road = roadAtCoords(clickCol, clickRow);
-          if (road) {
-            removeRoadSegment(road.id);
+          if (road && !road.locked) {
+            selectAsset(null);
+            setSelectedRoadId(road.id);
+            setSelectedCell(null);
+          } else {
+            // Single click empty space: clear selections
+            selectAsset(null);
+            setSelectedRoadId(null);
           }
         }
       }
@@ -1068,6 +1174,26 @@ export default function CityModule() {
           })}
         </div>
 
+        {/* Locking Controls */}
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg3)', borderRadius: 'var(--radius)', margin: '0 8px 10px', display: 'flex', gap: 6 }}>
+          <button
+            className="btn sm"
+            style={{ flex: 1, fontSize: 10, justifyContent: 'center' }}
+            onClick={() => { lockAllAssets(true); setSelectedRoadId(null); }}
+            title="Lock all objects and roads (L)"
+          >
+            🔒 Lock All
+          </button>
+          <button
+            className="btn sm"
+            style={{ flex: 1, fontSize: 10, justifyContent: 'center' }}
+            onClick={() => lockAllAssets(false)}
+            title="Unlock all objects and roads (U)"
+          >
+            🔓 Unlock All
+          </button>
+        </div>
+
         {cityTool === 'road' && (
           <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg3)', borderRadius: 'var(--radius)', margin: '0 8px 10px' }}>
             <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 6, fontWeight: '600', letterSpacing: '0.05em' }}>Road Type</div>
@@ -1091,45 +1217,154 @@ export default function CityModule() {
           </div>
         )}
 
-        {/* Presets Library */}
-        <div className="panel-label" style={{ padding:'10px 12px 4px' }}>Build Presets</div>
+        {/* Tabs for building library */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', margin: '10px 8px 4px' }}>
+          <button
+            onClick={() => setLeftTab('presets')}
+            style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              borderBottom: leftTab === 'presets' ? '2px solid var(--accent)' : '2px solid transparent',
+              color: leftTab === 'presets' ? 'var(--text)' : 'var(--text3)',
+              padding: '6px 0',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            🏢 Presets
+          </button>
+          <button
+            onClick={() => setLeftTab('custom')}
+            style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              borderBottom: leftTab === 'custom' ? '2px solid var(--accent)' : '2px solid transparent',
+              color: leftTab === 'custom' ? 'var(--text)' : 'var(--text3)',
+              padding: '6px 0',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            📐 Your Buildings ({publishedBuildings?.length || 0})
+          </button>
+        </div>
+
         <div className="tool-group" style={{ paddingTop:2, paddingBottom:6, overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:4 }}>
-          {TEMPLATES.filter(t => [
-            'house', 'suburban', 'apartment', 'villa', 'manor',
-            'skyscraper', 'office', 'mall', 'diner', 'factory', 'refinery', 'warehouse',
-            'park', 'greenhouse', 'fountain',
-            'townhall', 'hospital', 'solar', 'turbine', 'watertower', 'bridge', 'station',
-            'cathedral', 'megamall', 'techhq', 'resort', 'nuclear', 'skygarden', 'cargoport', 'university', 'ecodome', 'hyperloop',
-            'tree_oak', 'tree_pine', 'tree_birch', 'tree_maple', 'tree_cherry', 'tree_palm', 'tree_baobab', 'tree_cypress', 'tree_willow'
-          ].includes(t.id)).map(t => (
-            <button
-              key={t.id}
-              className={`tool-btn ${pendingPlacementAsset?.name === t.name ? 'active' : ''}`}
-              style={{ padding: '6px 12px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8 }}
-              onClick={() => {
-                useStore.setState({
-                  pendingPlacementAsset: {
-                    name: t.name,
-                    objects: t.objects,
-                    color: t.objects[0]?.color || '#4ECDC4',
-                    width: t.width || 2.0,
-                    height: t.height || 2.0,
-                  },
-                  cityTool: 'select',
-                });
-              }}
-            >
-              <span style={{ fontSize: 14 }}>{t.icon}</span>
-              {t.name}
-            </button>
-          ))}
+          {leftTab === 'presets' ? (
+            TEMPLATES.filter(t => [
+              'house', 'suburban', 'apartment', 'villa', 'manor',
+              'skyscraper', 'office', 'mall', 'diner', 'factory', 'refinery', 'warehouse',
+              'park', 'greenhouse', 'fountain',
+              'townhall', 'hospital', 'solar', 'turbine', 'watertower', 'bridge', 'station',
+              'cathedral', 'megamall', 'techhq', 'resort', 'nuclear', 'skygarden', 'cargoport', 'university', 'ecodome', 'hyperloop',
+              'tree_oak', 'tree_pine', 'tree_birch', 'tree_maple', 'tree_cherry', 'tree_palm', 'tree_baobab', 'tree_cypress', 'tree_willow'
+            ].includes(t.id)).map(t => (
+              <button
+                key={t.id}
+                className={`tool-btn ${pendingPlacementAsset?.name === t.name ? 'active' : ''}`}
+                style={{ padding: '6px 12px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8 }}
+                onClick={() => {
+                  useStore.setState({
+                    pendingPlacementAsset: {
+                      name: t.name,
+                      objects: t.objects,
+                      color: t.objects[0]?.color || '#4ECDC4',
+                      width: t.width || 2.0,
+                      height: t.height || 2.0,
+                    },
+                    cityTool: 'select',
+                  });
+                }}
+              >
+                <span style={{ fontSize: 14 }}>{t.icon}</span>
+                {t.name}
+              </button>
+            ))
+          ) : (
+            publishedBuildings && publishedBuildings.length === 0 ? (
+              <div style={{ padding: '16px 12px', fontSize: 10, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.6 }}>
+                No custom buildings published yet.<br />Design a building in the 3D Editor and click "Publish Selected".
+              </div>
+            ) : (
+              (publishedBuildings || []).map(b => (
+                <div key={b.id} style={{ display: 'flex', gap: 4, paddingRight: 8, alignItems: 'center' }}>
+                  <button
+                    className={`tool-btn ${pendingPlacementAsset?.name === b.name ? 'active' : ''}`}
+                    style={{ padding: '6px 12px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8, flex: 1, textAlign: 'left' }}
+                    onClick={() => {
+                      useStore.setState({
+                        pendingPlacementAsset: {
+                          name: b.name,
+                          objects: b.objects,
+                          color: b.objects[0]?.color || '#4ECDC4',
+                          width: b.width || 2.0,
+                          height: b.height || 2.0,
+                        },
+                        cityTool: 'select',
+                      });
+                    }}
+                  >
+                    <span style={{ fontSize: 14 }}>📐</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{b.name}</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`Delete "${b.name}" from your library?`)) {
+                        deletePublishedBuilding(b.id);
+                      }
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text3)',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      padding: 4,
+                    }}
+                    title="Delete custom building"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))
+            )
+          )}
         </div>
 
         {/* Footer */}
         <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:8 }}>
-          <button className={`btn full ${streetView?'primary':''}`} onClick={() => setStreetView(!streetView)}>
-            {streetView ? '🗺️ Map View' : '🚶 Street View'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={`btn ${streetView?'primary':''}`} style={{ flex: 1 }} onClick={() => setStreetView(!streetView)}>
+              {streetView ? '🗺️ Map View' : '🚶 Street View'}
+            </button>
+            <button
+              className="btn"
+              style={{
+                flex: '0 0 auto',
+                background: 'var(--bg-card)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '0 12px',
+                cursor: 'pointer',
+              }}
+              onClick={() => undoCity()}
+              title="Undo last action (Ctrl+Z)"
+            >
+              ↩️ Undo
+            </button>
+          </div>
           {!streetView && (
             <button
               className="btn full danger"
@@ -1187,7 +1422,12 @@ export default function CityModule() {
           </div>
         )}
         {streetView ? (
-          <StreetView city={city} onExit={() => setStreetView(false)} />
+          <StreetView
+            city={city}
+            onExit={() => setStreetView(false)}
+            selectedRoadId={selectedRoadId}
+            setSelectedRoadId={setSelectedRoadId}
+          />
         ) : (
           <canvas
             ref={canvasRef}
@@ -1238,29 +1478,162 @@ export default function CityModule() {
       {/* ── Right: asset info panel ── */}
       <div className="side-panel side-panel-right" style={{ width:190 }}>
         <div className="panel-section">
-          <div className="panel-label">Placed Buildings</div>
-          <div style={{ fontSize:22, fontWeight:700, color:'var(--accent)' }}>{city?.placedAssets?.length || 0}</div>
+          <div className="panel-label">Placed Objects</div>
+          <div style={{ fontSize:22, fontWeight:700, color:'var(--accent)' }}>
+            {(city?.placedAssets || []).length + (city?.roads || []).length}
+          </div>
         </div>
-        <div style={{ flex:1, overflowY:'auto' }}>
-          {(city?.placedAssets || []).length === 0 && (
-            <div style={{ padding:'16px 12px', fontSize:11, color:'var(--text3)', textAlign:'center', lineHeight:1.7 }}>
-              No buildings placed.<br />Build something in the<br />3D Editor and publish it!
+        <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column' }}>
+          
+          {/* Objects (Buildings & Trees) Section */}
+          <div style={{ padding:'6px 10px', background:'rgba(0,0,0,0.15)', fontSize:10, fontWeight:600, color:'var(--text2)', borderBottom:'1px solid var(--border)' }}>
+            🏢 Buildings & Trees ({(city?.placedAssets || []).length})
+          </div>
+          {(city?.placedAssets || []).length === 0 ? (
+            <div style={{ padding:'12px 10px', fontSize:10, color:'var(--text3)', textAlign:'center', borderBottom:'1px solid var(--border)' }}>
+              No objects placed.
             </div>
+          ) : (
+            (city?.placedAssets || []).map(asset => {
+              const isSel = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
+              return (
+                <div key={asset.id} 
+                  onClick={() => {
+                    selectAsset(asset.id === selectedAssetId ? null : asset.id);
+                    setSelectedRoadId(null);
+                  }}
+                  style={{ 
+                    padding:'6px 10px', 
+                    borderBottom:'1px solid var(--border)', 
+                    cursor:'pointer', 
+                    background: isSel ? 'rgba(78,205,196,0.07)' : 'transparent', 
+                    borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
+                    opacity: asset.locked ? 0.6 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 4
+                  }}
+                >
+                  <div style={{ display:'flex', flexDirection:'column', flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                      <div style={{ width:8, height:8, borderRadius:2, background:asset.color||'#4ECDC4', flexShrink:0 }} />
+                      <span style={{ fontSize:11, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {asset.name}
+                      </span>
+                    </div>
+                    <div style={{ fontSize:9, color:'var(--text3)', marginTop:1 }}>
+                      @{asset.placedBy} · ({asset.col.toFixed(0)},{asset.row.toFixed(0)})
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateAsset(asset.id, { locked: !asset.locked });
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      opacity: 0.8
+                    }}
+                    title={asset.locked ? 'Unlock object' : 'Lock object'}
+                  >
+                    {asset.locked ? '🔒' : '🔓'}
+                  </button>
+                </div>
+              );
+            })
           )}
-          {(city?.placedAssets || []).map(asset => (
-            <div key={asset.id} onClick={() => selectAsset(asset.id === selectedAssetId ? null : asset.id)}
-              style={{ padding:'8px 12px', borderBottom:'1px solid var(--border)', cursor:'pointer', background: asset.id===selectedAssetId ? 'rgba(78,205,196,0.07)' : 'transparent', borderLeft: asset.id===selectedAssetId ? '2px solid var(--accent)' : '2px solid transparent' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                <div style={{ width:10, height:10, borderRadius:2, background:asset.color||'#4ECDC4', flexShrink:0 }} />
-                <span style={{ fontSize:12, color:'var(--text)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{asset.name}</span>
+
+          {/* Roads Section */}
+          <div style={{ padding:'6px 10px', background:'rgba(0,0,0,0.15)', fontSize:10, fontWeight:600, color:'var(--text2)', borderBottom:'1px solid var(--border)', borderTop:'1px solid var(--border)' }}>
+            🛣️ Roads ({(city?.roads || []).length})
+          </div>
+          {(city?.roads || []).length === 0 ? (
+            <div style={{ padding:'12px 10px', fontSize:10, color:'var(--text3)', textAlign:'center' }}>
+              No roads built.
+            </div>
+          ) : (
+            (city?.roads || []).map(road => {
+              const isSel = road.id === selectedRoadId;
+              const typeLabel = road.roadType === 'highway' ? 'Highway' : road.roadType === 'multilane' ? 'Multilane' : 'Standard Road';
+              return (
+                <div key={road.id} 
+                  onClick={() => {
+                    selectAsset(null);
+                    setSelectedRoadId(road.id === selectedRoadId ? null : road.id);
+                  }}
+                  style={{ 
+                    padding:'6px 10px', 
+                    borderBottom:'1px solid var(--border)', 
+                    cursor:'pointer', 
+                    background: isSel ? 'rgba(78,205,196,0.07)' : 'transparent', 
+                    borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
+                    opacity: road.locked ? 0.6 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 4
+                  }}
+                >
+                  <div style={{ display:'flex', flexDirection:'column', flex:1, minWidth:0 }}>
+                    <span style={{ fontSize:11, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      🛣️ {typeLabel}
+                    </span>
+                    <div style={{ fontSize:9, color:'var(--text3)', marginTop:1 }}>
+                      Nodes: {road.points?.length || 0}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateRoad(road.id, { locked: !road.locked });
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      opacity: 0.8
+                    }}
+                    title={road.locked ? 'Unlock road' : 'Lock road'}
+                  >
+                    {road.locked ? '🔒' : '🔓'}
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+        {selectedAssetIds && selectedAssetIds.length > 1 ? (
+          <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:8 }}>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:'var(--text)' }}>
+                Selected: {selectedAssetIds.length} Buildings
               </div>
               <div style={{ fontSize:10, color:'var(--text3)', marginTop:2 }}>
-                @{asset.placedBy} · ({asset.col},{asset.row})
+                Press Delete/Backspace or click below to remove all selected.
               </div>
             </div>
-          ))}
-        </div>
-        {selectedAsset && (
+            <button
+              className="btn sm danger full"
+              style={{ marginTop: 4 }}
+              onClick={() => {
+                removeAssets(selectedAssetIds);
+              }}
+            >
+              🗑️ Remove Buildings
+            </button>
+          </div>
+        ) : selectedAsset && (
           <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:8 }}>
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:'var(--text)' }}>{selectedAsset.name}</div>
@@ -1287,7 +1660,8 @@ export default function CityModule() {
                   const val = parseFloat(e.target.value);
                   updateAsset(selectedAsset.id, { scaleMultiplier: val });
                 }}
-                style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                disabled={selectedAsset.locked}
+                style={{ width: '100%', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer', accentColor: 'var(--accent)' }}
               />
             </div>
 
@@ -1299,6 +1673,7 @@ export default function CityModule() {
                   className="btn sm"
                   style={{ padding: '4px 8px', fontSize: 10 }}
                   onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row - 0.2 })}
+                  disabled={selectedAsset.locked}
                   title="Move North"
                 >
                   ▲
@@ -1309,6 +1684,7 @@ export default function CityModule() {
                   className="btn sm"
                   style={{ padding: '4px 8px', fontSize: 10 }}
                   onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col - 0.2 })}
+                  disabled={selectedAsset.locked}
                   title="Move West"
                 >
                   ◀
@@ -1318,6 +1694,7 @@ export default function CityModule() {
                   className="btn sm"
                   style={{ padding: '4px 8px', fontSize: 10 }}
                   onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col + 0.2 })}
+                  disabled={selectedAsset.locked}
                   title="Move East"
                 >
                   ▶
@@ -1328,6 +1705,7 @@ export default function CityModule() {
                   className="btn sm"
                   style={{ padding: '4px 8px', fontSize: 10 }}
                   onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row + 0.2 })}
+                  disabled={selectedAsset.locked}
                   title="Move South"
                 >
                   ▼
@@ -1337,12 +1715,37 @@ export default function CityModule() {
             </div>
 
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6 }}>
-              <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text2)', marginBottom: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, color: 'var(--text2)', marginBottom: 4 }}>
                 <span>Rotation</span>
-                <span style={{ fontWeight: 600, color: 'var(--accent)' }}>
-                  {Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}°
-                </span>
-              </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <input
+                    type="number"
+                    min="0"
+                    max="360"
+                    value={Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}
+                    onChange={(e) => {
+                      let deg = parseInt(e.target.value);
+                      if (isNaN(deg)) deg = 0;
+                      deg = (deg % 360 + 360) % 360;
+                      const rad = (deg * Math.PI) / 180;
+                      updateAsset(selectedAsset.id, { rotation: rad });
+                    }}
+                    disabled={selectedAsset.locked}
+                    style={{
+                      width: 45,
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 3,
+                      color: 'var(--accent)',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      padding: '2px 4px',
+                      textAlign: 'center',
+                    }}
+                  />
+                  <span>°</span>
+                </div>
+              </div>
               <input
                 type="range"
                 min="0"
@@ -1354,7 +1757,8 @@ export default function CityModule() {
                   const rad = (deg * Math.PI) / 180;
                   updateAsset(selectedAsset.id, { rotation: rad });
                 }}
-                style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                disabled={selectedAsset.locked}
+                style={{ width: '100%', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer', accentColor: 'var(--accent)' }}
               />
             </div>
 
@@ -1379,9 +1783,10 @@ export default function CityModule() {
                           });
                           updateAsset(selectedAsset.id, { objects: newObjects });
                         }}
+                        disabled={selectedAsset.locked}
                         style={{
                           width: 18, height: 16, border: 'none', padding: 0,
-                          background: 'none', cursor: 'pointer'
+                          background: 'none', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer'
                         }}
                       />
                     </div>
@@ -1390,7 +1795,27 @@ export default function CityModule() {
               </div>
             )}
 
-            <button className="btn sm danger full" style={{ marginTop: 4 }} onClick={() => { removeAsset(selectedAsset.id); selectAsset(null); }}>Remove Building</button>
+            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+              <button
+                className="btn sm danger"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={() => {
+                  removeAsset(selectedAsset.id);
+                  selectAsset(null);
+                }}
+              >
+                🗑️ Delete
+              </button>
+              <button
+                className="btn sm"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={() => {
+                  updateAsset(selectedAsset.id, { locked: !selectedAsset.locked });
+                }}
+              >
+                {selectedAsset.locked ? '🔓 Unlock' : '🔒 Lock'}
+              </button>
+            </div>
           </div>
         )}
         {selectedRoad && (
@@ -1402,9 +1827,27 @@ export default function CityModule() {
                 Nodes: {selectedRoad.points?.length || 0}
               </div>
             </div>
-            <button className="btn sm danger full" style={{ marginTop: 4 }} onClick={() => { removeRoadSegment(selectedRoad.id); setSelectedRoadId(null); }}>
-              Delete Road
-            </button>
+            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+              <button
+                className="btn sm danger"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={() => {
+                  removeRoadSegment(selectedRoad.id);
+                  setSelectedRoadId(null);
+                }}
+              >
+                🗑️ Delete
+              </button>
+              <button
+                className="btn sm"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={() => {
+                  updateRoad(selectedRoad.id, { locked: !selectedRoad.locked });
+                }}
+              >
+                {selectedRoad.locked ? '🔓 Unlock' : '🔒 Lock'}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1413,7 +1856,7 @@ export default function CityModule() {
 }
 
 // ── Street View: simple Three.js first-person walk ────────────────────────
-function StreetView({ city, onExit }) {
+function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
   const mountRef = useRef(null);
   const animRef = useRef(null);
   const keys = useRef({});
@@ -1437,10 +1880,12 @@ function StreetView({ city, onExit }) {
     cityRef.current = city;
   }, [city]);
 
-  const { selectedAssetId, selectAsset, removeAsset, updateAsset } = useStore();
+  const { selectedAssetId, selectAsset, removeAsset, updateAsset, removeRoadSegment, updateRoad } = useStore();
+  const selectedRoad = selectedRoadId ? (city?.roads || []).find(r => r.id === selectedRoadId) : null;
   const materialCacheRef = useRef({});
   const draggingAssetIdRef = useRef(null);
   const dragOffset3D = useRef({ x: 0, z: 0 });
+  const dragStartPos3D = useRef(null);
 
   const rebuildStreetScene = useCallback(() => {
     const scene = sceneRef.current;
@@ -1548,11 +1993,22 @@ function StreetView({ city, onExit }) {
       if (type === 'multilane') radius = 1.5;
       else if (type === 'highway') radius = 2.2;
  
+      const isRoadSel = road.id === selectedRoadId;
+      const currentRoadMat = isRoadSel
+        ? new THREE.MeshStandardMaterial({
+            color: 0x3c1e22,
+            roughness: 0.85,
+            emissive: new THREE.Color(0xef4444),
+            emissiveIntensity: 0.35
+          })
+        : roadMat;
+
       // Squashed TubeGeometry for road surface
       const roadGeo = new THREE.TubeGeometry(curve, Math.max(30, road.points.length * 10), radius, 8, false);
-      const roadMesh = new THREE.Mesh(roadGeo, roadMat);
+      const roadMesh = new THREE.Mesh(roadGeo, currentRoadMat);
       roadMesh.scale.set(1, 0.01, 1);
       roadMesh.receiveShadow = true;
+      roadMesh.userData = { roadId: road.id };
       scene.add(roadMesh);
       meshesRef.current.push(roadMesh);
  
@@ -1560,6 +2016,7 @@ function StreetView({ city, onExit }) {
       const midPoint = road.points[Math.floor(road.points.length / 2)];
       markingsGroup.userData = {
         isRoadMarkings: true,
+        roadId: road.id,
         centerX: midPoint.x * cellS,
         centerZ: midPoint.z * cellS
       };
@@ -1823,7 +2280,7 @@ function StreetView({ city, onExit }) {
         });
       }
     }
-  }, [city, selectedAssetId]);
+  }, [city, selectedAssetId, selectedRoadId]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -1893,6 +2350,24 @@ function StreetView({ city, onExit }) {
       }
       keys.current[e.code] = e.type === 'keydown';
       keys.current[k] = e.type === 'keydown';
+
+      if (e.type === 'keydown' && (e.key === 'Delete' || e.key === 'Backspace')) {
+        if (document.activeElement && (
+          document.activeElement.tagName === 'INPUT' || 
+          document.activeElement.tagName === 'TEXTAREA' || 
+          document.activeElement.isContentEditable
+        )) {
+          return;
+        }
+        const latestSelectedAssetId = useStore.getState().selectedAssetId;
+        if (latestSelectedAssetId) {
+          removeAsset(latestSelectedAssetId);
+          selectAsset(null);
+        } else if (selectedRoadId) {
+          removeRoadSegment(selectedRoadId);
+          setSelectedRoadId(null);
+        }
+      }
     };
     const onBlur = () => { keys.current = {}; };
     window.addEventListener('keydown', onKey);
@@ -1935,23 +2410,24 @@ function StreetView({ city, onExit }) {
 
       const currentSelectedAssetId = useStore.getState().selectedAssetId;
       if (clickedAssetId && clickedAssetId === currentSelectedAssetId) {
-        // Start dragging asset in 3D instead of rotating camera
-        isDraggingMouse.current = false;
-        draggingAssetIdRef.current = clickedAssetId;
-
-        const intersectionPoint = new THREE.Vector3();
-        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-        raycaster.ray.intersectPlane(groundPlane, intersectionPoint);
-
         const currentCity = useStore.getState().city;
         const asset = (currentCity?.placedAssets || []).find(a => a.id === clickedAssetId);
-        if (asset) {
+        if (asset && !asset.locked) {
+          // Start dragging asset in 3D instead of rotating camera
+          isDraggingMouse.current = false;
+          draggingAssetIdRef.current = clickedAssetId;
+
+          const intersectionPoint = new THREE.Vector3();
+          const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+          raycaster.ray.intersectPlane(groundPlane, intersectionPoint);
+
           const assetX = asset.col * cellS;
           const assetZ = asset.row * cellS;
           dragOffset3D.current = {
             x: intersectionPoint.x - assetX,
             z: intersectionPoint.z - assetZ
           };
+          dragStartPos3D.current = { col: asset.col, row: asset.row };
         }
       }
     };
@@ -1994,7 +2470,14 @@ function StreetView({ city, onExit }) {
         if (buildingGroup) {
           const finalCol = buildingGroup.position.x / cellS;
           const finalRow = buildingGroup.position.z / cellS;
-          updateAsset(draggingAssetIdRef.current, { col: finalCol, row: finalRow }, true);
+          if (dragStartPos3D.current && (dragStartPos3D.current.col !== finalCol || dragStartPos3D.current.row !== finalRow)) {
+            useStore.getState().pushCityUndo({
+              type: 'UPDATE_ASSET',
+              assetId: draggingAssetIdRef.current,
+              updates: { col: dragStartPos3D.current.col, row: dragStartPos3D.current.row }
+            });
+          }
+          updateAsset(draggingAssetIdRef.current, { col: finalCol, row: finalRow }, true, true);
         }
         draggingAssetIdRef.current = null;
         return;
@@ -2017,18 +2500,49 @@ function StreetView({ city, onExit }) {
         
         const intersects = raycaster.intersectObjects(scene.children, true);
         let clickedAssetId = null;
+        let clickedRoadId = null;
         for (let i = 0; i < intersects.length; i++) {
           let obj = intersects[i].object;
           while (obj) {
-            if (obj.userData && obj.userData.assetId) {
-              clickedAssetId = obj.userData.assetId;
-              break;
+            if (obj.userData) {
+              if (obj.userData.assetId) {
+                clickedAssetId = obj.userData.assetId;
+                break;
+              }
+              if (obj.userData.roadId) {
+                clickedRoadId = obj.userData.roadId;
+                break;
+              }
             }
             obj = obj.parent;
           }
-          if (clickedAssetId) break;
+          if (clickedAssetId || clickedRoadId) break;
         }
-        selectAsset(clickedAssetId);
+        if (clickedAssetId) {
+          const latestCity = useStore.getState().city;
+          const asset = (latestCity?.placedAssets || []).find(a => a.id === clickedAssetId);
+          if (asset && asset.locked) {
+            clickedAssetId = null;
+          }
+        }
+        if (clickedRoadId) {
+          const latestCity = useStore.getState().city;
+          const road = (latestCity?.roads || []).find(r => r.id === clickedRoadId);
+          if (road && road.locked) {
+            clickedRoadId = null;
+          }
+        }
+        
+        if (clickedAssetId) {
+          selectAsset(clickedAssetId);
+          setSelectedRoadId(null);
+        } else if (clickedRoadId) {
+          selectAsset(null);
+          setSelectedRoadId(clickedRoadId);
+        } else {
+          selectAsset(null);
+          setSelectedRoadId(null);
+        }
       }
     };
     mount.addEventListener('mousedown', onMouseDown);
@@ -2228,7 +2742,7 @@ function StreetView({ city, onExit }) {
 
   useEffect(() => {
     rebuildStreetScene();
-  }, [city, selectedAssetId, rebuildStreetScene]);
+  }, [city, selectedAssetId, selectedRoadId, rebuildStreetScene]);
 
   const selectedAsset = selectedAssetId ? (city?.placedAssets || []).find(a => a.id === selectedAssetId) : null;
 
@@ -2304,7 +2818,8 @@ function StreetView({ city, onExit }) {
                 const val = parseFloat(e.target.value);
                 updateAsset(selectedAsset.id, { scaleMultiplier: val });
               }}
-              style={{ width: '100%', cursor: 'pointer', accentColor: '#4ECDC4' }}
+              disabled={selectedAsset.locked}
+              style={{ width: '100%', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer', accentColor: '#4ECDC4' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#888', marginTop: 2 }}>
               <span>{Math.min(0.1, getMaxScaleFactor(selectedAsset)).toFixed(2)}x</span>
@@ -2318,8 +2833,9 @@ function StreetView({ city, onExit }) {
               <div />
               <button
                 className="btn sm"
-                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer' }}
                 onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row - 0.2 })}
+                disabled={selectedAsset.locked}
                 title="Move North"
               >
                 ▲
@@ -2328,8 +2844,9 @@ function StreetView({ city, onExit }) {
               
               <button
                 className="btn sm"
-                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer' }}
                 onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col - 0.2 })}
+                disabled={selectedAsset.locked}
                 title="Move West"
               >
                 ◀
@@ -2337,8 +2854,9 @@ function StreetView({ city, onExit }) {
               <div style={{ fontSize: 9, color: '#aaa', textAlign: 'center' }}>Move</div>
               <button
                 className="btn sm"
-                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer' }}
                 onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col + 0.2 })}
+                disabled={selectedAsset.locked}
                 title="Move East"
               >
                 ▶
@@ -2347,8 +2865,9 @@ function StreetView({ city, onExit }) {
               <div />
               <button
                 className="btn sm"
-                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                style={{ padding: '4px 8px', fontSize: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer' }}
                 onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row + 0.2 })}
+                disabled={selectedAsset.locked}
                 title="Move South"
               >
                 ▼
@@ -2358,12 +2877,38 @@ function StreetView({ city, onExit }) {
           </div>
 
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 10 }}>
-            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, marginBottom: 4 }}>
               <span>Rotation</span>
-              <span style={{ fontWeight: 600, color: '#4ECDC4' }}>
-                {Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}°
-              </span>
-            </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <input
+                  type="number"
+                  min="0"
+                  max="360"
+                  value={Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}
+                  onChange={(e) => {
+                    let deg = parseInt(e.target.value);
+                    if (isNaN(deg)) deg = 0;
+                    deg = (deg % 360 + 360) % 360;
+                    const rad = (deg * Math.PI) / 180;
+                    updateAsset(selectedAsset.id, { rotation: rad });
+                  }}
+                  disabled={selectedAsset.locked}
+                  style={{
+                    width: 45,
+                    background: 'rgba(22, 27, 38, 0.95)',
+                    border: '1px solid rgba(255,255,255,0.25)',
+                    borderRadius: 4,
+                    color: '#4ECDC4',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '2px 4px',
+                    textAlign: 'center',
+                    cursor: selectedAsset.locked ? 'not-allowed' : 'text'
+                  }}
+                />
+                <span>°</span>
+              </div>
+            </div>
             <input
               type="range"
               min="0"
@@ -2375,7 +2920,8 @@ function StreetView({ city, onExit }) {
                 const rad = (deg * Math.PI) / 180;
                 updateAsset(selectedAsset.id, { rotation: rad });
               }}
-              style={{ width: '100%', cursor: 'pointer', accentColor: '#4ECDC4' }}
+              disabled={selectedAsset.locked}
+              style={{ width: '100%', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer', accentColor: '#4ECDC4' }}
             />
           </div>
           
@@ -2400,9 +2946,10 @@ function StreetView({ city, onExit }) {
                         });
                         updateAsset(selectedAsset.id, { objects: newObjects });
                       }}
+                      disabled={selectedAsset.locked}
                       style={{
                         width: 24, height: 20, border: 'none', padding: 0,
-                        background: 'none', cursor: 'pointer', borderRadius: 4
+                        background: 'none', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer', borderRadius: 4
                       }}
                     />
                   </div>
@@ -2426,7 +2973,76 @@ function StreetView({ city, onExit }) {
               onMouseEnter={(e) => e.target.style.background = '#c53030'}
               onMouseLeave={(e) => e.target.style.background = '#e53e3e'}
             >
-              🗑️ Delete Asset
+              🗑️ Delete
+            </button>
+            <button
+              onClick={() => {
+                updateAsset(selectedAsset.id, { locked: !selectedAsset.locked });
+              }}
+              style={{
+                flex: 1, padding: '6px 12px', background: 'rgba(255,255,255,0.1)',
+                color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6,
+                fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+              onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
+            >
+              {selectedAsset.locked ? '🔓 Unlock' : '🔒 Lock'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Road Info Panel in Street View */}
+      {selectedRoad && (
+        <div style={{
+          position: 'absolute', top: 60, right: 12, width: 280,
+          background: 'rgba(22, 27, 38, 0.85)', backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12,
+          padding: '16px', color: '#fff', zIndex: 100,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          display: 'flex', flexDirection: 'column', gap: 12
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>🛣️ Selected Road</span>
+            <button onClick={() => setSelectedRoadId(null)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 14 }}>✕</button>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>Type: {selectedRoad.roadType || 'standard'}</div>
+            <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>Nodes: {selectedRoad.points?.length || 0}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <button
+              onClick={() => {
+                removeRoadSegment(selectedRoad.id);
+                setSelectedRoadId(null);
+              }}
+              style={{
+                flex: 1, padding: '8px 12px', background: '#e53e3e',
+                color: '#fff', border: 'none', borderRadius: 6,
+                fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.background = '#c53030'}
+              onMouseLeave={(e) => e.target.style.background = '#e53e3e'}
+            >
+              🗑️ Delete
+            </button>
+            <button
+              onClick={() => {
+                updateRoad(selectedRoad.id, { locked: !selectedRoad.locked });
+              }}
+              style={{
+                flex: 1, padding: '8px 12px', background: selectedRoad.locked ? 'rgba(78, 205, 196, 0.2)' : 'rgba(255,255,255,0.1)',
+                color: selectedRoad.locked ? '#4ECDC4' : '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6,
+                fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+              onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
+            >
+              {selectedRoad.locked ? '🔓 Unlock' : '🔒 Lock'}
             </button>
           </div>
         </div>
