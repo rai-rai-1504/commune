@@ -343,6 +343,13 @@ export const useStore = create((set, get) => ({
         },
         rotation: { ...obj.rotation }, scale: { ...obj.scale }, color: obj.color,
         name: obj.name + '_copy', vectorClock: { ...get().editorVectorClock },
+        isSubtractive: obj.isSubtractive || false,
+        children: obj.children ? JSON.parse(JSON.stringify(obj.children)) : undefined,
+        text: obj.text || undefined,
+        textColor: obj.textColor || undefined,
+        textFont: obj.textFont || undefined,
+        textSize: obj.textSize || undefined,
+        textSurfaces: obj.textSurfaces || undefined,
       };
       nextObjs[newId] = mkObj(op, get().username);
       ops.push({ op, newId });
@@ -366,6 +373,174 @@ export const useStore = create((set, get) => ({
     });
   },
 
+  carveSelectedObjects() {
+    const { editorObjects, selectedObjectIds, username } = get();
+    if (selectedObjectIds.length < 2) {
+      get().pushNotif("Select 2 or more shapes to carve! 🪓");
+      return;
+    }
+
+    const objectsToGroup = selectedObjectIds.map(id => editorObjects[id]).filter(Boolean);
+    if (objectsToGroup.length < 2) return;
+
+    const solids = objectsToGroup.filter(o => !o.isSubtractive);
+    if (solids.length === 0) {
+      get().pushNotif("Need at least one Solid shape to carve! ⬜");
+      return;
+    }
+
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+
+    objectsToGroup.forEach(obj => {
+      const bounds = getObjectBounds(obj);
+      if (bounds.minX < minX) minX = bounds.minX;
+      if (bounds.maxX > maxX) maxX = bounds.maxX;
+      if (bounds.minY < minY) minY = bounds.minY;
+      if (bounds.maxY > maxY) maxY = bounds.maxY;
+      if (bounds.minZ < minZ) minZ = bounds.minZ;
+      if (bounds.maxZ > maxZ) maxZ = bounds.maxZ;
+    });
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const centerZ = (minZ + maxZ) / 2;
+
+    const groupPosition = {
+      x: parseFloat(centerX.toFixed(2)),
+      y: parseFloat(centerY.toFixed(2)),
+      z: parseFloat(centerZ.toFixed(2))
+    };
+
+    const children = objectsToGroup.map(obj => ({
+      ...obj,
+      position: {
+        x: parseFloat((obj.position.x - centerX).toFixed(2)),
+        y: parseFloat((obj.position.y - centerY).toFixed(2)),
+        z: parseFloat((obj.position.z - centerZ).toFixed(2))
+      }
+    }));
+
+    const newId = uuid();
+    const op = {
+      kind: 'CREATE',
+      objectId: newId,
+      geometry: 'csg',
+      objType: 'mesh',
+      position: groupPosition,
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 1, y: 1, z: 1 },
+      color: solids[0].color,
+      name: 'Carved_' + newId.slice(0, 4),
+      isSubtractive: false,
+      children,
+      vectorClock: { ...get().editorVectorClock }
+    };
+
+    const newObj = mkObj(op, username);
+
+    const undoAction = {
+      type: 'COMPOUND_EDITOR',
+      actions: [
+        { type: 'DELETE', objectId: newId },
+        ...objectsToGroup.map(obj => ({ type: 'RESTORE', object: obj }))
+      ]
+    };
+
+    const nextObjs = { ...editorObjects };
+    objectsToGroup.forEach(obj => {
+      delete nextObjs[obj.id];
+      get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op: { kind: 'DELETE', objectId: obj.id, vectorClock: { ...get().editorVectorClock } } });
+    });
+
+    nextObjs[newId] = newObj;
+
+    set(state => ({
+      editorObjects: nextObjs,
+      selectedObjectId: newId,
+      selectedObjectIds: [newId],
+      undoStack: [...state.undoStack, undoAction].slice(-30),
+      redoStack: [],
+    }));
+
+    get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+    get().pushNotif("Objects carved into group! 🪓");
+  },
+
+  uncarveSelectedObject() {
+    const { editorObjects, selectedObjectId } = get();
+    if (!selectedObjectId) return;
+    const csgObj = editorObjects[selectedObjectId];
+    if (!csgObj || csgObj.geometry !== 'csg' || !csgObj.children) return;
+
+    const childrenToRestore = csgObj.children;
+    const nextObjs = { ...editorObjects };
+
+    delete nextObjs[csgObj.id];
+    get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op: { kind: 'DELETE', objectId: csgObj.id, vectorClock: { ...get().editorVectorClock } } });
+
+    const opsToRestore = [];
+    const restoredIds = [];
+
+    childrenToRestore.forEach(child => {
+      const restoredChild = {
+        ...child,
+        position: {
+          x: parseFloat((child.position.x + csgObj.position.x).toFixed(2)),
+          y: parseFloat((child.position.y + csgObj.position.y).toFixed(2)),
+          z: parseFloat((child.position.z + csgObj.position.z).toFixed(2))
+        }
+      };
+      
+      nextObjs[child.id] = restoredChild;
+      restoredIds.push(child.id);
+
+      const op = {
+        kind: 'CREATE',
+        objectId: child.id,
+        geometry: child.geometry,
+        objType: 'mesh',
+        position: restoredChild.position,
+        rotation: child.rotation,
+        scale: child.scale,
+        color: child.color,
+        name: child.name,
+        isSubtractive: child.isSubtractive || false,
+        children: child.children || undefined,
+        text: child.text || undefined,
+        textColor: child.textColor || undefined,
+        textFont: child.textFont || undefined,
+        textSize: child.textSize || undefined,
+        textSurfaces: child.textSurfaces || undefined,
+        vectorClock: { ...get().editorVectorClock }
+      };
+      opsToRestore.push(op);
+    });
+
+    const undoAction = {
+      type: 'COMPOUND_EDITOR',
+      actions: [
+        { type: 'RESTORE', object: csgObj },
+        ...restoredIds.map(id => ({ type: 'DELETE', objectId: id }))
+      ]
+    };
+
+    set(state => ({
+      editorObjects: nextObjs,
+      selectedObjectId: restoredIds[restoredIds.length - 1],
+      selectedObjectIds: restoredIds,
+      undoStack: [...state.undoStack, undoAction].slice(-30),
+      redoStack: [],
+    }));
+
+    opsToRestore.forEach(op => {
+      get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+    });
+
+    get().pushNotif("Group split back into shapes! 🔓");
+  },
+
   pushUndoAction(action) {
     set(state => ({
       undoStack: [...state.undoStack, action].slice(-30),
@@ -383,8 +558,15 @@ export const useStore = create((set, get) => ({
     } else if (action.type === 'UPDATE') {
       get().updateObjectProp(action.objectId, action.property, action.value, true);
     } else if (action.type === 'RESTORE') {
-      const op = { kind: 'CREATE', objectId: action.snapshot.id, geometry: action.snapshot.geometry, objType: 'mesh', position: action.snapshot.position, rotation: action.snapshot.rotation, scale: action.snapshot.scale, color: action.snapshot.color, name: action.snapshot.name, vectorClock: { ...get().editorVectorClock } };
-      set(state => ({ editorObjects: { ...state.editorObjects, [action.snapshot.id]: action.snapshot } }));
+      const s = action.snapshot;
+      const op = {
+        kind: 'CREATE', objectId: s.id, geometry: s.geometry, objType: 'mesh',
+        position: s.position, rotation: s.rotation, scale: s.scale, color: s.color, name: s.name,
+        isSubtractive: s.isSubtractive, children: s.children,
+        text: s.text, textColor: s.textColor, textFont: s.textFont, textSize: s.textSize, textSurfaces: s.textSurfaces,
+        vectorClock: { ...get().editorVectorClock }
+      };
+      set(state => ({ editorObjects: { ...state.editorObjects, [s.id]: s } }));
       get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
     } else if (action.type === 'MOVE_GROUP') {
       Object.entries(action.positions).forEach(([id, pos]) => {
@@ -392,9 +574,15 @@ export const useStore = create((set, get) => ({
       });
     } else if (action.type === 'RESTORE_GROUP') {
       const nextObjs = { ...get().editorObjects };
-      action.snapshots.forEach(snapshot => {
-        nextObjs[snapshot.id] = snapshot;
-        const op = { kind: 'CREATE', objectId: snapshot.id, geometry: snapshot.geometry, objType: 'mesh', position: snapshot.position, rotation: snapshot.rotation, scale: snapshot.scale, color: snapshot.color, name: snapshot.name, vectorClock: { ...get().editorVectorClock } };
+      action.snapshots.forEach(s => {
+        nextObjs[s.id] = s;
+        const op = {
+          kind: 'CREATE', objectId: s.id, geometry: s.geometry, objType: 'mesh',
+          position: s.position, rotation: s.rotation, scale: s.scale, color: s.color, name: s.name,
+          isSubtractive: s.isSubtractive, children: s.children,
+          text: s.text, textColor: s.textColor, textFont: s.textFont, textSize: s.textSize, textSurfaces: s.textSurfaces,
+          vectorClock: { ...get().editorVectorClock }
+        };
         get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
       });
       set({ editorObjects: nextObjs });
@@ -403,6 +591,23 @@ export const useStore = create((set, get) => ({
     } else if (action.type === 'UPDATE_GROUP') {
       Object.entries(action.values).forEach(([id, val]) => {
         get().updateObjectProp(id, action.property, val, true);
+      });
+    } else if (action.type === 'COMPOUND_EDITOR') {
+      action.actions.forEach(subAction => {
+        if (subAction.type === 'DELETE') {
+          get().deleteObject(subAction.objectId, true);
+        } else if (subAction.type === 'RESTORE') {
+          const s = subAction.object;
+          const op = {
+            kind: 'CREATE', objectId: s.id, geometry: s.geometry, objType: 'mesh',
+            position: s.position, rotation: s.rotation, scale: s.scale, color: s.color, name: s.name,
+            isSubtractive: s.isSubtractive, children: s.children,
+            text: s.text, textColor: s.textColor, textFont: s.textFont, textSize: s.textSize, textSurfaces: s.textSurfaces,
+            vectorClock: { ...get().editorVectorClock }
+          };
+          set(state => ({ editorObjects: { ...state.editorObjects, [s.id]: s } }));
+          get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+        }
       });
     }
   },
@@ -814,5 +1019,61 @@ function mkObj(op, createdBy) {
     name: op.name || 'Object',
     createdBy: createdBy || 'unknown',
     timestamp: Date.now(),
+    isSubtractive: op.isSubtractive || false,
+    children: op.children || undefined,
+    text: op.text || undefined,
+    textColor: op.textColor || undefined,
+    textFont: op.textFont || undefined,
+    textSize: op.textSize || undefined,
+    textSurfaces: op.textSurfaces || undefined,
+  };
+}
+
+function getObjectBounds(obj) {
+  if (obj.geometry === 'csg') {
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    const children = obj.children || [];
+    children.forEach(child => {
+      const childAbs = {
+        ...child,
+        position: {
+          x: child.position.x + obj.position.x,
+          y: child.position.y + obj.position.y,
+          z: child.position.z + obj.position.z,
+        }
+      };
+      const cb = getObjectBounds(childAbs);
+      if (cb.minX < minX) minX = cb.minX;
+      if (cb.maxX > maxX) maxX = cb.maxX;
+      if (cb.minY < minY) minY = cb.minY;
+      if (cb.maxY > maxY) maxY = cb.maxY;
+      if (cb.minZ < minZ) minZ = cb.minZ;
+      if (cb.maxZ > maxZ) maxZ = cb.maxZ;
+    });
+    if (minX === Infinity) {
+      return {
+        minX: obj.position.x - 0.5, maxX: obj.position.x + 0.5,
+        minY: obj.position.y - 0.5, maxY: obj.position.y + 0.5,
+        minZ: obj.position.z - 0.5, maxZ: obj.position.z + 0.5,
+      };
+    }
+    return { minX, maxX, minY, maxY, minZ, maxZ };
+  }
+
+  const sx = obj.scale?.x ?? 1;
+  const sy = obj.scale?.y ?? 1;
+  const sz = obj.scale?.z ?? 1;
+  const px = obj.position?.x ?? 0;
+  const py = obj.position?.y ?? 0;
+  const pz = obj.position?.z ?? 0;
+  return {
+    minX: px - sx / 2,
+    maxX: px + sx / 2,
+    minY: py - sy / 2,
+    maxY: py + sy / 2,
+    minZ: pz - sz / 2,
+    maxZ: pz + sz / 2,
   };
 }

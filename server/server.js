@@ -289,7 +289,9 @@ function handleMessage(ws, client, msg) {
 
       if (op.kind === 'CREATE') {
         scene.objects[op.objectId] = {
-          id: op.objectId, type: op.objType || 'box', geometry: op.geometry || 'box',
+          id: op.objectId,
+          type: op.objType || 'box',
+          geometry: op.geometry || 'box',
           position: op.position || { x: 0, y: 0.5, z: 0 },
           rotation: op.rotation || { x: 0, y: 0, z: 0 },
           scale: op.scale || { x: 1, y: 1, z: 1 },
@@ -297,6 +299,13 @@ function handleMessage(ws, client, msg) {
           name: op.name || 'Object',
           createdBy: client.username,
           timestamp: Date.now(),
+          isSubtractive: op.isSubtractive || false,
+          children: op.children || undefined,
+          text: op.text || undefined,
+          textColor: op.textColor || undefined,
+          textFont: op.textFont || undefined,
+          textSize: op.textSize || undefined,
+          textSurfaces: op.textSurfaces || undefined,
         };
       } else if (op.kind === 'UPDATE') {
         const obj = scene.objects[op.objectId];

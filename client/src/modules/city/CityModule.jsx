@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
+import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
 import { useStore } from '../../store/useStore';
 import { TEMPLATES } from '../../components/AssetLibrary';
 
@@ -61,6 +62,134 @@ function getStreetGeo(type) {
     }
   }
   return STREET_GEO[type];
+}
+
+const cityCSGEvaluator = new Evaluator();
+
+function buildCSGGeometryInStreetView(obj) {
+  const children = obj.children || [];
+  if (children.length === 0) {
+    return { geometry: new THREE.BoxGeometry(0.1, 0.1, 0.1), materials: new THREE.MeshStandardMaterial({ color: 0xcccccc }) };
+  }
+
+  const solids = children.filter(c => !c.isSubtractive);
+  const subtractives = children.filter(c => c.isSubtractive);
+
+  if (solids.length === 0) {
+    return { geometry: new THREE.BoxGeometry(0.001, 0.001, 0.001), materials: new THREE.MeshStandardMaterial({ color: 0xcccccc, transparent: true, opacity: 0 }) };
+  }
+
+  let resultBrush = null;
+  const brushMaterials = [];
+
+  solids.forEach((solid, idx) => {
+    let geom;
+    let mat;
+    if (solid.geometry === 'csg') {
+      const compiled = buildCSGGeometryInStreetView(solid);
+      geom = compiled.geometry;
+      mat = compiled.materials;
+    } else {
+      geom = getStreetGeo(solid.geometry);
+      mat = new THREE.MeshStandardMaterial({
+        color: solid.color,
+        roughness: 0.65,
+        metalness: 0.08
+      });
+    }
+
+    if (Array.isArray(mat)) {
+      brushMaterials.push(...mat);
+    } else {
+      brushMaterials.push(mat);
+    }
+    
+    const brush = new Brush(geom, mat);
+    brush.position.set(solid.position.x, solid.position.y, solid.position.z);
+    brush.rotation.set(solid.rotation.x, solid.rotation.y, solid.rotation.z);
+    brush.scale.set(solid.scale.x, solid.scale.y, solid.scale.z);
+    brush.updateMatrixWorld(true);
+
+    if (idx === 0) {
+      resultBrush = brush;
+    } else {
+      resultBrush = cityCSGEvaluator.evaluate(resultBrush, brush, ADDITION);
+    }
+  });
+
+  subtractives.forEach(sub => {
+    let geom;
+    let mat;
+    if (sub.geometry === 'csg') {
+      const compiled = buildCSGGeometryInStreetView(sub);
+      geom = compiled.geometry;
+      mat = compiled.materials;
+    } else {
+      geom = getStreetGeo(sub.geometry);
+      mat = new THREE.MeshStandardMaterial({
+        color: sub.color,
+        roughness: 0.65,
+        metalness: 0.08
+      });
+    }
+
+    if (Array.isArray(mat)) {
+      brushMaterials.push(...mat);
+    } else {
+      brushMaterials.push(mat);
+    }
+
+    const brush = new Brush(geom, mat);
+    brush.position.set(sub.position.x, sub.position.y, sub.position.z);
+    brush.rotation.set(sub.rotation.x, sub.rotation.y, sub.rotation.z);
+    brush.scale.set(sub.scale.x, sub.scale.y, sub.scale.z);
+    brush.updateMatrixWorld(true);
+
+    resultBrush = cityCSGEvaluator.evaluate(resultBrush, brush, SUBTRACTION);
+  });
+
+  return {
+    geometry: resultBrush.geometry,
+    materials: resultBrush.material || brushMaterials
+  };
+}
+
+function drawObject2D(ctx, obj, baseScale, defaultColor, strokeColor) {
+  if (obj.isSubtractive) return; // Skip subtractive/cutter elements entirely
+
+  if (obj.geometry === 'csg') {
+    const children = obj.children || [];
+    children.forEach(child => {
+      ctx.save();
+      const ox = (child.position?.x !== undefined ? child.position.x : 0) * baseScale;
+      const oz = (child.position?.z !== undefined ? child.position.z : 0) * baseScale;
+      ctx.translate(ox, oz);
+      ctx.rotate(-(child.rotation?.y || 0));
+
+      drawObject2D(ctx, child, baseScale, defaultColor, strokeColor);
+      ctx.restore();
+    });
+    return;
+  }
+
+  const sx = (obj.scale?.x !== undefined ? obj.scale.x : 1) * baseScale;
+  const sz = (obj.scale?.z !== undefined ? obj.scale.z : 1) * baseScale;
+
+  ctx.fillStyle = obj.color || defaultColor || '#4ECDC4';
+  ctx.strokeStyle = strokeColor || 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+
+  if (obj.geometry === 'cylinder' || obj.geometry === 'sphere' || obj.geometry === 'cone' || obj.geometry === 'torus') {
+    ctx.beginPath();
+    ctx.ellipse(0, 0, sx / 2, sz / 2, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.rect(-sx / 2, -sz / 2, sx, sz);
+    ctx.fill();
+    ctx.stroke();
+  }
 }
 
 const getOffsetPoints = (samples, dist) => {
@@ -644,25 +773,7 @@ export default function CityModule() {
           ctx.translate(ox, oz);
           ctx.rotate(-(obj.rotation?.y || 0));
 
-          const sx = (obj.scale?.x !== undefined ? obj.scale.x : 1) * objScale;
-          const sz = (obj.scale?.z !== undefined ? obj.scale.z : 1) * objScale;
-
-          ctx.fillStyle = obj.color || asset.color || '#4ECDC4';
-          ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-          ctx.lineWidth = 1;
-
-          if (obj.geometry === 'cylinder' || obj.geometry === 'sphere' || obj.geometry === 'cone' || obj.geometry === 'torus') {
-            ctx.beginPath();
-            ctx.ellipse(0, 0, sx / 2, sz / 2, 0, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.stroke();
-          } else {
-            // box or wedge
-            ctx.beginPath();
-            ctx.rect(-sx / 2, -sz / 2, sx, sz);
-            ctx.fill();
-            ctx.stroke();
-          }
+          drawObject2D(ctx, obj, objScale, asset.color);
           ctx.restore();
         });
       } else {
@@ -723,24 +834,8 @@ export default function CityModule() {
           ctx.translate(ox, oz);
           ctx.rotate(-(obj.rotation?.y || 0));
 
-          const sx = (obj.scale?.x !== undefined ? obj.scale.x : 1) * objScale;
-          const sz = (obj.scale?.z !== undefined ? obj.scale.z : 1) * objScale;
-
-          ctx.fillStyle = obj.color || pendingPlacementAsset.color || '#4ECDC4';
-          ctx.strokeStyle = isValid ? 'rgba(78, 205, 196, 0.4)' : 'rgba(226, 75, 74, 0.4)';
-          ctx.lineWidth = 1;
-
-          if (obj.geometry === 'cylinder' || obj.geometry === 'sphere' || obj.geometry === 'cone' || obj.geometry === 'torus') {
-            ctx.beginPath();
-            ctx.ellipse(0, 0, sx / 2, sz / 2, 0, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.stroke();
-          } else {
-            ctx.beginPath();
-            ctx.rect(-sx / 2, -sz / 2, sx, sz);
-            ctx.fill();
-            ctx.stroke();
-          }
+          const strokeColor = isValid ? 'rgba(78, 205, 196, 0.4)' : 'rgba(226, 75, 74, 0.4)';
+          drawObject2D(ctx, obj, objScale, pendingPlacementAsset.color, strokeColor);
           ctx.restore();
         });
         ctx.restore();
@@ -2117,49 +2212,58 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
         // Level 0: Detailed model (Group of meshes)
         const detailedGroup = new THREE.Group();
         asset.objects.forEach(obj => {
-          let texture = null;
-          if (obj.text) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = obj.color;
-            ctx.fillRect(0, 0, 256, 256);
-            ctx.fillStyle = obj.textColor || '#ffffff';
-            ctx.font = `bold ${obj.textSize || 32}px ${obj.textFont || 'sans-serif'}`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(obj.text, 128, 128);
-            texture = new THREE.CanvasTexture(canvas);
-          }
-          
+          let meshGeom;
           let materials;
-          const faces = SHAPE_FACES[obj.geometry];
-          if (texture) {
-            if (faces) {
-              const textSurfaces = obj.textSurfaces || [];
-              materials = faces.map(faceName => {
-                const hasFaceText = textSurfaces.length === 0 || textSurfaces.includes(faceName);
-                return new THREE.MeshStandardMaterial({
-                  color: hasFaceText ? 0xffffff : obj.color,
-                  map: hasFaceText ? texture : null,
+
+          if (obj.geometry === 'csg') {
+            const compiled = buildCSGGeometryInStreetView(obj);
+            meshGeom = compiled.geometry;
+            materials = compiled.materials;
+          } else {
+            meshGeom = getStreetGeo(obj.geometry);
+            let texture = null;
+            if (obj.text) {
+              const canvas = document.createElement('canvas');
+              canvas.width = 256;
+              canvas.height = 256;
+              const ctx = canvas.getContext('2d');
+              ctx.fillStyle = obj.color;
+              ctx.fillRect(0, 0, 256, 256);
+              ctx.fillStyle = obj.textColor || '#ffffff';
+              ctx.font = `bold ${obj.textSize || 32}px ${obj.textFont || 'sans-serif'}`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(obj.text, 128, 128);
+              texture = new THREE.CanvasTexture(canvas);
+            }
+            
+            const faces = SHAPE_FACES[obj.geometry];
+            if (texture) {
+              if (faces) {
+                const textSurfaces = obj.textSurfaces || [];
+                materials = faces.map(faceName => {
+                  const hasFaceText = textSurfaces.length === 0 || textSurfaces.includes(faceName);
+                  return new THREE.MeshStandardMaterial({
+                    color: hasFaceText ? 0xffffff : obj.color,
+                    map: hasFaceText ? texture : null,
+                    roughness: 0.65,
+                    metalness: 0.08
+                  });
+                });
+              } else {
+                materials = new THREE.MeshStandardMaterial({
+                  color: 0xffffff,
+                  map: texture,
                   roughness: 0.65,
                   metalness: 0.08
                 });
-              });
+              }
             } else {
-              materials = new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                map: texture,
-                roughness: 0.65,
-                metalness: 0.08
-              });
+              materials = getCachedMaterial(obj.color, isSel);
             }
-          } else {
-            materials = getCachedMaterial(obj.color, isSel);
           }
 
-          if (isSel && texture) {
+          if (isSel) {
             if (Array.isArray(materials)) {
               materials.forEach(mat => {
                 mat.emissive.set(0x4ECDC4);
@@ -2171,7 +2275,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
             }
           }
           
-          const mesh = new THREE.Mesh(getStreetGeo(obj.geometry), materials);
+          const mesh = new THREE.Mesh(meshGeom, materials);
           const oPos = obj.position || { x: 0, y: 0, z: 0 };
           const oRot = obj.rotation || { x: 0, y: 0, z: 0 };
           const oScl = obj.scale || { x: 1, y: 1, z: 1 };

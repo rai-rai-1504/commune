@@ -1,7 +1,108 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
+import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
 import { useStore } from '../../store/useStore';
 import AssetLibrary from '../../components/AssetLibrary';
+
+const evaluator = new Evaluator();
+
+const getCSGKey = (obj) => {
+  return (obj.children || []).map(c => 
+    `${c.id}_${c.geometry}_${c.color}_${c.isSubtractive}_` +
+    `${c.position.x},${c.position.y},${c.position.z}_` +
+    `${c.rotation.x},${c.rotation.y},${c.rotation.z}_` +
+    `${c.scale.x},${c.scale.y},${c.scale.z}` +
+    (c.geometry === 'csg' ? `_CSG_${getCSGKey(c)}` : '')
+  ).join('|');
+};
+
+function buildCSGGeometry(obj) {
+  const children = obj.children || [];
+  if (children.length === 0) {
+    return { geometry: new THREE.BoxGeometry(0.1, 0.1, 0.1), materials: new THREE.MeshStandardMaterial({ color: 0xcccccc }) };
+  }
+
+  const solids = children.filter(c => !c.isSubtractive);
+  const subtractives = children.filter(c => c.isSubtractive);
+
+  if (solids.length === 0) {
+    return { geometry: new THREE.BoxGeometry(0.001, 0.001, 0.001), materials: new THREE.MeshStandardMaterial({ color: 0xcccccc, transparent: true, opacity: 0 }) };
+  }
+
+  let resultBrush = null;
+  const brushMaterials = [];
+
+  solids.forEach((solid, idx) => {
+    let geom;
+    let mat;
+    if (solid.geometry === 'csg') {
+      const compiled = buildCSGGeometry(solid);
+      geom = compiled.geometry;
+      mat = compiled.materials;
+    } else {
+      geom = getGeo(solid.geometry);
+      mat = new THREE.MeshStandardMaterial({
+        color: solid.color,
+        roughness: 0.65,
+        metalness: 0.08
+      });
+    }
+
+    if (Array.isArray(mat)) {
+      brushMaterials.push(...mat);
+    } else {
+      brushMaterials.push(mat);
+    }
+    
+    const brush = new Brush(geom, mat);
+    brush.position.set(solid.position.x, solid.position.y, solid.position.z);
+    brush.rotation.set(solid.rotation.x, solid.rotation.y, solid.rotation.z);
+    brush.scale.set(solid.scale.x, solid.scale.y, solid.scale.z);
+    brush.updateMatrixWorld(true);
+
+    if (idx === 0) {
+      resultBrush = brush;
+    } else {
+      resultBrush = evaluator.evaluate(resultBrush, brush, ADDITION);
+    }
+  });
+
+  subtractives.forEach(sub => {
+    let geom;
+    let mat;
+    if (sub.geometry === 'csg') {
+      const compiled = buildCSGGeometry(sub);
+      geom = compiled.geometry;
+      mat = compiled.materials;
+    } else {
+      geom = getGeo(sub.geometry);
+      mat = new THREE.MeshStandardMaterial({
+        color: sub.color,
+        roughness: 0.65,
+        metalness: 0.08
+      });
+    }
+
+    if (Array.isArray(mat)) {
+      brushMaterials.push(...mat);
+    } else {
+      brushMaterials.push(mat);
+    }
+
+    const brush = new Brush(geom, mat);
+    brush.position.set(sub.position.x, sub.position.y, sub.position.z);
+    brush.rotation.set(sub.rotation.x, sub.rotation.y, sub.rotation.z);
+    brush.scale.set(sub.scale.x, sub.scale.y, sub.scale.z);
+    brush.updateMatrixWorld(true);
+
+    resultBrush = evaluator.evaluate(resultBrush, brush, SUBTRACTION);
+  });
+
+  return {
+    geometry: resultBrush.geometry,
+    materials: resultBrush.material || brushMaterials
+  };
+}
 
 // ── Geometry cache ─────────────────────────────────────────────────────────
 const GEO = {};
@@ -122,7 +223,7 @@ export default function EditorModule() {
     editorObjects, selectedObjectId, selectedObjectIds, editorTool,
     addObject, deleteObjects, duplicateObjects, selectObject, selectObjects,
     updateObjectProp, updateObjectsProp, setEditorTool, publishToCity, clearScene,
-    undo, pushUndoAction,
+    undo, pushUndoAction, carveSelectedObjects, uncarveSelectedObject,
   } = useStore();
 
   // ── Init Three.js ─────────────────────────────────────────────────────
@@ -363,7 +464,8 @@ export default function EditorModule() {
         const mat = new THREE.MeshStandardMaterial({
           color: obj.color, roughness: 0.65, metalness: 0.08,
         });
-        const mesh = new THREE.Mesh(getGeo(obj.geometry), mat);
+        const initialGeom = obj.geometry === 'csg' ? new THREE.BufferGeometry() : getGeo(obj.geometry);
+        const mesh = new THREE.Mesh(initialGeom, mat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         mesh.name = id;
@@ -375,46 +477,78 @@ export default function EditorModule() {
       mesh.rotation.set(obj.rotation.x, obj.rotation.y, obj.rotation.z);
       mesh.scale.set(obj.scale.x, obj.scale.y, obj.scale.z);
       
-      const hasText = !!obj.text;
-      const textSurfacesStr = (obj.textSurfaces || []).join(',');
-      const textureKey = `${obj.color}_${obj.text}_${obj.textColor}_${obj.textFont}_${obj.textSize}_${textSurfacesStr}_${obj.geometry}`;
-      
-      if (!mesh.userData.textureKey || mesh.userData.textureKey !== textureKey) {
-        clearMeshMaterials(mesh);
+      if (obj.geometry === 'csg') {
+        const csgKey = getCSGKey(obj);
+        if (!mesh.userData.csgKey || mesh.userData.csgKey !== csgKey) {
+          // Clean up old custom geometry
+          if (mesh.geometry && mesh.geometry !== GEO[obj.geometry]) {
+            mesh.geometry.dispose();
+          }
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach(m => m.dispose());
+          } else if (mesh.material) {
+            mesh.material.dispose();
+          }
+
+          const { geometry, materials } = buildCSGGeometry(obj);
+          mesh.geometry = geometry;
+          mesh.material = materials;
+          mesh.userData.csgKey = csgKey;
+          mesh.userData.textureKey = 'csg_rendered';
+        }
+      } else {
+        const hasText = !!obj.text;
+        const textSurfacesStr = (obj.textSurfaces || []).join(',');
+        const textureKey = `${obj.color}_${obj.text}_${obj.textColor}_${obj.textFont}_${obj.textSize}_${textSurfacesStr}_${obj.geometry}_${obj.isSubtractive}`;
         
-        if (hasText) {
-          const canvas = createTextCanvas(obj.color, obj.text, obj.textColor, obj.textFont, obj.textSize);
-          const texture = new THREE.CanvasTexture(canvas);
-          const faces = SHAPE_FACES[obj.geometry];
+        if (!mesh.userData.textureKey || mesh.userData.textureKey !== textureKey) {
+          clearMeshMaterials(mesh);
           
-          if (faces) {
-            const textSurfaces = obj.textSurfaces || [];
-            const materials = faces.map(faceName => {
-              const hasFaceText = textSurfaces.length === 0 || textSurfaces.includes(faceName);
-              return new THREE.MeshStandardMaterial({
-                color: hasFaceText ? 0xffffff : obj.color,
-                map: hasFaceText ? texture : null,
+          if (obj.isSubtractive) {
+            mesh.material = new THREE.MeshStandardMaterial({
+              color: 0xef4444,
+              roughness: 0.8,
+              metalness: 0.1,
+              transparent: true,
+              opacity: 0.45,
+              emissive: 0xff0000,
+              emissiveIntensity: 0.25,
+              side: THREE.DoubleSide
+            });
+          } else if (hasText) {
+            const canvas = createTextCanvas(obj.color, obj.text, obj.textColor, obj.textFont, obj.textSize);
+            const texture = new THREE.CanvasTexture(canvas);
+            const faces = SHAPE_FACES[obj.geometry];
+            
+            if (faces) {
+              const textSurfaces = obj.textSurfaces || [];
+              const materials = faces.map(faceName => {
+                const hasFaceText = textSurfaces.length === 0 || textSurfaces.includes(faceName);
+                return new THREE.MeshStandardMaterial({
+                  color: hasFaceText ? 0xffffff : obj.color,
+                  map: hasFaceText ? texture : null,
+                  roughness: 0.65,
+                  metalness: 0.08
+                });
+              });
+              mesh.material = materials;
+            } else {
+              mesh.material = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                map: texture,
                 roughness: 0.65,
                 metalness: 0.08
               });
-            });
-            mesh.material = materials;
+            }
           } else {
             mesh.material = new THREE.MeshStandardMaterial({
-              color: 0xffffff,
-              map: texture,
+              color: obj.color,
               roughness: 0.65,
               metalness: 0.08
             });
           }
-        } else {
-          mesh.material = new THREE.MeshStandardMaterial({
-            color: obj.color,
-            roughness: 0.65,
-            metalness: 0.08
-          });
+          mesh.userData.textureKey = textureKey;
         }
-        mesh.userData.textureKey = textureKey;
       }
       
       const sel = selectedObjectIds.includes(id);
@@ -819,6 +953,11 @@ export default function EditorModule() {
 
   function onKeyDown(e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'g') {
+      e.preventDefault();
+      carveSelectedObjects();
+      return;
+    }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
       e.preventDefault();
       selectObjects(Object.keys(editorObjects), false);
@@ -961,9 +1100,11 @@ export default function EditorModule() {
         <div className="obj-list">
           {objList.map(obj => (
             <div key={obj.id} className={`obj-item ${selectedObjectIds.includes(obj.id)?'selected':''}`} onClick={(e) => selectObject(obj.id, e.ctrlKey)}>
-              <div className="obj-dot" style={{ background:obj.color }} />
-              <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:11 }}>{obj.name}</span>
-              <span style={{ fontSize:10, opacity:0.35 }}>{obj.geometry}</span>
+              <div className="obj-dot" style={{ background: obj.isSubtractive ? '#ef4444' : obj.color, border: obj.isSubtractive ? '1px dashed #ff8888' : 'none' }} />
+              <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:11, color: obj.isSubtractive ? '#ff8888' : 'inherit' }}>
+                {obj.name} {obj.isSubtractive && ' 🕳️'}
+              </span>
+              <span style={{ fontSize:10, opacity:0.35 }}>{obj.geometry === 'csg' ? 'carved' : obj.geometry}</span>
             </div>
           ))}
           {!objList.length && (
@@ -976,6 +1117,24 @@ export default function EditorModule() {
         <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', marginTop:'auto', display:'flex', flexDirection:'column', gap:6 }}>
           {selected && (
             <>
+              {selectedObjectIds.length >= 2 && (
+                <button
+                  className="btn sm"
+                  style={{ justifyContent:'center', background: 'var(--accent)', color: '#fff' }}
+                  onClick={carveSelectedObjects}
+                >
+                  🪓 Carve / Group (Ctrl+G)
+                </button>
+              )}
+              {selectedObjectIds.length === 1 && selected.geometry === 'csg' && (
+                <button
+                  className="btn sm"
+                  style={{ justifyContent:'center', background: 'rgba(78, 205, 196, 0.2)', color: '#4ECDC4', border: '1px solid #4ECDC4' }}
+                  onClick={uncarveSelectedObject}
+                >
+                  🔓 Uncarve / Ungroup
+                </button>
+              )}
               <button className="btn sm" style={{ justifyContent:'center' }} onClick={() => duplicateObjects(selectedObjectIds)}>⧉ Duplicate</button>
               <button className="btn sm danger" style={{ justifyContent:'center' }} onClick={() => deleteObjects(selectedObjectIds)}>🗑 Delete</button>
             </>
@@ -1115,6 +1274,30 @@ export default function EditorModule() {
                 ))}
               </div>
             </div>
+
+            {selected.geometry !== 'csg' && (
+              <div className="panel-section">
+                <div className="panel-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Subtractive (Cutter) 🕳️</span>
+                  <input
+                    type="checkbox"
+                    checked={!!selected.isSubtractive}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      if (selectedObjectIds.length > 1) {
+                        updateObjectsProp(selectedObjectIds, 'isSubtractive', val);
+                      } else {
+                        updateObjectProp(selectedObjectId, 'isSubtractive', val);
+                      }
+                    }}
+                    style={{ cursor: 'pointer', width: 16, height: 16 }}
+                  />
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4, lineHeight: 1.4 }}>
+                  Subtractive shapes carve space out of other Solid shapes when merged.
+                </div>
+              </div>
+            )}
 
             <div className="panel-section">
               <div className="panel-label">Text Overlay</div>

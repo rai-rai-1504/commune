@@ -277,8 +277,8 @@
           "name": "Office_Window2"
         }
       ],
-      "col": 9.705882352941176,
-      "row": 10.970588235294118,
+      "col": 9.781531111067075,
+      "row": 10.962182817724575,
       "rotation": 2.1293956421384577,
       "color": "#556688",
       "placedBy": "asasa",
@@ -2170,131 +2170,6 @@
       "height": 2
     },
     {
-      "id": "a0678b06-3359-4b1a-b480-ab3a71ff0e2b",
-      "name": "Fast Food Diner",
-      "objects": [
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 0.6,
-            "z": 0
-          },
-          "scale": {
-            "x": 3,
-            "y": 1.2,
-            "z": 2.2
-          },
-          "color": "#f7fafc",
-          "name": "Diner_Body"
-        },
-        {
-          "geometry": "torus",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "scale": {
-            "x": 3.1,
-            "y": 2.3,
-            "z": 0.1
-          },
-          "rotation": {
-            "x": 1.5707963267948966,
-            "y": 0,
-            "z": 0
-          },
-          "color": "#ed64a6",
-          "name": "Diner_NeonRoof"
-        },
-        {
-          "geometry": "cylinder",
-          "position": {
-            "x": -0.8,
-            "y": 1.6,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.4,
-            "y": 0.8,
-            "z": 0.4
-          },
-          "color": "#ecc94b",
-          "name": "Diner_RoofSign"
-        },
-        {
-          "geometry": "cone",
-          "position": {
-            "x": -0.8,
-            "y": 2.1,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 0.3,
-            "z": 0.3
-          },
-          "color": "#e53e3e",
-          "name": "Diner_SignStar"
-        },
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0.4,
-            "y": 0.45,
-            "z": 1.11
-          },
-          "scale": {
-            "x": 0.6,
-            "y": 0.9,
-            "z": 0.05
-          },
-          "color": "#dd6b20",
-          "name": "Diner_Door"
-        },
-        {
-          "geometry": "cylinder",
-          "position": {
-            "x": -1.8,
-            "y": 0.25,
-            "z": 1.2
-          },
-          "scale": {
-            "x": 0.5,
-            "y": 0.5,
-            "z": 0.5
-          },
-          "color": "#718096",
-          "name": "Diner_Table"
-        },
-        {
-          "geometry": "cylinder",
-          "position": {
-            "x": -1.8,
-            "y": 0.15,
-            "z": 1.6
-          },
-          "scale": {
-            "x": 0.2,
-            "y": 0.3,
-            "z": 0.2
-          },
-          "color": "#e53e3e",
-          "name": "Diner_Chair"
-        }
-      ],
-      "col": 21.0599326498889,
-      "row": 17.76433352771542,
-      "rotation": 2.7487887166956737,
-      "color": "#f7fafc",
-      "placedBy": "asasa",
-      "placedAt": 1781504377323,
-      "width": 2,
-      "height": 2,
-      "scaleMultiplier": 0.6
-    },
-    {
       "id": "0a552c49-3072-4673-9474-4ccfed7fc83e",
       "name": "Overpass Bridge",
       "objects": [
@@ -2374,9 +2249,9 @@
           "name": "Bridge_Pillar_Right"
         }
       ],
-      "col": 23.190014910249573,
-      "row": 17.60357260240518,
-      "rotation": 6.283185307179586,
+      "col": 23.198420422649555,
+      "row": 17.645600164405078,
+      "rotation": 0.05235987755983018,
       "color": "#445566",
       "placedBy": "asasa",
       "placedAt": 1781504423098,
@@ -2755,9 +2630,9 @@
           "name": "Stn_Canopy"
         }
       ],
-      "col": 22.53817020476956,
-      "row": 18.17501202563928,
-      "rotation": 3.084841692694896,
+      "col": 23.056639268734784,
+      "row": 18.30109471163897,
+      "rotation": 3.1546548627746667,
       "color": "#445566",
       "placedBy": "asasa",
       "placedAt": 1781505634173,
@@ -2879,9 +2754,9 @@
           "name": "Diner_Chair"
         }
       ],
-      "col": 22.660428415866946,
-      "row": 17.03421240583909,
-      "rotation": -0.21625162861701414,
+      "col": 22.674441401218868,
+      "row": 16.95013449372756,
+      "rotation": 0.010641174142233645,
       "color": "#f7fafc",
       "placedBy": "asasa",
       "placedAt": 1781505645418,
@@ -2973,8 +2848,8 @@
           "name": "Factory_Annex"
         }
       ],
-      "col": 30.750653806276656,
-      "row": 1.5559207596892803,
+      "col": 28.485422935419702,
+      "row": 0.4042084425607744,
       "rotation": -3.032945447810833,
       "color": "#667788",
       "placedBy": "asasa",
@@ -204512,184 +204387,6 @@
       "height": 2
     },
     {
-      "id": "384017b6-f14c-409a-a6c8-a14070e6af11",
-      "name": "Overpass Bridge",
-      "objects": [
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "scale": {
-            "x": 4.5,
-            "y": 0.2,
-            "z": 1.6
-          },
-          "color": "#445566",
-          "name": "Bridge_Road"
-        },
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.35,
-            "z": 0.75
-          },
-          "scale": {
-            "x": 4.5,
-            "y": 0.15,
-            "z": 0.08
-          },
-          "color": "#EF9F27",
-          "name": "Bridge_Rail_Left"
-        },
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.35,
-            "z": -0.75
-          },
-          "scale": {
-            "x": 4.5,
-            "y": 0.15,
-            "z": 0.08
-          },
-          "color": "#EF9F27",
-          "name": "Bridge_Rail_Right"
-        },
-        {
-          "geometry": "cylinder",
-          "position": {
-            "x": -1.5,
-            "y": 0.6,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.4,
-            "y": 1.2,
-            "z": 0.4
-          },
-          "color": "#8892a4",
-          "name": "Bridge_Pillar_Left"
-        },
-        {
-          "geometry": "cylinder",
-          "position": {
-            "x": 1.5,
-            "y": 0.6,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.4,
-            "y": 1.2,
-            "z": 0.4
-          },
-          "color": "#8892a4",
-          "name": "Bridge_Pillar_Right"
-        }
-      ],
-      "col": 52.55618304328371,
-      "row": 22.20193523252399,
-      "rotation": 3.141592653589793,
-      "color": "#445566",
-      "placedBy": "asasa",
-      "placedAt": 1781607980216,
-      "width": 2,
-      "height": 2
-    },
-    {
-      "id": "d2dbb8db-52ca-4a35-9078-bd5abe8b8f7c",
-      "name": "Overpass Bridge",
-      "objects": [
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "scale": {
-            "x": 4.5,
-            "y": 0.2,
-            "z": 1.6
-          },
-          "color": "#445566",
-          "name": "Bridge_Road"
-        },
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.35,
-            "z": 0.75
-          },
-          "scale": {
-            "x": 4.5,
-            "y": 0.15,
-            "z": 0.08
-          },
-          "color": "#EF9F27",
-          "name": "Bridge_Rail_Left"
-        },
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.35,
-            "z": -0.75
-          },
-          "scale": {
-            "x": 4.5,
-            "y": 0.15,
-            "z": 0.08
-          },
-          "color": "#EF9F27",
-          "name": "Bridge_Rail_Right"
-        },
-        {
-          "geometry": "cylinder",
-          "position": {
-            "x": -1.5,
-            "y": 0.6,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.4,
-            "y": 1.2,
-            "z": 0.4
-          },
-          "color": "#8892a4",
-          "name": "Bridge_Pillar_Left"
-        },
-        {
-          "geometry": "cylinder",
-          "position": {
-            "x": 1.5,
-            "y": 0.6,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.4,
-            "y": 1.2,
-            "z": 0.4
-          },
-          "color": "#8892a4",
-          "name": "Bridge_Pillar_Right"
-        }
-      ],
-      "col": 53.80407076850498,
-      "row": 22.038945970498908,
-      "rotation": 3.4033920413889422,
-      "color": "#445566",
-      "placedBy": "asasa",
-      "placedAt": 1781607981844,
-      "width": 2,
-      "height": 2
-    },
-    {
       "id": "25bb5e45-f430-4a53-a119-f88688b485fe",
       "name": "Overpass Bridge",
       "objects": [
@@ -204775,95 +204472,6 @@
       "color": "#445566",
       "placedBy": "asasa",
       "placedAt": 1781607982630,
-      "width": 2,
-      "height": 2
-    },
-    {
-      "id": "34e8340c-52a7-4a57-9365-cff42b5a47d1",
-      "name": "Overpass Bridge",
-      "objects": [
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "scale": {
-            "x": 4.5,
-            "y": 0.2,
-            "z": 1.6
-          },
-          "color": "#445566",
-          "name": "Bridge_Road"
-        },
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.35,
-            "z": 0.75
-          },
-          "scale": {
-            "x": 4.5,
-            "y": 0.15,
-            "z": 0.08
-          },
-          "color": "#EF9F27",
-          "name": "Bridge_Rail_Left"
-        },
-        {
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.35,
-            "z": -0.75
-          },
-          "scale": {
-            "x": 4.5,
-            "y": 0.15,
-            "z": 0.08
-          },
-          "color": "#EF9F27",
-          "name": "Bridge_Rail_Right"
-        },
-        {
-          "geometry": "cylinder",
-          "position": {
-            "x": -1.5,
-            "y": 0.6,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.4,
-            "y": 1.2,
-            "z": 0.4
-          },
-          "color": "#8892a4",
-          "name": "Bridge_Pillar_Left"
-        },
-        {
-          "geometry": "cylinder",
-          "position": {
-            "x": 1.5,
-            "y": 0.6,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.4,
-            "y": 1.2,
-            "z": 0.4
-          },
-          "color": "#8892a4",
-          "name": "Bridge_Pillar_Right"
-        }
-      ],
-      "col": 51.25787808904991,
-      "row": 22.203382371641148,
-      "rotation": 3.141592653589793,
-      "color": "#445566",
-      "placedBy": "asasa",
-      "placedAt": 1781607983372,
       "width": 2,
       "height": 2
     },
@@ -229698,132 +229306,6 @@
       "height": 1.5
     },
     {
-      "id": "81c1c098-4e01-45e6-8c50-4b357d795e40",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 5.0588235294117645,
-      "row": 12.5,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669501719,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "80749ed4-bc06-449e-bbef-283c3d420fd8",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 5.352941176470588,
-      "row": 12.5,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669502376,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "eba77d1b-34e1-4e89-bc3a-b60db97effe1",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 5.647058823529412,
-      "row": 12.382352941176471,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669503272,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
       "id": "27b4f697-c3ba-4c10-b1d1-95c6d6f85d08",
       "name": "literal wall bro",
       "objects": [
@@ -229856,9 +229338,9 @@
           "color_ts": 1781669487783
         }
       ],
-      "col": 5.887331785634514,
-      "row": 12.773084154990938,
-      "rotation": 0,
+      "col": 10.733802751289273,
+      "row": 17.939771148897986,
+      "rotation": 5.532693728822068,
       "color": "#4ECDC4",
       "placedBy": "asasa",
       "placedAt": 1781669505230,
@@ -229898,390 +229380,12 @@
           "color_ts": 1781669487783
         }
       ],
-      "col": 6.117434176969193,
-      "row": 12.589280387334448,
-      "rotation": 0,
+      "col": 9.556497161941476,
+      "row": 19.465850624081675,
+      "rotation": 5.829399701661085,
       "color": "#4ECDC4",
       "placedBy": "asasa",
       "placedAt": 1781669505929,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "49184c8f-b5a4-406a-8275-e534cf36540b",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 6.353547430406553,
-      "row": 12.23840113759894,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669506168,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "94346746-629a-43f3-bcdd-6730ef8c98f2",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 6.4798408720407465,
-      "row": 11.986723066446855,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669506428,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "49b7d72a-606e-464a-97d8-b2d6cdbc8da1",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 6.395785305628197,
-      "row": 11.717745253926694,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669506634,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "727d91ac-b3a6-48ed-bccc-1c15e13901a3",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 6.076374153260505,
-      "row": 11.650500800796653,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669506844,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "48bd7631-fcc8-4210-ac13-5115df3cf524",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 5.933479690359169,
-      "row": 11.558039677742848,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669507080,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "b8443ca9-f3e7-4ab4-af87-2078cd0abbf2",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 5.832613010664108,
-      "row": 11.41514521484151,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669507297,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "0a306b49-126a-4772-a633-da0760c83fc0",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 5.487985188372652,
-      "row": 11.406739658200257,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669507556,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "739d4a8f-9c30-498e-b20c-f9c1f2801019",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 5.361901838753826,
-      "row": 11.473984111330298,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669507796,
-      "width": 0.3000000000000007,
-      "height": 2.4000000000000004
-    },
-    {
-      "id": "b33fade3-32dc-4648-b974-f07605da1096",
-      "name": "literal wall bro",
-      "objects": [
-        {
-          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
-          "type": "mesh",
-          "geometry": "box",
-          "position": {
-            "x": 0,
-            "y": 1.2,
-            "z": 0
-          },
-          "rotation": {
-            "x": 0,
-            "y": 0.0008726646259971648,
-            "z": 0
-          },
-          "scale": {
-            "x": 0.3,
-            "y": 2.5,
-            "z": 2.4
-          },
-          "color": "#888",
-          "name": "Box_b087",
-          "createdBy": "asasa",
-          "timestamp": 1781669355866,
-          "rotation_ts": 1781669405203,
-          "scale_ts": 1781669428060,
-          "position_ts": 1781669458618,
-          "color_ts": 1781669487783
-        }
-      ],
-      "col": 6.210863059520586,
-      "row": 11.280656308581431,
-      "rotation": 0,
-      "color": "#4ECDC4",
-      "placedBy": "asasa",
-      "placedAt": 1781669508904,
       "width": 0.3000000000000007,
       "height": 2.4000000000000004
     },
@@ -230318,9 +229422,9 @@
           "color_ts": 1781669487783
         }
       ],
-      "col": 9.72920086758109,
-      "row": 15.005526455889905,
-      "rotation": 0,
+      "col": 9.839314488166107,
+      "row": 18.98299773149621,
+      "rotation": 5.672320068981605,
       "color": "#4ECDC4",
       "placedBy": "asasa",
       "placedAt": 1781669509858,
@@ -230360,9 +229464,9 @@
           "color_ts": 1781669487783
         }
       ],
-      "col": 6.580707551735808,
-      "row": 12.953362080191184,
-      "rotation": 0,
+      "col": 10.277196752608974,
+      "row": 18.444854267496584,
+      "rotation": 5.55014702134201,
       "color": "#4ECDC4",
       "placedBy": "asasa",
       "placedAt": 1781669510069,
@@ -230622,8 +229726,8 @@
       "height": 2.4000000000000004
     },
     {
-      "id": "03e6926f-1ef5-4e87-b264-072ae19d31bc",
-      "name": "a fucking wall",
+      "id": "ba3f8db1-31b8-484d-80f8-9145567ad4f1",
+      "name": "literal wall bro",
       "objects": [
         {
           "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
@@ -230647,21 +229751,4956 @@
           "color": "#888",
           "name": "Box_b087",
           "createdBy": "asasa",
-          "timestamp": 1781669355873,
+          "timestamp": 1781669355866,
           "rotation_ts": 1781669405203,
           "scale_ts": 1781669428060,
           "position_ts": 1781669458618,
           "color_ts": 1781669487783
         }
       ],
-      "col": 6.970588235294118,
-      "row": 11.735294117647058,
-      "rotation": 0,
+      "col": 11.189168543838795,
+      "row": 17.459851510794874,
+      "rotation": 5.497787143782141,
       "color": "#4ECDC4",
       "placedBy": "asasa",
-      "placedAt": 1781671495720,
+      "placedAt": 1781677483051,
       "width": 0.3000000000000007,
       "height": 2.4000000000000004
+    },
+    {
+      "id": "dfd8c301-7582-4c7a-8918-cdaf46623921",
+      "name": "literal wall bro",
+      "objects": [
+        {
+          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 1.2,
+            "z": 0
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0.0008726646259971648,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.3,
+            "y": 2.5,
+            "z": 2.4
+          },
+          "color": "#888",
+          "name": "Box_b087",
+          "createdBy": "asasa",
+          "timestamp": 1781669355866,
+          "rotation_ts": 1781669405203,
+          "scale_ts": 1781669428060,
+          "position_ts": 1781669458618,
+          "color_ts": 1781669487783
+        }
+      ],
+      "col": 11.667492283844533,
+      "row": 17.022025169498473,
+      "rotation": 5.427973973702414,
+      "color": "#4ECDC4",
+      "placedBy": "asasa",
+      "placedAt": 1781677491449,
+      "width": 0.3000000000000007,
+      "height": 2.4000000000000004
+    },
+    {
+      "id": "9e8cbeab-8046-473c-ba2a-12851bc30d51",
+      "name": "literal wall bro",
+      "objects": [
+        {
+          "id": "b0875bec-dc1e-40d8-8dd4-7fc158486a14",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 1.2,
+            "z": 0
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0.0008726646259971648,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.3,
+            "y": 2.5,
+            "z": 2.4
+          },
+          "color": "#888",
+          "name": "Box_b087",
+          "createdBy": "asasa",
+          "timestamp": 1781669355866,
+          "rotation_ts": 1781669405203,
+          "scale_ts": 1781669428060,
+          "position_ts": 1781669458618,
+          "color_ts": 1781669487783
+        }
+      ],
+      "col": 8.952540237289375,
+      "row": 19.131791973258334,
+      "rotation": 5.811946409141143,
+      "color": "#4ECDC4",
+      "placedBy": "asasa",
+      "placedAt": 1781677503019,
+      "width": 0.3000000000000007,
+      "height": 2.4000000000000004
+    },
+    {
+      "id": "ea449278-7b94-44bc-ba18-d321fba52942",
+      "name": "bridge start/end",
+      "objects": [
+        {
+          "id": "598a7940-2eb1-44be-8451-e45abd17fc80",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.7079999999999995,
+            "y": 1.2,
+            "z": 0.0129999999999999
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.2,
+            "z": 1.6
+          },
+          "color": "#445566",
+          "name": "Bridge_Road",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537
+        },
+        {
+          "id": "10b277b9-dc72-4b77-98e7-9fc9fc5e56e4",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.7079999999999995,
+            "y": 1.35,
+            "z": 0.7629999999999999
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.15,
+            "z": 0.08
+          },
+          "color": "#EF9F27",
+          "name": "Bridge_Rail_Left",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537
+        },
+        {
+          "id": "b03b2696-b78b-40ac-bdce-2e66f1c0987c",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.7079999999999995,
+            "y": 1.35,
+            "z": -0.7370000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.15,
+            "z": 0.08
+          },
+          "color": "#EF9F27",
+          "name": "Bridge_Rail_Right",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537
+        },
+        {
+          "id": "77354506-0fd0-4aa1-b2e5-993dd35b039c",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.7920000000000007,
+            "y": 0.6,
+            "z": 0.0129999999999999
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.4,
+            "y": 1.2,
+            "z": 0.4
+          },
+          "color": "#8892a4",
+          "name": "Bridge_Pillar_Left",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537,
+          "position_ts": 1781678105509
+        },
+        {
+          "id": "7ac342d0-9d56-41c6-9947-7ef80de4dcba",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": 2.2079999999999993,
+            "y": 0.6,
+            "z": 0.0129999999999999
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.4,
+            "y": 1.2,
+            "z": 0.4
+          },
+          "color": "#8892a4",
+          "name": "Bridge_Pillar_Right",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537
+        },
+        {
+          "id": "84d5c09a-32d4-41ac-b436-af4a611c7da1",
+          "type": "mesh",
+          "geometry": "wedge",
+          "position": {
+            "x": -2.172,
+            "y": -0.1,
+            "z": -0.027000000000000135
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 1.572,
+            "z": 1.572
+          },
+          "color": "#C8A028",
+          "name": "Wedge_84d5",
+          "createdBy": "asasa",
+          "timestamp": 1781678061563,
+          "position_ts": 1781678165555,
+          "rotation_ts": 1781678122856,
+          "scale_ts": 1781678093557,
+          "color_ts": 1781678145428
+        }
+      ],
+      "col": 19.13737253205957,
+      "row": 18.049171879210963,
+      "rotation": 0.03825345293777627,
+      "color": "#4ECDC4",
+      "placedBy": "asasa",
+      "placedAt": 1781678195632,
+      "width": 5.9159999999999995,
+      "height": 1.6260000000000003
+    },
+    {
+      "id": "876dba38-27d1-436f-8982-8dca8922d283",
+      "name": "Overpass Bridge",
+      "objects": [
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 1.2,
+            "z": 0
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.2,
+            "z": 1.6
+          },
+          "color": "#445566",
+          "name": "Bridge_Road"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 1.35,
+            "z": 0.75
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.15,
+            "z": 0.08
+          },
+          "color": "#EF9F27",
+          "name": "Bridge_Rail_Left"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 1.35,
+            "z": -0.75
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.15,
+            "z": 0.08
+          },
+          "color": "#EF9F27",
+          "name": "Bridge_Rail_Right"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.5,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.4,
+            "y": 1.2,
+            "z": 0.4
+          },
+          "color": "#8892a4",
+          "name": "Bridge_Pillar_Left"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.5,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.4,
+            "y": 1.2,
+            "z": 0.4
+          },
+          "color": "#8892a4",
+          "name": "Bridge_Pillar_Right"
+        }
+      ],
+      "col": 21.894455767782254,
+      "row": 17.744962544268972,
+      "rotation": 0.09808768504845311,
+      "color": "#445566",
+      "placedBy": "asasa",
+      "placedAt": 1781678248681,
+      "width": 2,
+      "height": 2
+    },
+    {
+      "id": "6372f3f4-b739-45fc-900c-2614c0656246",
+      "name": "Overpass Bridge",
+      "objects": [
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 1.2,
+            "z": 0
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.2,
+            "z": 1.6
+          },
+          "color": "#445566",
+          "name": "Bridge_Road"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 1.35,
+            "z": 0.75
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.15,
+            "z": 0.08
+          },
+          "color": "#EF9F27",
+          "name": "Bridge_Rail_Left"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 1.35,
+            "z": -0.75
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.15,
+            "z": 0.08
+          },
+          "color": "#EF9F27",
+          "name": "Bridge_Rail_Right"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.5,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.4,
+            "y": 1.2,
+            "z": 0.4
+          },
+          "color": "#8892a4",
+          "name": "Bridge_Pillar_Left"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.5,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.4,
+            "y": 1.2,
+            "z": 0.4
+          },
+          "color": "#8892a4",
+          "name": "Bridge_Pillar_Right"
+        }
+      ],
+      "col": 20.637770993662958,
+      "row": 17.912782231502128,
+      "rotation": 3.2996771457731064,
+      "color": "#445566",
+      "placedBy": "asasa",
+      "placedAt": 1781678249708,
+      "width": 2,
+      "height": 2
+    },
+    {
+      "id": "60270094-7ca4-41af-a1cf-2fa3de4b5dda",
+      "name": "bridge start/end",
+      "objects": [
+        {
+          "id": "598a7940-2eb1-44be-8451-e45abd17fc80",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.7079999999999995,
+            "y": 1.2,
+            "z": 0.0129999999999999
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.2,
+            "z": 1.6
+          },
+          "color": "#445566",
+          "name": "Bridge_Road",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537
+        },
+        {
+          "id": "10b277b9-dc72-4b77-98e7-9fc9fc5e56e4",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.7079999999999995,
+            "y": 1.35,
+            "z": 0.7629999999999999
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.15,
+            "z": 0.08
+          },
+          "color": "#EF9F27",
+          "name": "Bridge_Rail_Left",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537
+        },
+        {
+          "id": "b03b2696-b78b-40ac-bdce-2e66f1c0987c",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.7079999999999995,
+            "y": 1.35,
+            "z": -0.7370000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 4.5,
+            "y": 0.15,
+            "z": 0.08
+          },
+          "color": "#EF9F27",
+          "name": "Bridge_Rail_Right",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537
+        },
+        {
+          "id": "77354506-0fd0-4aa1-b2e5-993dd35b039c",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.7920000000000007,
+            "y": 0.6,
+            "z": 0.0129999999999999
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.4,
+            "y": 1.2,
+            "z": 0.4
+          },
+          "color": "#8892a4",
+          "name": "Bridge_Pillar_Left",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537,
+          "position_ts": 1781678105509
+        },
+        {
+          "id": "7ac342d0-9d56-41c6-9947-7ef80de4dcba",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": 2.2079999999999993,
+            "y": 0.6,
+            "z": 0.0129999999999999
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.4,
+            "y": 1.2,
+            "z": 0.4
+          },
+          "color": "#8892a4",
+          "name": "Bridge_Pillar_Right",
+          "createdBy": "asasa",
+          "timestamp": 1781677897537
+        },
+        {
+          "id": "84d5c09a-32d4-41ac-b436-af4a611c7da1",
+          "type": "mesh",
+          "geometry": "wedge",
+          "position": {
+            "x": -2.172,
+            "y": -0.1,
+            "z": -0.027000000000000135
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 1.572,
+            "z": 1.572
+          },
+          "color": "#C8A028",
+          "name": "Wedge_84d5",
+          "createdBy": "asasa",
+          "timestamp": 1781678061563,
+          "position_ts": 1781678165555,
+          "rotation_ts": 1781678122856,
+          "scale_ts": 1781678093557,
+          "color_ts": 1781678145428
+        }
+      ],
+      "col": 51.34546493142504,
+      "row": 22.320832191511816,
+      "rotation": 2.9670597283903604,
+      "color": "#445566",
+      "placedBy": "asasa",
+      "placedAt": 1781678553964,
+      "width": 5.9159999999999995,
+      "height": 1.6260000000000003
+    },
+    {
+      "id": "d51aded2-9ca6-414f-87ca-1f996a5dec25",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 32.59210950553536,
+      "row": 11.429920678337195,
+      "rotation": 1.762782544514268,
+      "color": "#4ECDC4",
+      "placedBy": "asasa",
+      "placedAt": 1781680142351,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "ab9d8c16-f8ee-49c4-87e3-632a97829662",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 33.04274815856168,
+      "row": 13.9623056955749,
+      "rotation": 1.7453292519943295,
+      "color": "#4ECDC4",
+      "placedBy": "asasa",
+      "placedAt": 1781680144453,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "62222dff-7ff6-4848-a34c-223e9613001e",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 33.50408291928363,
+      "row": 16.457872686167903,
+      "rotation": 1.762782544514275,
+      "color": "#4ECDC4",
+      "placedBy": "asasa",
+      "placedAt": 1781680150240,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "f09ff433-c922-4336-ae49-ba174bfe3cf1",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 34.00473638399463,
+      "row": 18.971762358123236,
+      "rotation": 1.7627825445142715,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680242858,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "2def9c0e-4fb9-4857-befe-77dc85c890fe",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 34.52330639218398,
+      "row": 21.497384818638693,
+      "rotation": 1.7802358370342137,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680503530,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "1174baff-b27f-4e4d-b495-fba258256f5a",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 35.129015903509284,
+      "row": 23.947688380286152,
+      "rotation": 1.8325957145940404,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680504797,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "e956f3b3-9416-4471-a019-58393354696c",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 31.704402653540726,
+      "row": 6.361890086162756,
+      "rotation": 1.7453292519943258,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680505807,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "d0912889-37cc-49e6-ac62-81bd5cd5c47c",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 31.272090624429183,
+      "row": 3.814006447111956,
+      "rotation": 1.7278759594743782,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680506528,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "a05b62b3-0dd7-4f28-bb78-55edeae13584",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 35.88088268993013,
+      "row": 26.352887964387993,
+      "rotation": 1.9024088846738163,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680507214,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "2f753925-1743-43ee-b0b5-171f57c35954",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 32.141876053433364,
+      "row": 8.923096866624416,
+      "rotation": 1.745329251994331,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680508038,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "516f0b08-16f8-46de-9ff7-616299191284",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 30.870445651769543,
+      "row": 1.2724526189113565,
+      "rotation": 1.727875959474387,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680508959,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "e840c2a0-8ded-4111-b92e-32085e63b7c2",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 26.474413084440613,
+      "row": -7.022475091920376,
+      "rotation": 0,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680719894,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "880bbda6-6e17-4474-9d7d-47ad77a8b088",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 30.31880115346077,
+      "row": -3.763240475217378,
+      "rotation": 1.6755160819145543,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680720570,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "e57461e9-c3ef-4bba-b784-5f175db7d359",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 30.06054632423076,
+      "row": -6.3178730045434275,
+      "rotation": 1.658062789394612,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680721343,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "3371e1a9-025e-45d2-bfe6-d763d50e8fbb",
+      "name": "BIG FLYOVER",
+      "objects": [
+        {
+          "id": "cfab1159-5de4-40cd-bd1d-483f16c651e9",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 3.5,
+            "z": -0.03499999999999992
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.8,
+            "y": 0.15,
+            "z": 4.95
+          },
+          "color": "#7f8076",
+          "name": "Box_cfab",
+          "createdBy": "asasa",
+          "timestamp": 1781679069658,
+          "rotation_ts": 1781679094192,
+          "position_ts": 1781679984511,
+          "scale_ts": 1781679135066,
+          "color_ts": 1781679766136
+        },
+        {
+          "id": "18b7f8c5-cce4-483c-ad56-828b0e215204",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": -2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7",
+          "createdBy": "asasa",
+          "timestamp": 1781679143171,
+          "position_ts": 1781680048291,
+          "scale_ts": 1781679552600,
+          "rotation_ts": 1781679375329
+        },
+        {
+          "id": "1de2885f-fcaa-4101-8a63-ee8e75fc43ed",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 3.8099999999999996,
+            "y": 3.6,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2",
+          "createdBy": "asasa",
+          "timestamp": 1781679148520,
+          "position_ts": 1781680019752,
+          "scale_ts": 1781679167794
+        },
+        {
+          "id": "c31b0224-d48e-43b2-a263-b2540d355978",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 2.07,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679190153,
+          "position_ts": 1781680026513
+        },
+        {
+          "id": "9aad4caf-e9ca-4ffc-861f-2c2e5d6cc24e",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.21999999999999986,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679206107,
+          "position_ts": 1781680036350
+        },
+        {
+          "id": "cd7e95e7-f873-42d4-a5e9-9dfc5acf9a5a",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -1.55,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679226299,
+          "position_ts": 1781680009953
+        },
+        {
+          "id": "502fc6d9-aa89-4c78-b0d2-bd6bfbed8d99",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": -3.2700000000000005,
+            "y": 3.6,
+            "z": 0.125
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 0.2,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Box_1de2_copy_copy_copy_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679234361,
+          "position_ts": 1781679996066
+        },
+        {
+          "id": "11e856cd-01f7-4f3f-9202-9f3dcb82c8a2",
+          "type": "mesh",
+          "geometry": "box",
+          "position": {
+            "x": 0.2699999999999999,
+            "y": 4.5,
+            "z": 2.295
+          },
+          "rotation": {
+            "x": 0,
+            "y": -1.5707963267948966,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.25,
+            "y": 1.9,
+            "z": 4.5
+          },
+          "color": "#FFEAA7",
+          "name": "Box_18b7_copy",
+          "createdBy": "asasa",
+          "timestamp": 1781679564552,
+          "position_ts": 1781680055425
+        },
+        {
+          "id": "e2bf8642-4620-43a6-b679-a31c7e1b5fe3",
+          "type": "mesh",
+          "geometry": "cylinder",
+          "position": {
+            "x": -1.1102230246251565e-16,
+            "y": 1.7,
+            "z": 0.15500000000000003
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.572,
+            "y": 3.522,
+            "z": 1.572
+          },
+          "color": "#4ECDC4",
+          "name": "Cylinder_e2bf",
+          "createdBy": "asasa",
+          "timestamp": 1781679794912,
+          "position_ts": 1781680101189,
+          "scale_ts": 1781680090446,
+          "color_ts": 1781679948747
+        }
+      ],
+      "col": 30.556930238670525,
+      "row": -1.2565571231743222,
+      "rotation": 1.6580627893946132,
+      "color": "#7f8076",
+      "placedBy": "asasa",
+      "placedAt": 1781680722265,
+      "width": 8.8,
+      "height": 9.09
+    },
+    {
+      "id": "3cc3df64-c324-4594-82e1-3208c0a7f5b4",
+      "name": "CITY TEMPLE",
+      "objects": [
+        {
+          "id": "aa1ab715-f95c-442e-903c-cd2c422fa786",
+          "type": "mesh",
+          "geometry": "csg",
+          "position": {
+            "x": 0.4800000000000004,
+            "y": 4.32,
+            "z": 0.07000000000000028
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 8.605,
+            "y": 8.605,
+            "z": 8.605
+          },
+          "color": "#FFEAA7",
+          "name": "Carved_aa1a",
+          "createdBy": "asasa",
+          "timestamp": 1781696737218,
+          "isSubtractive": false,
+          "children": [
+            {
+              "id": "fcb95070-0522-4d70-86ba-57067bb61d33",
+              "type": "mesh",
+              "geometry": "csg",
+              "position": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "scale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+              },
+              "color": "#DDA0DD",
+              "name": "Carved_fcb9",
+              "createdBy": "asasa",
+              "timestamp": 1781696682251,
+              "isSubtractive": false,
+              "children": [
+                {
+                  "id": "6056ee1e-de88-4106-8c9b-35c1b7e8df1d",
+                  "type": "mesh",
+                  "geometry": "cone",
+                  "position": {
+                    "x": -0.07,
+                    "y": 0.28,
+                    "z": 0.15
+                  },
+                  "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "scale": {
+                    "x": 1,
+                    "y": 1,
+                    "z": 1
+                  },
+                  "color": "#DDA0DD",
+                  "name": "Cone_6056",
+                  "createdBy": "asasa",
+                  "timestamp": 1781696644456,
+                  "isSubtractive": false
+                },
+                {
+                  "id": "46e95fbb-1b5e-41f6-a7d4-5e433148c73b",
+                  "type": "mesh",
+                  "geometry": "cylinder",
+                  "position": {
+                    "x": 0.02,
+                    "y": -0.22,
+                    "z": -0.09
+                  },
+                  "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "scale": {
+                    "x": 1.12,
+                    "y": 1.12,
+                    "z": 1.12
+                  },
+                  "color": "#45B7D1",
+                  "name": "Cylinder_46e9",
+                  "createdBy": "asasa",
+                  "timestamp": 1781696656146,
+                  "isSubtractive": true,
+                  "position_ts": 1781696676695,
+                  "scale_ts": 1781696673520,
+                  "isSubtractive_ts": 1781696679871
+                }
+              ],
+              "position_ts": 1781696696850
+            },
+            {
+              "id": "3766e9ba-cc72-49e7-8b32-20c5f61dcbd3",
+              "type": "mesh",
+              "geometry": "sphere",
+              "position": {
+                "x": 0.02,
+                "y": 0.18,
+                "z": -0.09
+              },
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "scale": {
+                "x": 0.182,
+                "y": 0.182,
+                "z": 0.182
+              },
+              "color": "#378ADD",
+              "name": "Sphere_3766",
+              "createdBy": "asasa",
+              "timestamp": 1781696706422,
+              "isSubtractive": true,
+              "scale_ts": 1781696709608,
+              "position_ts": 1781696725689,
+              "isSubtractive_ts": 1781696734518
+            }
+          ],
+          "position_ts": 1781697100653,
+          "color_ts": 1781696998918,
+          "scale_ts": 1781697039320
+        },
+        {
+          "id": "b3d68e54-857e-47fb-9eb6-6490ce0d7d5d",
+          "type": "mesh",
+          "geometry": "csg",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 25,
+            "y": 0.05,
+            "z": 22.7
+          },
+          "color": "#DDA0DD",
+          "name": "Carved_b3d6",
+          "createdBy": "asasa",
+          "timestamp": 1781696943557,
+          "isSubtractive": false,
+          "children": [
+            {
+              "id": "4b57b091-c5e4-43eb-850a-97d2d030eb71",
+              "type": "mesh",
+              "geometry": "csg",
+              "position": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "scale": {
+                "x": 1,
+                "y": 0.061,
+                "z": 1
+              },
+              "color": "#DDA0DD",
+              "name": "Carved_4b57",
+              "createdBy": "asasa",
+              "timestamp": 1781696795236,
+              "isSubtractive": false,
+              "children": [
+                {
+                  "id": "25ac8f5c-b467-4b1c-8b29-29ac3ab38c91",
+                  "type": "mesh",
+                  "geometry": "cylinder",
+                  "position": {
+                    "x": 0,
+                    "y": -0.5,
+                    "z": 0
+                  },
+                  "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "scale": {
+                    "x": 2.209,
+                    "y": 2.209,
+                    "z": 2.209
+                  },
+                  "color": "#DDA0DD",
+                  "name": "Cylinder_25ac",
+                  "createdBy": "asasa",
+                  "timestamp": 1781696754301,
+                  "isSubtractive": false,
+                  "position_ts": 1781696787203,
+                  "scale_ts": 1781696761546
+                },
+                {
+                  "id": "af60eec6-ffd1-40f7-92fa-e087a372b3a9",
+                  "type": "mesh",
+                  "geometry": "cylinder",
+                  "position": {
+                    "x": 0.04,
+                    "y": 0.9,
+                    "z": 0.01
+                  },
+                  "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "scale": {
+                    "x": 1.404,
+                    "y": 1.404,
+                    "z": 1.404
+                  },
+                  "color": "#DDA0DD",
+                  "name": "Cylinder_af60",
+                  "createdBy": "asasa",
+                  "timestamp": 1781696768451,
+                  "isSubtractive": true,
+                  "position_ts": 1781696773932,
+                  "scale_ts": 1781696771283,
+                  "isSubtractive_ts": 1781696782502
+                }
+              ],
+              "position_ts": 1781696849002,
+              "scale_ts": 1781696872812
+            },
+            {
+              "id": "073a495d-25b7-4496-b89f-c308e168ff40",
+              "type": "mesh",
+              "geometry": "cylinder",
+              "position": {
+                "x": 0.03,
+                "y": 0.3,
+                "z": 0
+              },
+              "rotation": {
+                "x": 0,
+                "y": -0.0008726646259971648,
+                "z": 0
+              },
+              "scale": {
+                "x": 0.712,
+                "y": 0.712,
+                "z": 0.712
+              },
+              "color": "#E24B4A",
+              "name": "Cylinder_073a",
+              "createdBy": "asasa",
+              "timestamp": 1781696877488,
+              "isSubtractive": true,
+              "position_ts": 1781696938254,
+              "scale_ts": 1781696920579,
+              "rotation_ts": 1781696898732,
+              "isSubtractive_ts": 1781696928940
+            }
+          ],
+          "position_ts": 1781697111014,
+          "scale_ts": 1781697126251
+        }
+      ],
+      "col": 39.35335071511169,
+      "row": 5.945723080918257,
+      "rotation": 3.5779249665883754,
+      "color": "#4ECDC4",
+      "placedBy": "asasa",
+      "placedAt": 1781697176099,
+      "width": 25,
+      "height": 22.7,
+      "scaleMultiplier": 0.7
+    },
+    {
+      "id": "35a70df1-9d3a-4ed8-87d7-d9a0a93a3340",
+      "name": "PENCIL TOWER",
+      "objects": [
+        {
+          "id": "3dbc4cd5-3190-4aac-8567-7305223e56d4",
+          "type": "mesh",
+          "geometry": "csg",
+          "position": {
+            "x": 0,
+            "y": 0.5,
+            "z": 0
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "color": "#4ECDC4",
+          "name": "Carved_3dbc",
+          "createdBy": "asasa",
+          "timestamp": 1781777079702,
+          "isSubtractive": false,
+          "children": [
+            {
+              "id": "0cabcedd-e068-4a17-89f2-d1dc9e2c8f8a",
+              "type": "mesh",
+              "geometry": "csg",
+              "position": {
+                "x": 0,
+                "y": -0.06,
+                "z": -0.04
+              },
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "scale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+              },
+              "color": "#4ECDC4",
+              "name": "Carved_0cab",
+              "createdBy": "asasa",
+              "timestamp": 1781776909946,
+              "isSubtractive": false,
+              "children": [
+                {
+                  "id": "3611da93-2b4c-4861-bdfd-4e112031ab25",
+                  "type": "mesh",
+                  "geometry": "csg",
+                  "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "scale": {
+                    "x": 1,
+                    "y": 1,
+                    "z": 1
+                  },
+                  "color": "#C8A028",
+                  "name": "Carved_3611",
+                  "createdBy": "asasa",
+                  "timestamp": 1781776741523,
+                  "isSubtractive": false,
+                  "children": [
+                    {
+                      "id": "dbb9bcdf-23ec-48a7-a5fb-1d9ad4bb4bda",
+                      "type": "mesh",
+                      "geometry": "cylinder",
+                      "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                      },
+                      "rotation": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                      },
+                      "scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                      },
+                      "color": "#C8A028",
+                      "name": "Cylinder_dbb9",
+                      "createdBy": "asasa",
+                      "timestamp": 1781776574720,
+                      "isSubtractive": false,
+                      "position_ts": 1781776601170
+                    },
+                    {
+                      "id": "224ff86e-e91d-4c09-a8e8-b8e8eee9e6d5",
+                      "type": "mesh",
+                      "geometry": "box",
+                      "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                      },
+                      "rotation": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                      },
+                      "scale": {
+                        "x": 1,
+                        "y": 0.45,
+                        "z": 0.6
+                      },
+                      "color": "#E24B4A",
+                      "name": "Box_224f",
+                      "createdBy": "asasa",
+                      "timestamp": 1781776610957,
+                      "isSubtractive": true,
+                      "position_ts": 1781776709677,
+                      "scale_ts": 1781776712231,
+                      "isSubtractive_ts": 1781776722992
+                    }
+                  ]
+                },
+                {
+                  "id": "b552f6df-2e28-477a-83fc-bfdcedf1005e",
+                  "type": "mesh",
+                  "geometry": "cylinder",
+                  "position": {
+                    "x": -0.3,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "scale": {
+                    "x": 0.322,
+                    "y": 0.622,
+                    "z": 0.322
+                  },
+                  "color": "#E24B4A",
+                  "name": "Cylinder_b552",
+                  "createdBy": "asasa",
+                  "timestamp": 1781776763741,
+                  "isSubtractive": false,
+                  "position_ts": 1781776796935,
+                  "scale_ts": 1781776785703
+                },
+                {
+                  "id": "d2db0ac5-12a1-4714-a19c-20d6727943a0",
+                  "type": "mesh",
+                  "geometry": "cylinder",
+                  "position": {
+                    "x": 0.29,
+                    "y": 0,
+                    "z": 0.01
+                  },
+                  "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "scale": {
+                    "x": 0.322,
+                    "y": 0.622,
+                    "z": 0.322
+                  },
+                  "color": "#E24B4A",
+                  "name": "Cylinder_b552_copy",
+                  "createdBy": "asasa",
+                  "timestamp": 1781776802221,
+                  "isSubtractive": false,
+                  "position_ts": 1781776861873,
+                  "scale_ts": 1781776854987
+                },
+                {
+                  "id": "2bc9c6a1-de9b-4acf-a4e3-e23896af1aea",
+                  "type": "mesh",
+                  "geometry": "cylinder",
+                  "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0.01
+                  },
+                  "rotation": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                  },
+                  "scale": {
+                    "x": 0.35,
+                    "y": 1.2,
+                    "z": 0.35
+                  },
+                  "color": "#DDA0DD",
+                  "name": "Cylinder_2bc9",
+                  "createdBy": "asasa",
+                  "timestamp": 1781776876660,
+                  "isSubtractive": true,
+                  "position_ts": 1781776880249,
+                  "scale_ts": 1781776894432,
+                  "isSubtractive_ts": 1781776906731
+                }
+              ],
+              "color_ts": 1781776936352
+            },
+            {
+              "id": "efd667e5-3a2a-4ebd-9052-c608ec63598e",
+              "type": "mesh",
+              "geometry": "torus",
+              "position": {
+                "x": 0.04,
+                "y": 0.34,
+                "z": 0.23
+              },
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "scale": {
+                "x": 0.636,
+                "y": 0.636,
+                "z": 0.636
+              },
+              "color": "#FFEAA7",
+              "name": "Torus_efd6",
+              "createdBy": "asasa",
+              "timestamp": 1781777059380,
+              "isSubtractive": true,
+              "position_ts": 1781777070432,
+              "scale_ts": 1781777063211,
+              "isSubtractive_ts": 1781777076118
+            }
+          ],
+          "position_ts": 1781777113018
+        },
+        {
+          "id": "f0fc84f5-a36e-4f8b-8d51-fc7f2e85467f",
+          "type": "mesh",
+          "geometry": "csg",
+          "position": {
+            "x": 0,
+            "y": 1.4,
+            "z": -0.009999999999999787
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.712,
+            "y": 0.712,
+            "z": 0.712
+          },
+          "color": "#F7DC6F",
+          "name": "Carved_f0fc",
+          "createdBy": "asasa",
+          "timestamp": 1781777026803,
+          "isSubtractive": false,
+          "children": [
+            {
+              "id": "689a36cc-51df-457d-bb1f-287db28c9b01",
+              "type": "mesh",
+              "geometry": "cone",
+              "position": {
+                "x": -0.01,
+                "y": 0,
+                "z": -0.01
+              },
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "scale": {
+                "x": 0.636,
+                "y": 0.636,
+                "z": 0.636
+              },
+              "color": "#F7DC6F",
+              "name": "Cone_689a",
+              "createdBy": "asasa",
+              "timestamp": 1781776966083,
+              "isSubtractive": false,
+              "position_ts": 1781776979848,
+              "scale_ts": 1781776972791
+            },
+            {
+              "id": "ab430be2-8372-4c6b-8010-d6c87ab96c4d",
+              "type": "mesh",
+              "geometry": "torus",
+              "position": {
+                "x": 0.11,
+                "y": 0,
+                "z": 0.1
+              },
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "scale": {
+                "x": 0.453,
+                "y": 0.453,
+                "z": 0.453
+              },
+              "color": "#C8A028",
+              "name": "Torus_ab43",
+              "createdBy": "asasa",
+              "timestamp": 1781776986672,
+              "isSubtractive": true,
+              "position_ts": 1781777020112,
+              "scale_ts": 1781777007843,
+              "isSubtractive_ts": 1781777003282
+            }
+          ],
+          "position_ts": 1781777121884,
+          "scale_ts": 1781777226322
+        }
+      ],
+      "col": 40.24781339044632,
+      "row": 12.99847299491539,
+      "rotation": 2.9670597283903604,
+      "color": "#4ECDC4",
+      "placedBy": "asasa",
+      "placedAt": 1781777268660,
+      "width": 1,
+      "height": 1,
+      "scaleMultiplier": 2.85
     }
   ],
   "roads": [
@@ -230839,47 +234878,6 @@
         {
           "x": 37.03368953477319,
           "z": 21.731657739001108
-        }
-      ]
-    },
-    {
-      "id": "c7b12cdb-a31e-4e7c-825e-74dd11ea9572",
-      "points": [
-        {
-          "x": 15.332710816220265,
-          "z": 18.150778650958877
-        },
-        {
-          "x": 15.09029640865364,
-          "z": 21.09005334270421
-        },
-        {
-          "x": 14.181242380278794,
-          "z": 23.51419741837046
-        },
-        {
-          "x": 10.635931669616898,
-          "z": 24.02932803444954
-        },
-        {
-          "x": 8.93903081665052,
-          "z": 20.180999314329362
-        },
-        {
-          "x": 10.817742475291867,
-          "z": 17.332630025421516
-        },
-        {
-          "x": 13.211584750012292,
-          "z": 15.302409362051028
-        },
-        {
-          "x": 14.817580200141187,
-          "z": 13.908526518542933
-        },
-        {
-          "x": 17.453836882428238,
-          "z": 11.48438244287668
         }
       ]
     },
@@ -231212,13 +235210,149 @@
           "z": 5
         }
       ]
+    },
+    {
+      "id": "be2c7d23-695e-4b28-90c5-cb6e6491d6a5",
+      "points": [
+        {
+          "x": 16.883463846917383,
+          "z": 12.716850661045736
+        },
+        {
+          "x": 13.297504896549231,
+          "z": 15.27600783447877
+        },
+        {
+          "x": 11.52591069471585,
+          "z": 16.675918739510898
+        },
+        {
+          "x": 10.376157188376952,
+          "z": 17.783863027437473
+        },
+        {
+          "x": 9.665400475367452,
+          "z": 18.66185661409627
+        },
+        {
+          "x": 8.97427209124746,
+          "z": 20.03059197998101
+        },
+        {
+          "x": 10.167111096315335,
+          "z": 21.19131432804184
+        },
+        {
+          "x": 11.839479832808276,
+          "z": 20.71050831630012
+        },
+        {
+          "x": 13.344611695651924,
+          "z": 19.414422545518093
+        },
+        {
+          "x": 14.988664293002769,
+          "z": 17.98186286880443
+        },
+        {
+          "x": 16.60573073181316,
+          "z": 17.51210310775737
+        },
+        {
+          "x": 17.836849088804335,
+          "z": 18.03549900820822
+        },
+        {
+          "x": 19.438411426796442,
+          "z": 18.20400291103516
+        },
+        {
+          "x": 20.719204332855043,
+          "z": 18.39678342931285
+        },
+        {
+          "x": 21.938388615490975,
+          "z": 17.683453465478024
+        },
+        {
+          "x": 22.765154751254332,
+          "z": 17.585362568014578
+        }
+      ],
+      "roadType": "standard"
+    },
+    {
+      "id": "311cec1d-7438-40eb-9288-00f05d12b656",
+      "points": [
+        {
+          "x": 22.765154751254343,
+          "z": 17.58536256801458
+        },
+        {
+          "x": 24.31009653553522,
+          "z": 17.206353864987054
+        },
+        {
+          "x": 25.821726162771117,
+          "z": 17.131397023967093
+        },
+        {
+          "x": 26.496337731950774,
+          "z": 17.893458241003373
+        },
+        {
+          "x": 26.69622264133734,
+          "z": 18.568069810183026
+        },
+        {
+          "x": 26.874952950662934,
+          "z": 20.314844023205552
+        },
+        {
+          "x": 27.78735719950927,
+          "z": 22.15142129998093
+        },
+        {
+          "x": 29.401800749828585,
+          "z": 22.254121187956343
+        },
+        {
+          "x": 31.594449055817986,
+          "z": 21.42665856353881
+        },
+        {
+          "x": 33.73651336001397,
+          "z": 20.125894777285186
+        },
+        {
+          "x": 35.150030436619055,
+          "z": 18.042816980182955
+        },
+        {
+          "x": 35.74519552150541,
+          "z": 15.290178462583583
+        },
+        {
+          "x": 35.52200861467303,
+          "z": 12.165561766930239
+        },
+        {
+          "x": 34.77805225856509,
+          "z": 9.933692698606421
+        },
+        {
+          "x": 33.99532236780338,
+          "z": 8.843809444007244
+        }
+      ],
+      "roadType": "standard"
     }
   ],
   "stats": {
-    "population": 86560,
+    "population": 88800,
     "happiness": 95,
-    "treasury": 3047062,
+    "treasury": 4345463,
     "traffic": "medium"
   },
-  "simulationTick": 15111
+  "simulationTick": 22049
 }
