@@ -2424,6 +2424,10 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
   }, [city]);
 
   const { selectedAssetId, selectAsset, removeAsset, updateAsset, removeRoadSegment, updateRoad } = useStore();
+  const selectedRoadIdRef = useRef(selectedRoadId);
+  useEffect(() => {
+    selectedRoadIdRef.current = selectedRoadId;
+  }, [selectedRoadId]);
   const selectedRoad = selectedRoadId ? (city?.roads || []).find(r => r.id === selectedRoadId) : null;
   const materialCacheRef = useRef({});
   const draggingAssetIdRef = useRef(null);
@@ -3282,11 +3286,20 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         }
         
         if (clickedAssetId) {
-          selectAsset(clickedAssetId);
+          const currentSelectedAssetId = useStore.getState().selectedAssetId;
+          if (clickedAssetId === currentSelectedAssetId) {
+            selectAsset(null);
+          } else {
+            selectAsset(clickedAssetId);
+          }
           setSelectedRoadId(null);
         } else if (clickedRoadId) {
-          selectAsset(null);
-          setSelectedRoadId(clickedRoadId);
+          if (clickedRoadId === selectedRoadIdRef.current) {
+            setSelectedRoadId(null);
+          } else {
+            selectAsset(null);
+            setSelectedRoadId(clickedRoadId);
+          }
         } else {
           selectAsset(null);
           setSelectedRoadId(null);

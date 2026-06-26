@@ -289509,8 +289509,8 @@
           "name": "Ribbon6_3"
         }
       ],
-      "col": 49.925973286684474,
-      "row": 23.342084001099426,
+      "col": 49.901336346788185,
+      "row": 23.374606961977012,
       "rotation": 1.4311699866353536,
       "color": "#3182ce",
       "placedBy": "asasa",
@@ -297745,8 +297745,8 @@
   "stats": {
     "population": 110720,
     "happiness": 95,
-    "treasury": 7118373,
+    "treasury": 7272443,
     "traffic": "high"
   },
-  "simulationTick": 34850
+  "simulationTick": 35560
 }
