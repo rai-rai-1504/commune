@@ -297745,8 +297745,8 @@
   "stats": {
     "population": 110720,
     "happiness": 95,
-    "treasury": 7272443,
+    "treasury": 7282208,
     "traffic": "high"
   },
-  "simulationTick": 35560
+  "simulationTick": 35605
 }

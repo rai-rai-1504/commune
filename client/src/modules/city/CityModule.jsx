@@ -2576,8 +2576,8 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
       // Squashed TubeGeometry for road surface
       const roadGeo = new THREE.TubeGeometry(curve, Math.max(30, road.points.length * 10), radius, 8, false);
+      roadGeo.scale(1, 0.01, 1); // squash the geometry itself to keep raycasting precise
       const roadMesh = new THREE.Mesh(roadGeo, currentRoadMat);
-      roadMesh.scale.set(1, 0.01, 1);
       roadMesh.receiveShadow = true;
       roadMesh.userData = { roadId: road.id };
       scene.add(roadMesh);
@@ -2880,6 +2880,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         lowDetailMesh.castShadow = true;
         lowDetailMesh.receiveShadow = true;
         lowDetailMesh.userData = { isLowDetail: true, assetId: asset.id };
+        lowDetailMesh.raycast = () => {}; // prevent raycasting from hitting this low-detail bounding box
         lod.addLevel(lowDetailMesh, 75); // Swap to low detail at 75 units distance
 
         buildingMainObject = lod;
