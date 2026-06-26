@@ -86,6 +86,7 @@ function createInitialCity() {
     ],
     stats: { population: 0, happiness: 100, treasury: 500000, traffic: 'low' },
     simulationTick: 0,
+    zones: [],
   };
 }
 
@@ -98,6 +99,7 @@ function createEmptyCity() {
     rows: ROWS,
     placedAssets: [],
     roads: [],
+    zones: [],
     stats: { population: 0, happiness: 100, treasury: 500000, traffic: 'low' },
     simulationTick: 0,
   };
@@ -420,6 +422,37 @@ function handleMessage(ws, client, msg) {
         if (msg.locked !== undefined) road.locked = msg.locked;
         broadcast({ type: 'CITY_ROAD_UPDATED', road });
         saveCity();
+      }
+      break;
+    }
+
+    case 'CITY_ADD_ZONE': {
+      if (!state.city.zones) state.city.zones = [];
+      state.city.zones.push(msg.zone);
+      broadcast({ type: 'CITY_ZONE_ADDED', zone: msg.zone });
+      saveCity();
+      break;
+    }
+
+    case 'CITY_REMOVE_ZONE': {
+      if (state.city.zones) {
+        state.city.zones = state.city.zones.filter(z => z.id !== msg.zoneId);
+      }
+      broadcast({ type: 'CITY_ZONE_REMOVED', zoneId: msg.zoneId });
+      saveCity();
+      break;
+    }
+
+    case 'CITY_UPDATE_ZONE': {
+      if (state.city.zones) {
+        const zone = state.city.zones.find(z => z.id === msg.zoneId);
+        if (zone) {
+          if (msg.name !== undefined) zone.name = msg.name;
+          if (msg.points !== undefined) zone.points = msg.points;
+          if (msg.color !== undefined) zone.color = msg.color;
+          broadcast({ type: 'CITY_ZONE_UPDATED', zone });
+          saveCity();
+        }
       }
       break;
     }

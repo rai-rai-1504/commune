@@ -714,8 +714,234 @@ function makeHyperloop() {
   return o;
 }
 
+// Procedural generators for massive futuristic complexes (>200 objects each)
+function generateFuturisticArcology() {
+  const objects = [];
+  // Base plate
+  objects.push({ geometry: 'box', position: {x:0, y:0.1, z:0}, scale: {x:8, y:0.2, z:8}, color: '#0f172a', name: 'Arcology_Platform' });
+  
+  // 4 corner towers
+  const positions = [
+    {x: -2, z: -2},
+    {x: 2, z: -2},
+    {x: -2, z: 2},
+    {x: 2, z: 2}
+  ];
+  
+  positions.forEach((pos, idx) => {
+    const towerH = 10 + idx * 2; // heights 10, 12, 14, 16
+    objects.push({
+      geometry: 'box',
+      position: {x: pos.x, y: towerH/2, z: pos.z},
+      scale: {x: 1.8, y: towerH, z: 1.8},
+      color: '#1e293b',
+      name: `Tower_${idx}_Core`
+    });
+    
+    // Spire
+    objects.push({
+      geometry: 'cylinder',
+      position: {x: pos.x, y: towerH + 0.4, z: pos.z},
+      scale: {x: 0.6, y: 0.8, z: 0.6},
+      color: '#06b6d4',
+      name: `Tower_${idx}_Cap`
+    });
+    objects.push({
+      geometry: 'cylinder',
+      position: {x: pos.x, y: towerH + 1.2, z: pos.z},
+      scale: {x: 0.08, y: 1.6, z: 0.08},
+      color: '#ffffff',
+      name: `Tower_${idx}_Spire`
+    });
+
+    const steps = Math.floor(towerH - 1.5) * 2;
+    for (let s = 0; s < steps; s++) {
+      const y = 1.0 + s * 0.5;
+      
+      // Face +Z
+      objects.push({
+        geometry: 'box',
+        position: {x: pos.x, y: y, z: pos.z + 0.91},
+        scale: {x: 1.2, y: 0.2, z: 0.05},
+        color: '#06b6d4',
+        name: `T${idx}_W_Z_${s}`
+      });
+      // Face -Z
+      objects.push({
+        geometry: 'box',
+        position: {x: pos.x, y: y, z: pos.z - 0.91},
+        scale: {x: 1.2, y: 0.2, z: 0.05},
+        color: '#06b6d4',
+        name: `T${idx}_W_mZ_${s}`
+      });
+      // Face +X
+      objects.push({
+        geometry: 'box',
+        position: {x: pos.x + 0.91, y: y, z: pos.z},
+        scale: {x: 0.05, y: 0.2, z: 1.2},
+        color: '#3b82f6',
+        name: `T${idx}_W_X_${s}`
+      });
+      // Face -X
+      objects.push({
+        geometry: 'box',
+        position: {x: pos.x - 0.91, y: y, z: pos.z},
+        scale: {x: 0.05, y: 0.2, z: 1.2},
+        color: '#3b82f6',
+        name: `T${idx}_W_mX_${s}`
+      });
+    }
+  });
+
+  // Skybridges
+  objects.push({
+    geometry: 'box',
+    position: {x: 0, y: 6, z: -2},
+    scale: {x: 2.2, y: 0.6, z: 0.4},
+    color: '#ec4899',
+    name: 'Skybridge_North'
+  });
+  objects.push({
+    geometry: 'box',
+    position: {x: 0, y: 8, z: 2},
+    scale: {x: 2.2, y: 0.6, z: 0.4},
+    color: '#ec4899',
+    name: 'Skybridge_South'
+  });
+  objects.push({
+    geometry: 'box',
+    position: {x: -2, y: 9, z: 0},
+    scale: {x: 0.4, y: 0.6, z: 2.2},
+    color: '#ec4899',
+    name: 'Skybridge_West'
+  });
+  
+  return objects;
+}
+
+function generateCyberHabitationDome() {
+  const objects = [];
+  // Base plate
+  objects.push({ geometry: 'box', position: {x:0, y:0.1, z:0}, scale: {x:10, y:0.2, z:10}, color: '#090d16', name: 'Dome_Base' });
+  
+  // Center cyber spire
+  objects.push({ geometry: 'cylinder', position: {x:0, y:6, z:0}, scale: {x:2.4, y:12, z:2.4}, color: '#334155', name: 'Dome_Center_Core' });
+  
+  // Glowing neon rings
+  for (let r = 1; r <= 11; r += 2) {
+    const numRingSegments = 12;
+    const radius = 1.35;
+    for (let s = 0; s < numRingSegments; s++) {
+      const angle = (s / numRingSegments) * Math.PI * 2;
+      objects.push({
+        geometry: 'box',
+        position: { x: Math.cos(angle) * radius, y: r, z: Math.sin(angle) * radius },
+        scale: { x: 0.6, y: 0.15, z: 0.15 },
+        rotation: { x: 0, y: -angle, z: 0 },
+        color: '#a855f7',
+        name: `Center_Ring_${r}_${s}`
+      });
+    }
+  }
+
+  // 6 outer towers
+  const numOuter = 6;
+  const outerRadius = 3.6;
+  for (let i = 0; i < numOuter; i++) {
+    const angle = (i / numOuter) * Math.PI * 2;
+    const tx = Math.cos(angle) * outerRadius;
+    const tz = Math.sin(angle) * outerRadius;
+    const tHeight = 8;
+    
+    objects.push({
+      geometry: 'cylinder',
+      position: {x: tx, y: tHeight/2, z: tz},
+      scale: {x: 1.0, y: tHeight, z: 1.0},
+      color: '#1e293b',
+      name: `Outer_Tower_${i}_Core`
+    });
+
+    // Spiral neon lights
+    const steps = 16;
+    for (let s = 0; s < steps; s++) {
+      const y = 0.5 + s * 0.45;
+      const spiralAngle = angle + (s * 0.4);
+      const px = tx + Math.cos(spiralAngle) * 0.55;
+      const pz = tz + Math.sin(spiralAngle) * 0.55;
+      objects.push({
+        geometry: 'box',
+        position: {x: px, y: y, z: pz},
+        scale: {x: 0.15, y: 0.15, z: 0.15},
+        rotation: {x: 0, y: -spiralAngle, z: 0},
+        color: '#10b981',
+        name: `Outer_Tower_${i}_Node_${s}`
+      });
+    }
+
+    // Radial Bridge
+    objects.push({
+      geometry: 'box',
+      position: {x: tx * 0.5, y: 5.5, z: tz * 0.5},
+      scale: {x: 0.25, y: 0.2, z: outerRadius * 0.65},
+      rotation: {x: 0, y: angle + Math.PI/2, z: 0},
+      color: '#3b82f6',
+      name: `Radial_Bridge_${i}`
+    });
+  }
+
+  // 12 outer columns
+  for (let s = 0; s < 12; s++) {
+    const angle = (s / 12) * Math.PI * 2;
+    objects.push({
+      geometry: 'cylinder',
+      position: { x: Math.cos(angle) * 4.6, y: 1.5, z: Math.sin(angle) * 4.6 },
+      scale: { x: 0.15, y: 3.0, z: 0.15 },
+      color: '#475569',
+      name: `Support_Col_${s}`
+    });
+  }
+
+  // 12 center pods
+  for (let l = 0; l < 4; l++) {
+    const y = 2.5 + l * 2;
+    for (let p = 0; p < 3; p++) {
+      const angle = (p / 3) * Math.PI * 2 + (l * 0.5);
+      const px = Math.cos(angle) * 1.45;
+      const pz = Math.sin(angle) * 1.45;
+      objects.push({
+        geometry: 'box',
+        position: {x: px, y: y, z: pz},
+        scale: {x: 0.6, y: 0.5, z: 0.5},
+        rotation: {x: 0, y: -angle, z: 0},
+        color: '#f59e0b',
+        name: `Center_Pod_${l}_${p}`
+      });
+    }
+  }
+
+  return objects;
+}
+
 // Prebuilt building templates — collections of primitives
 export const TEMPLATES = [
+  {
+    id: 'neo_arcology',
+    name: 'Neo-Arcology Complex',
+    icon: '🏙️',
+    category: 'residential',
+    width: 8.0,
+    height: 8.0,
+    objects: generateFuturisticArcology(),
+  },
+  {
+    id: 'cyber_habitation_dome',
+    name: 'Cyber-Habitation Dome',
+    icon: '🔮',
+    category: 'residential',
+    width: 10.0,
+    height: 10.0,
+    objects: generateCyberHabitationDome(),
+  },
   {
     id: 'house',
     name: 'Simple House',

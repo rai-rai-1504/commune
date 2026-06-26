@@ -315,6 +315,7 @@ function distanceToSegment(p, a, b) {
 const TOOLS = [
   { id: 'select',             label: 'Select',      icon: '🖱️', group: 'tools' },
   { id: 'road',               label: 'Road',        icon: '🛣️', color: '#445566', group: 'infra' },
+  { id: 'pencil',             label: 'Zone Pencil', icon: '✏️', group: 'tools' },
   { id: 'erase',              label: 'Erase',       icon: '🗑️', group: 'tools' },
 ];
 
@@ -569,21 +570,25 @@ const getDefaultScaleFactor = (asset) => {
 
 export default function CityModule() {
   const {
-    city, cityTool, setCityTool,
+    city, cityTool,
     presence, streetView, setStreetView,
     selectedAssetId, selectAsset, removeAsset, updateAsset,
     pendingPlacementAsset, placePendingAsset, clearCity,
     addRoadSegment, removeRoadSegment,
     selectedAssetIds, selectAssets, removeAssets, undoCity,
     publishedBuildings, deletePublishedBuilding, lockAllAssets,
-    updateRoad
+    updateRoad, addZone, removeZone
   } = useStore();
 
   const canvasRef = useRef(null);
   const [offset, setOffset] = useState({ x: 16, y: 16 });
   const [zoom, setZoom] = useState(1.0);
   const intersections = useMemo(() => findIntersections(city?.roads || []), [city?.roads]);
-  const [leftTab, setLeftTab] = useState('presets');
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [showObjectsPanel, setShowObjectsPanel] = useState(false);
+  
+  const [activeZonePoints, setActiveZonePoints] = useState([]);
+  const isDrawingZoneRef = useRef(false);
 
   const targetZoomRef = useRef(1.0);
   const targetOffsetRef = useRef({ x: 16, y: 16 });
@@ -1118,6 +1123,89 @@ export default function CityModule() {
       });
     }
 
+    // Render existing zones on the 2D map
+    if (city.zones && city.zones.length > 0) {
+      city.zones.forEach(zone => {
+        if (!zone.points || zone.points.length < 3) return;
+        ctx.save();
+        
+        // 1. Draw filled polygon
+        ctx.fillStyle = zone.color;
+        ctx.globalAlpha = 0.12;
+        ctx.beginPath();
+        zone.points.forEach((pt, idx) => {
+          const sx = offset.x + pt.x * cellSize;
+          const sy = offset.y + pt.z * cellSize;
+          if (idx === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        });
+        ctx.closePath();
+        ctx.fill();
+        
+        // 2. Draw border
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = zone.color;
+        ctx.lineWidth = 1.8 * zoom;
+        ctx.stroke();
+        
+        // 3. Draw zone name at centroid
+        let sumX = 0, sumZ = 0;
+        zone.points.forEach(pt => {
+          sumX += pt.x;
+          sumZ += pt.z;
+        });
+        const cx = offset.x + (sumX / zone.points.length) * cellSize;
+        const cz = offset.y + (sumZ / zone.points.length) * cellSize;
+        
+        ctx.globalAlpha = 1.0;
+        ctx.font = `bold ${Math.max(10, 12 * zoom)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Draw small shadow/outline for readability
+        ctx.fillStyle = 'rgba(22, 27, 38, 0.82)';
+        const textWidth = ctx.measureText(zone.name).width;
+        ctx.fillRect(cx - textWidth / 2 - 6, cz - 8, textWidth + 12, 16);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(zone.name, cx, cz);
+        
+        ctx.restore();
+      });
+    }
+
+    // Render active zone drawing under construction (pencil tool)
+    if (cityTool === 'pencil' && activeZonePoints.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.5 * zoom;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      ctx.beginPath();
+      activeZonePoints.forEach((pt, idx) => {
+        const sx = offset.x + pt.x * cellSize;
+        const sy = offset.y + pt.z * cellSize;
+        if (idx === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      });
+      
+      // Draw line to current hover point if moving mouse
+      if (hoveredFloat) {
+        const hx = offset.x + hoveredFloat.col * cellSize;
+        const hy = offset.y + hoveredFloat.row * cellSize;
+        ctx.lineTo(hx, hy);
+      }
+      ctx.stroke();
+      
+      // Draw starting node circle
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(offset.x + activeZonePoints[0].x * cellSize, offset.y + activeZonePoints[0].z * cellSize, 6 * zoom, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.restore();
+    }
+
     // Render marquee selection box
     if (marqueeStart && marqueeEnd) {
       const sx = offset.x + marqueeStart.col * cellSize;
@@ -1275,7 +1363,7 @@ export default function CityModule() {
       ctx.strokeRect(sx + 1, sy + 1, cellSize - 2, cellSize - 2);
       ctx.setLineDash([]);
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints]);
 
   // Resize + redraw
   useEffect(() => {
@@ -1503,6 +1591,12 @@ export default function CityModule() {
         setActiveRoadPoints(prev => [...prev, { x: finalCol, z: finalRow }]);
         return;
       }
+      if (cityTool === 'pencil') {
+        e.preventDefault();
+        isDrawingZoneRef.current = true;
+        setActiveZonePoints([{ x: floatCoords.col, z: floatCoords.row }]);
+        return;
+      }
       if (cityTool === 'erase') {
         e.preventDefault();
         // Start marquee erase selection immediately
@@ -1551,6 +1645,15 @@ export default function CityModule() {
     }
     setHoveredFloat(floatCoords);
 
+    if (cityTool === 'pencil' && isDrawingZoneRef.current) {
+      const lastPt = activeZonePoints[activeZonePoints.length - 1];
+      const dist = lastPt ? Math.sqrt((floatCoords.col - lastPt.x)**2 + (floatCoords.row - lastPt.z)**2) : 999;
+      if (dist > 0.15) { // 0.15 cell threshold for fine-grained drawing detail
+        setActiveZonePoints(prev => [...prev, { x: floatCoords.col, z: floatCoords.row }]);
+      }
+      return;
+    }
+
     if (draggingAssetId) {
       const newCol = floatCoords.col - dragOffset.current.col;
       const newRow = floatCoords.row - dragOffset.current.row;
@@ -1565,6 +1668,26 @@ export default function CityModule() {
   function onMouseUp() {
     setPanning(false);
     panStart.current = null;
+
+    if (cityTool === 'pencil' && isDrawingZoneRef.current) {
+      isDrawingZoneRef.current = false;
+      if (activeZonePoints.length >= 3) {
+        const closedPoints = [...activeZonePoints, { x: activeZonePoints[0].x, z: activeZonePoints[0].z }];
+        setTimeout(() => {
+          const name = prompt('Enter a name for this zone:', `Zone ${city?.zones?.length + 1 || 1}`);
+          if (name) {
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            addZone(name, closedPoints, color);
+          }
+          setActiveZonePoints([]);
+        }, 50);
+      } else {
+        setActiveZonePoints([]);
+      }
+      return;
+    }
+
     if (draggingAssetId) {
       const latestCity = useStore.getState().city;
       const asset = (latestCity?.placedAssets || []).find(a => a.id === draggingAssetId);
@@ -1599,7 +1722,16 @@ export default function CityModule() {
           const roadsToDelete = (city?.roads || []).filter(road => {
             return road.points.some(pt => pt.x >= minCol && pt.x <= maxCol && pt.z >= minRow && pt.z <= maxRow);
           });
-          if (assetsToDelete.length > 0 || roadsToDelete.length > 0) {
+          const zonesToDelete = (city?.zones || []).filter(zone => {
+            let sumX = 0, sumZ = 0;
+            zone.points.forEach(pt => { sumX += pt.x; sumZ += pt.z; });
+            const cx = sumX / zone.points.length;
+            const cz = sumZ / zone.points.length;
+            return cx >= minCol && cx <= maxCol &&
+                   cz >= minRow && cz <= maxRow;
+          });
+
+          if (assetsToDelete.length > 0 || roadsToDelete.length > 0 || zonesToDelete.length > 0) {
             const compoundActions = [];
             assetsToDelete.forEach(a => compoundActions.push({ type: 'PLACE_ASSET', asset: a }));
             roadsToDelete.forEach(r => compoundActions.push({ type: 'ADD_ROAD', road: r }));
@@ -1607,6 +1739,7 @@ export default function CityModule() {
 
             assetsToDelete.forEach(a => removeAsset(a.id, true));
             roadsToDelete.forEach(r => removeRoadSegment(r.id, true));
+            zonesToDelete.forEach(z => removeZone(z.id));
           }
         } else {
           // Single click: delete whatever was clicked
@@ -1620,6 +1753,19 @@ export default function CityModule() {
             const road = roadAtCoords(clickCol, clickRow);
             if (road) {
               removeRoadSegment(road.id);
+            } else {
+              // Check if we clicked near a zone centroid to delete it
+              const zone = (city?.zones || []).find(z => {
+                let sumX = 0, sumZ = 0;
+                z.points.forEach(pt => { sumX += pt.x; sumZ += pt.z; });
+                const cx = sumX / z.points.length;
+                const cz = sumZ / z.points.length;
+                const dist = Math.sqrt((clickCol - cx)**2 + (clickRow - cz)**2);
+                return dist < 1.5; // click within 1.5 cells of centroid
+              });
+              if (zone) {
+                removeZone(zone.id);
+              }
             }
           }
         }
@@ -1682,718 +1828,776 @@ export default function CityModule() {
   const selectedRoad = selectedRoadId ? (city?.roads || []).find(r => r.id === selectedRoadId) : null;
 
   return (
-    <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
 
-      {/* ── Left panel ── */}
-      <div className="side-panel">
-        <div className="panel-section">
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ fontSize:18 }}>🏙️</span>
-            <div>
-              <div className="panel-title">{city?.name || 'Loading…'}</div>
-              <div className="panel-sub">{presence.length} player{presence.length!==1?'s':''} online</div>
-            </div>
-          </div>
-        </div>
+      {/* ── Map / Street view canvas ── */}
+      {streetView ? (
+        <StreetView
+          city={city}
+          onExit={() => setStreetView(false)}
+          selectedRoadId={selectedRoadId}
+          setSelectedRoadId={setSelectedRoadId}
+          intersections={intersections}
+        />
+      ) : (
+        <canvas
+          ref={canvasRef}
+          style={{ width: '100%', height: '100%', display:'block', cursor: panning ? 'grabbing' : cityTool==='select'?'default':'crosshair' }}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+          onWheel={onWheel}
+          onDoubleClick={onDoubleClick}
+          onContextMenu={(e) => e.preventDefault()}
+        />
+      )}
 
-
-
-        {/* Tools */}
-        <div className="panel-label" style={{ padding:'10px 12px 4px' }}>Tools</div>
-        <div className="tool-group" style={{ paddingTop:2, paddingBottom:4, overflowY:'auto', flex:1 }}>
-          {TOOLS.map((t, i) => {
-            const prev = TOOLS[i-1];
-            const showSep = prev && prev.group !== t.group;
-            return (
-              <React.Fragment key={t.id}>
-                {showSep && <div className="tool-sep" />}
-                <button className={`tool-btn ${cityTool===t.id?'active':''}`} onClick={() => setCityTool(t.id)}>
-                  <span className="tb-icon">{t.icon}</span>
-                  {t.label}
-                  {t.color && <span style={{ marginLeft:'auto', width:9, height:9, borderRadius:2, background:t.color, display:'inline-block', flexShrink:0 }} />}
-                </button>
-              </React.Fragment>
-            );
-          })}
-        </div>
-
-        {/* Locking Controls */}
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg3)', borderRadius: 'var(--radius)', margin: '0 8px 10px', display: 'flex', gap: 6 }}>
-          <button
-            className="btn sm"
-            style={{ flex: 1, fontSize: 10, justifyContent: 'center' }}
-            onClick={() => { lockAllAssets(true); setSelectedRoadId(null); }}
-            title="Lock all objects and roads (L)"
-          >
-            🔒 Lock All
-          </button>
-          <button
-            className="btn sm"
-            style={{ flex: 1, fontSize: 10, justifyContent: 'center' }}
-            onClick={() => lockAllAssets(false)}
-            title="Unlock all objects and roads (U)"
-          >
-            🔓 Unlock All
-          </button>
-        </div>
-
-        {cityTool === 'road' && (
-          <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg3)', borderRadius: 'var(--radius)', margin: '0 8px 10px' }}>
-            <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 6, fontWeight: '600', letterSpacing: '0.05em' }}>Road Type</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {[
-                { id: 'standard', label: 'Standard (2 lanes)', color: '#445566' },
-                { id: 'multilane', label: 'Multi-lane (4 lanes)', color: '#334155' },
-                { id: 'highway', label: 'Highway (4 lanes + Median)', color: '#1e293b' },
-              ].map(rt => (
-                <button
-                  key={rt.id}
-                  className={`btn sm ${activeRoadType === rt.id ? 'primary' : ''}`}
-                  style={{ justifyContent: 'flex-start', width: '100%', padding: '6px 10px' }}
-                  onClick={() => setActiveRoadType(rt.id)}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: rt.color, marginRight: 6 }} />
-                  {rt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tabs for building library */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', margin: '10px 8px 4px' }}>
-          <button
-            onClick={() => setLeftTab('presets')}
-            style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
-              borderBottom: leftTab === 'presets' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: leftTab === 'presets' ? 'var(--text)' : 'var(--text3)',
-              padding: '6px 0',
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            🏢 Presets
-          </button>
-          <button
-            onClick={() => setLeftTab('custom')}
-            style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
-              borderBottom: leftTab === 'custom' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: leftTab === 'custom' ? 'var(--text)' : 'var(--text3)',
-              padding: '6px 0',
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            📐 Your Buildings ({publishedBuildings?.length || 0})
-          </button>
-        </div>
-
-        <div className="tool-group" style={{ paddingTop:2, paddingBottom:6, overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:4 }}>
-          {leftTab === 'presets' ? (
-            TEMPLATES.filter(t => [
-              'house', 'suburban', 'apartment', 'villa', 'manor',
-              'skyscraper', 'office', 'mall', 'diner', 'factory', 'refinery', 'warehouse',
-              'park', 'greenhouse', 'fountain',
-              'townhall', 'hospital', 'solar', 'turbine', 'watertower', 'bridge', 'station',
-              'cathedral', 'megamall', 'techhq', 'resort', 'nuclear', 'skygarden', 'cargoport', 'university', 'ecodome', 'hyperloop',
-              'tree_oak', 'tree_pine', 'tree_birch', 'tree_maple', 'tree_cherry', 'tree_palm', 'tree_baobab', 'tree_cypress', 'tree_willow'
-            ].includes(t.id)).map(t => (
-              <button
-                key={t.id}
-                className={`tool-btn ${pendingPlacementAsset?.name === t.name ? 'active' : ''}`}
-                style={{ padding: '6px 12px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8 }}
-                onClick={() => {
-                  useStore.setState({
-                    pendingPlacementAsset: {
-                      name: t.name,
-                      objects: t.objects,
-                      color: t.objects[0]?.color || '#4ECDC4',
-                      width: t.width || 2.0,
-                      height: t.height || 2.0,
-                    },
-                    cityTool: 'select',
-                  });
-                }}
-              >
-                <span style={{ fontSize: 14 }}>{t.icon}</span>
-                {t.name}
-              </button>
-            ))
-          ) : (
-            publishedBuildings && publishedBuildings.length === 0 ? (
-              <div style={{ padding: '16px 12px', fontSize: 10, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.6 }}>
-                No custom buildings published yet.<br />Design a building in the 3D Editor and click "Publish Selected".
-              </div>
-            ) : (
-              (publishedBuildings || []).map(b => (
-                <div key={b.id} style={{ display: 'flex', gap: 4, paddingRight: 8, alignItems: 'center' }}>
-                  <button
-                    className={`tool-btn ${pendingPlacementAsset?.name === b.name ? 'active' : ''}`}
-                    style={{ padding: '6px 12px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8, flex: 1, textAlign: 'left' }}
-                    onClick={() => {
-                      useStore.setState({
-                        pendingPlacementAsset: {
-                          name: b.name,
-                          objects: b.objects,
-                          color: b.objects[0]?.color || '#4ECDC4',
-                          width: b.width || 2.0,
-                          height: b.height || 2.0,
-                        },
-                        cityTool: 'select',
-                      });
-                    }}
-                  >
-                    <span style={{ fontSize: 14 }}>📐</span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{b.name}</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm(`Delete "${b.name}" from your library?`)) {
-                        deletePublishedBuilding(b.id);
-                      }
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text3)',
-                      cursor: 'pointer',
-                      fontSize: 12,
-                      padding: 4,
-                    }}
-                    title="Delete custom building"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              ))
-            )
-          )}
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:8 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className={`btn ${streetView?'primary':''}`} style={{ flex: 1 }} onClick={() => setStreetView(!streetView)}>
-              {streetView ? '🗺️ Map View' : '🚶 Street View'}
-            </button>
-            <button
-              className="btn"
-              style={{
-                flex: '0 0 auto',
-                background: 'var(--bg-card)',
-                color: 'var(--text)',
-                border: '1px solid var(--border)',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                padding: '0 12px',
-                cursor: 'pointer',
-              }}
-              onClick={() => undoCity()}
-              title="Undo last action (Ctrl+Z)"
-            >
-              ↩️ Undo
-            </button>
-          </div>
-          {!streetView && (
-            <button
-              className="btn full danger"
-              style={{
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                color: '#fff',
-                border: 'none',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.25)',
-                transition: 'all 0.2s ease',
-              }}
-              onClick={() => {
-                if (window.confirm("Are you sure you want to clean the entire city? This will remove all zones, roads, and placed buildings!")) {
-                  clearCity();
-                }
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.filter = 'brightness(1.1)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.filter = 'none';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.25)';
-              }}
-            >
-              <span>🧹</span> Clean City
-            </button>
-          )}
-          <div style={{ fontSize:10, color:'var(--text3)', marginTop:2, lineHeight:1.6 }}>
-            Click: select/place · Right Click/Enter: finish road · Esc: cancel · Alt+drag: pan · Scroll: zoom
-          </div>
+      {/* ── Top-Left: City Info Pill ── */}
+      <div className="glass-panel" style={{
+        position: 'absolute',
+        top: 80,
+        left: 16,
+        zIndex: 100,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '6px 14px',
+        borderRadius: 20,
+        pointerEvents: 'none'
+      }}>
+        <span style={{ fontSize: 16 }}>🏙️</span>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>{city?.name || 'Loading…'}</div>
+          <div style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap' }}>{presence.length} player{presence.length!==1?'s':''} online</div>
         </div>
       </div>
 
-      {/* ── Map / Street view ── */}
-      <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
-        {pendingPlacementAsset && !streetView && (
-          <div style={{
-            position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
-            background: 'rgba(22, 27, 38, 0.95)', border: '2px solid var(--accent)',
-            borderRadius: 8, padding: '10px 20px', zIndex: 100, display: 'flex', alignItems: 'center', gap: 12,
-            boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+      {/* ── Top-Center: Tooltip / Placement Banner ── */}
+      {pendingPlacementAsset && !streetView && (
+        <div className="glass-panel" style={{
+          position: 'absolute',
+          top: 80,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          borderRadius: 20,
+          padding: '6px 16px',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          border: '1px solid var(--accent)'
+        }}>
+          <span style={{ fontSize: 14 }}>🏗️</span>
+          <span style={{ fontSize: 11, color: '#ffffff', fontWeight: 600 }}>
+            Click to place "{pendingPlacementAsset.name}" ({pendingPlacementAsset.width.toFixed(0)}x{pendingPlacementAsset.height.toFixed(0)})
+          </span>
+          <button
+            className="glass-button danger"
+            onClick={() => useStore.setState({ pendingPlacementAsset: null })}
+            style={{ padding: '2px 8px', fontSize: 10, borderRadius: 12 }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {hoveredFloat && !streetView && !pendingPlacementAsset && (
+        <div className="glass-panel" style={{
+          position:'absolute',
+          top: 80,
+          left:'50%',
+          transform:'translateX(-50%)',
+          borderRadius: 20,
+          padding:'4px 14px',
+          fontSize:10,
+          pointerEvents:'none',
+          whiteSpace:'nowrap',
+          zIndex: 100
+        }}>
+          ({hoveredFloat.col.toFixed(1)}, {hoveredFloat.row.toFixed(1)}) · {assetAtCell(hoveredFloat.col, hoveredFloat.row) ? `🏢 ${assetAtCell(hoveredFloat.col, hoveredFloat.row).name}` : (roadAtCoords(hoveredFloat.col, hoveredFloat.row) ? '🛣️ Road' : 'Empty')} · Tool: {TOOLS.find(t=>t.id===cityTool)?.label || 'Place'}
+        </div>
+      )}
+
+      {/* ── Left-Side: Floating Tools Toolbar ── */}
+      <div className="glass-panel" style={{
+        position: 'absolute',
+        left: 16,
+        top: 136,
+        zIndex: 100,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        padding: 10,
+        width: 50,
+        alignItems: 'center',
+        borderRadius: 25
+      }}>
+        <button
+          className={`glass-button ${cityTool === 'select' && !pendingPlacementAsset ? 'active' : ''}`}
+          onClick={() => {
+            useStore.setState({ cityTool: 'select', pendingPlacementAsset: null });
+          }}
+          title="Select Tool"
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14 }}
+        >
+          🖱️
+        </button>
+        <button
+          className={`glass-button ${cityTool === 'pencil' ? 'active' : ''}`}
+          onClick={() => {
+            useStore.setState({ cityTool: 'pencil', pendingPlacementAsset: null });
+            setActiveCategory(null);
+          }}
+          title="Zone Pencil"
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14 }}
+        >
+          ✏️
+        </button>
+        <button
+          className={`glass-button ${cityTool === 'erase' ? 'active' : ''}`}
+          onClick={() => {
+            useStore.setState({ cityTool: 'erase', pendingPlacementAsset: null });
+            setActiveCategory(null);
+          }}
+          title="Erase Tool"
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14 }}
+        >
+          🗑️
+        </button>
+        
+        <div style={{ height: 1, width: '70%', background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+        
+        <button
+          className="glass-button"
+          onClick={() => { lockAllAssets(true); setSelectedRoadId(null); }}
+          title="Lock all objects"
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}
+        >
+          🔒
+        </button>
+        <button
+          className="glass-button"
+          onClick={() => lockAllAssets(false)}
+          title="Unlock all objects"
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}
+        >
+          🔓
+        </button>
+
+        <div style={{ height: 1, width: '70%', background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+
+        <button
+          className="glass-button"
+          onClick={() => undoCity()}
+          title="Undo (Ctrl+Z)"
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}
+        >
+          ↩️
+        </button>
+
+        <button
+          className="glass-button danger"
+          onClick={() => {
+            if (window.confirm("Are you sure you want to clean the entire city? This will remove all zones, roads, and placed buildings!")) {
+              clearCity();
+            }
+          }}
+          title="Clean City"
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}
+        >
+          🧹
+        </button>
+      </div>
+
+      {/* ── Top-Right: View Toggles & Placed Objects Menu ── */}
+      <div style={{ position: 'absolute', top: 80, right: 16, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className={`glass-button ${streetView ? 'active' : ''}`}
+            onClick={() => setStreetView(!streetView)}
+            style={{ height: 36, padding: '0 14px', fontWeight: 600 }}
+          >
+            {streetView ? '🗺️ Map View' : '🚶 Street View'}
+          </button>
+
+          <button
+            className={`glass-button ${showObjectsPanel ? 'active' : ''}`}
+            onClick={() => setShowObjectsPanel(!showObjectsPanel)}
+            style={{ height: 36, padding: '0 14px', fontWeight: 600 }}
+          >
+            📊 Objects ({(city?.placedAssets || []).length + (city?.roads || []).length})
+          </button>
+        </div>
+
+        {/* Objects Panel Overlay */}
+        {showObjectsPanel && (
+          <div className="glass-panel" style={{
+            width: 240,
+            maxHeight: '60vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            padding: 10,
+            gap: 8,
+            animation: 'fadeIn 0.2s ease'
           }}>
-            <span style={{ fontSize: 16 }}>🏗️</span>
-            <span style={{ fontSize: 12, color: 'var(--text)', fontWeight: 600 }}>
-              Click on the city map to place "{pendingPlacementAsset.name}" ({pendingPlacementAsset.width.toFixed(1)}x{pendingPlacementAsset.height.toFixed(1)} units)
-            </span>
-            <button className="btn sm danger" onClick={() => useStore.setState({ pendingPlacementAsset: null })} style={{ marginLeft: 8 }}>
-              Cancel
-            </button>
-          </div>
-        )}
-        {streetView ? (
-          <StreetView
-            city={city}
-            onExit={() => setStreetView(false)}
-            selectedRoadId={selectedRoadId}
-            setSelectedRoadId={setSelectedRoadId}
-            intersections={intersections}
-          />
-        ) : (
-          <canvas
-            ref={canvasRef}
-            style={{ display:'block', cursor: panning ? 'grabbing' : cityTool==='select'?'default':'crosshair' }}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onMouseLeave={onMouseUp}
-            onWheel={onWheel}
-            onDoubleClick={onDoubleClick}
-            onContextMenu={(e) => { if (cityTool === 'road') e.preventDefault(); }}
-          />
-        )}
-
-        {/* Zoom controls */}
-        {!streetView && (
-          <div style={{ position:'absolute', top:10, right:10, display:'flex', flexDirection:'column', gap:4 }}>
-            <button className="btn sm" onClick={() => handleZoomButton(true)}>＋</button>
-            <button className="btn sm" onClick={() => handleZoomButton(false)}>－</button>
-            <button className="btn sm" onClick={() => { targetZoomRef.current = 1.0; targetOffsetRef.current = {x:16,y:16}; }}>⟳</button>
-          </div>
-        )}
-
-        {/* Cell info tooltip */}
-        {hoveredFloat && !streetView && (
-          <div style={{ position:'absolute', bottom:12, left:'50%', transform:'translateX(-50%)', background:'rgba(10,17,24,0.92)', border:'1px solid var(--border)', borderRadius:6, padding:'4px 14px', fontSize:11, color:'var(--text2)', pointerEvents:'none', whiteSpace:'nowrap' }}>
-            ({hoveredFloat.col.toFixed(1)}, {hoveredFloat.row.toFixed(1)}) · {assetAtCell(hoveredFloat.col, hoveredFloat.row) ? `🏢 ${assetAtCell(hoveredFloat.col, hoveredFloat.row).name}` : (roadAtCoords(hoveredFloat.col, hoveredFloat.row) ? '🛣️ Road' : 'Empty')} · Tool: {TOOLS.find(t=>t.id===cityTool)?.label}
-          </div>
-        )}
-
-        {/* Legend */}
-        {!streetView && (
-          <div style={{ position:'absolute', bottom:12, right:12, background:'rgba(10,17,24,0.88)', border:'1px solid var(--border)', borderRadius:8, padding:'8px 12px' }}>
-            {Object.entries(ZONE_META).filter(([k])=>k!=='empty').map(([type,meta]) => (
-              <div key={type} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3, fontSize:11, color:'var(--text2)' }}>
-                <div style={{ width:10, height:10, borderRadius:2, background:meta.color, flexShrink:0 }} />
-                {meta.label}
-              </div>
-            ))}
-            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:3, fontSize:11, color:'var(--text2)' }}>
-              <div style={{ width:10, height:10, borderRadius:2, background:'#1e2a38', border:'1px solid #445566', flexShrink:0 }} />
-              Road
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Right: asset info panel ── */}
-      <div className="side-panel side-panel-right" style={{ width:190 }}>
-        <div className="panel-section">
-          <div className="panel-label">Placed Objects</div>
-          <div style={{ fontSize:22, fontWeight:700, color:'var(--accent)' }}>
-            {(city?.placedAssets || []).length + (city?.roads || []).length}
-          </div>
-        </div>
-        <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column' }}>
-          
-          {/* Objects (Buildings & Trees) Section */}
-          <div style={{ padding:'6px 10px', background:'rgba(0,0,0,0.15)', fontSize:10, fontWeight:600, color:'var(--text2)', borderBottom:'1px solid var(--border)' }}>
-            🏢 Buildings & Trees ({(city?.placedAssets || []).length})
-          </div>
-          {(city?.placedAssets || []).length === 0 ? (
-            <div style={{ padding:'12px 10px', fontSize:10, color:'var(--text3)', textAlign:'center', borderBottom:'1px solid var(--border)' }}>
-              No objects placed.
-            </div>
-          ) : (
-            (city?.placedAssets || []).map(asset => {
-              const isSel = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
-              return (
-                <div key={asset.id} 
-                  onClick={() => {
-                    selectAsset(asset.id === selectedAssetId ? null : asset.id);
-                    setSelectedRoadId(null);
-                  }}
-                  style={{ 
-                    padding:'6px 10px', 
-                    borderBottom:'1px solid var(--border)', 
-                    cursor:'pointer', 
-                    background: isSel ? 'rgba(78,205,196,0.07)' : 'transparent', 
-                    borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
-                    opacity: asset.locked ? 0.6 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 4
-                  }}
-                >
-                  <div style={{ display:'flex', flexDirection:'column', flex:1, minWidth:0 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                      <div style={{ width:8, height:8, borderRadius:2, background:asset.color||'#4ECDC4', flexShrink:0 }} />
-                      <span style={{ fontSize:11, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                        {asset.name}
-                      </span>
-                    </div>
-                    <div style={{ fontSize:9, color:'var(--text3)', marginTop:1 }}>
-                      @{asset.placedBy} · ({asset.col.toFixed(0)},{asset.row.toFixed(0)})
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      updateAsset(asset.id, { locked: !asset.locked });
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: 11,
-                      padding: '2px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      opacity: 0.8
-                    }}
-                    title={asset.locked ? 'Unlock object' : 'Lock object'}
-                  >
-                    {asset.locked ? '🔒' : '🔓'}
-                  </button>
-                </div>
-              );
-            })
-          )}
-
-          {/* Roads Section */}
-          <div style={{ padding:'6px 10px', background:'rgba(0,0,0,0.15)', fontSize:10, fontWeight:600, color:'var(--text2)', borderBottom:'1px solid var(--border)', borderTop:'1px solid var(--border)' }}>
-            🛣️ Roads ({(city?.roads || []).length})
-          </div>
-          {(city?.roads || []).length === 0 ? (
-            <div style={{ padding:'12px 10px', fontSize:10, color:'var(--text3)', textAlign:'center' }}>
-              No roads built.
-            </div>
-          ) : (
-            (city?.roads || []).map(road => {
-              const isSel = road.id === selectedRoadId;
-              const typeLabel = road.roadType === 'highway' ? 'Highway' : road.roadType === 'multilane' ? 'Multilane' : 'Standard Road';
-              return (
-                <div key={road.id} 
-                  onClick={() => {
-                    selectAsset(null);
-                    setSelectedRoadId(road.id === selectedRoadId ? null : road.id);
-                  }}
-                  style={{ 
-                    padding:'6px 10px', 
-                    borderBottom:'1px solid var(--border)', 
-                    cursor:'pointer', 
-                    background: isSel ? 'rgba(78,205,196,0.07)' : 'transparent', 
-                    borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
-                    opacity: road.locked ? 0.6 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 4
-                  }}
-                >
-                  <div style={{ display:'flex', flexDirection:'column', flex:1, minWidth:0 }}>
-                    <span style={{ fontSize:11, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      🛣️ {typeLabel}
-                    </span>
-                    <div style={{ fontSize:9, color:'var(--text3)', marginTop:1 }}>
-                      Nodes: {road.points?.length || 0}
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      updateRoad(road.id, { locked: !road.locked });
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: 11,
-                      padding: '2px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      opacity: 0.8
-                    }}
-                    title={road.locked ? 'Unlock road' : 'Lock road'}
-                  >
-                    {road.locked ? '🔒' : '🔓'}
-                  </button>
-                </div>
-              );
-            })
-          )}
-        </div>
-        {selectedAssetIds && selectedAssetIds.length > 1 ? (
-          <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:8 }}>
-            <div>
-              <div style={{ fontSize:12, fontWeight:600, color:'var(--text)' }}>
-                Selected: {selectedAssetIds.length} Buildings
-              </div>
-              <div style={{ fontSize:10, color:'var(--text3)', marginTop:2 }}>
-                Press Delete/Backspace or click below to remove all selected.
-              </div>
-            </div>
-            <button
-              className="btn sm danger full"
-              style={{ marginTop: 4 }}
-              onClick={() => {
-                removeAssets(selectedAssetIds);
-              }}
-            >
-              🗑️ Remove Buildings
-            </button>
-          </div>
-        ) : selectedAsset && (
-          <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:8 }}>
-            <div>
-              <div style={{ fontSize:12, fontWeight:600, color:'var(--text)' }}>{selectedAsset.name}</div>
-              <div style={{ fontSize:10, color:'var(--text3)', marginTop:2 }}>
-                Placed by @{selectedAsset.placedBy}<br />
-                Position: ({selectedAsset.col}, {selectedAsset.row})
-              </div>
+            <div style={{ fontSize: 11, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: 6 }}>
+              🏢 Placed Objects
             </div>
             
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6 }}>
-              <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text2)', marginBottom: 2 }}>
-                <span>Scale</span>
-                <span style={{ fontWeight: 600, color: 'var(--accent)' }}>
-                  {(selectedAsset.scaleMultiplier !== undefined ? selectedAsset.scaleMultiplier : getDefaultScaleFactor(selectedAsset)).toFixed(2)}x
-                </span>
-              </label>
-              <input
-                type="range"
-                min={Math.min(0.1, getMaxScaleFactor(selectedAsset)).toFixed(2)}
-                max={getMaxScaleFactor(selectedAsset).toFixed(2)}
-                step="0.05"
-                value={selectedAsset.scaleMultiplier !== undefined ? selectedAsset.scaleMultiplier : getDefaultScaleFactor(selectedAsset)}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  updateAsset(selectedAsset.id, { scaleMultiplier: val });
-                }}
-                disabled={selectedAsset.locked}
-                style={{ width: '100%', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer', accentColor: 'var(--accent)' }}
-              />
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6 }}>
-              <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 600, marginBottom: 4 }}>Position Nudge</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, justifyItems: 'center', alignItems: 'center', width: '100%' }}>
-                <div />
+            {/* Selected item details when open */}
+            {selectedAssetIds && selectedAssetIds.length > 1 ? (
+              <div style={{ padding: '8px 4px', borderBottom: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: '#ffffff' }}>
+                  Selected: {selectedAssetIds.length} Buildings
+                </div>
                 <button
-                  className="btn sm"
-                  style={{ padding: '4px 8px', fontSize: 10 }}
-                  onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row - 0.2 })}
-                  disabled={selectedAsset.locked}
-                  title="Move North"
+                  className="glass-button danger"
+                  style={{ width: '100%', padding: '4px', fontSize: 10 }}
+                  onClick={() => removeAssets(selectedAssetIds)}
                 >
-                  ▲
+                  🗑️ Delete Selected
                 </button>
-                <div />
-                
-                <button
-                  className="btn sm"
-                  style={{ padding: '4px 8px', fontSize: 10 }}
-                  onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col - 0.2 })}
-                  disabled={selectedAsset.locked}
-                  title="Move West"
-                >
-                  ◀
-                </button>
-                <div style={{ fontSize: 9, color: 'var(--text3)', textAlign: 'center' }}>Move</div>
-                <button
-                  className="btn sm"
-                  style={{ padding: '4px 8px', fontSize: 10 }}
-                  onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col + 0.2 })}
-                  disabled={selectedAsset.locked}
-                  title="Move East"
-                >
-                  ▶
-                </button>
-                
-                <div />
-                <button
-                  className="btn sm"
-                  style={{ padding: '4px 8px', fontSize: 10 }}
-                  onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row + 0.2 })}
-                  disabled={selectedAsset.locked}
-                  title="Move South"
-                >
-                  ▼
-                </button>
-                <div />
               </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, color: 'var(--text2)', marginBottom: 4 }}>
-                <span>Rotation</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            ) : selectedAsset ? (
+              <div style={{ padding: '8px 4px', borderBottom: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '25vh', overflowY: 'auto' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#ffffff' }}>{selectedAsset.name}</div>
+                <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)' }}>
+                  Placed by @{selectedAsset.placedBy} · ({selectedAsset.col.toFixed(1)}, {selectedAsset.row.toFixed(1)})
+                </div>
+                
+                {/* Scale */}
+                <div>
+                  <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 8, color: 'rgba(255,255,255,0.8)', marginBottom: 2 }}>
+                    <span>Scale</span>
+                    <span style={{ fontWeight: 600, color: 'var(--accent)' }}>
+                      {(selectedAsset.scaleMultiplier !== undefined ? selectedAsset.scaleMultiplier : getDefaultScaleFactor(selectedAsset)).toFixed(2)}x
+                    </span>
+                  </label>
                   <input
-                    type="number"
+                    type="range"
+                    min={Math.min(0.1, getMaxScaleFactor(selectedAsset)).toFixed(2)}
+                    max={getMaxScaleFactor(selectedAsset).toFixed(2)}
+                    step="0.05"
+                    value={selectedAsset.scaleMultiplier !== undefined ? selectedAsset.scaleMultiplier : getDefaultScaleFactor(selectedAsset)}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      updateAsset(selectedAsset.id, { scaleMultiplier: val });
+                    }}
+                    disabled={selectedAsset.locked}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                {/* Nudge */}
+                <div>
+                  <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginBottom: 4 }}>Position Nudge</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, justifyItems: 'center', alignItems: 'center' }}>
+                    <div />
+                    <button
+                      className="glass-button"
+                      style={{ padding: '1px 5px', fontSize: 8 }}
+                      onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row - 0.2 })}
+                      disabled={selectedAsset.locked}
+                    >
+                      ▲
+                    </button>
+                    <div />
+                    
+                    <button
+                      className="glass-button"
+                      style={{ padding: '1px 5px', fontSize: 8 }}
+                      onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col - 0.2 })}
+                      disabled={selectedAsset.locked}
+                    >
+                      ◀
+                    </button>
+                    <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>Move</div>
+                    <button
+                      className="glass-button"
+                      style={{ padding: '1px 5px', fontSize: 8 }}
+                      onClick={() => updateAsset(selectedAsset.id, { col: selectedAsset.col + 0.2 })}
+                      disabled={selectedAsset.locked}
+                    >
+                      ▶
+                    </button>
+                    
+                    <div />
+                    <button
+                      className="glass-button"
+                      style={{ padding: '1px 5px', fontSize: 8 }}
+                      onClick={() => updateAsset(selectedAsset.id, { row: selectedAsset.row + 0.2 })}
+                      disabled={selectedAsset.locked}
+                    >
+                      ▼
+                    </button>
+                    <div />
+                  </div>
+                </div>
+
+                {/* Rotation */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 8, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>
+                    <span>Rotation</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="360"
+                        value={Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}
+                        onChange={(e) => {
+                          let deg = parseInt(e.target.value);
+                          if (isNaN(deg)) deg = 0;
+                          deg = (deg % 360 + 360) % 360;
+                          const rad = (deg * Math.PI) / 180;
+                          updateAsset(selectedAsset.id, { rotation: rad });
+                        }}
+                        disabled={selectedAsset.locked}
+                        style={{
+                          width: 32,
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: 3,
+                          color: '#60a5fa',
+                          fontSize: 8,
+                          textAlign: 'center',
+                        }}
+                      />
+                      <span>°</span>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
                     min="0"
                     max="360"
+                    step="5"
                     value={Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}
                     onChange={(e) => {
-                      let deg = parseInt(e.target.value);
-                      if (isNaN(deg)) deg = 0;
-                      deg = (deg % 360 + 360) % 360;
+                      const deg = parseInt(e.target.value);
                       const rad = (deg * Math.PI) / 180;
                       updateAsset(selectedAsset.id, { rotation: rad });
                     }}
                     disabled={selectedAsset.locked}
-                    style={{
-                      width: 45,
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 3,
-                      color: 'var(--accent)',
-                      fontSize: 10,
-                      fontWeight: 600,
-                      padding: '2px 4px',
-                      textAlign: 'center',
-                    }}
+                    style={{ width: '100%' }}
                   />
-                  <span>°</span>
                 </div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="360"
-                step="5"
-                value={Math.round(((selectedAsset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360}
-                onChange={(e) => {
-                  const deg = parseInt(e.target.value);
-                  const rad = (deg * Math.PI) / 180;
-                  updateAsset(selectedAsset.id, { rotation: rad });
-                }}
-                disabled={selectedAsset.locked}
-                style={{ width: '100%', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer', accentColor: 'var(--accent)' }}
-              />
-            </div>
 
-            {selectedAsset.objects && selectedAsset.objects.length > 0 && (
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6 }}>
-                <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 600, marginBottom: 4 }}>Objects Colors</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 100, overflowY: 'auto' }}>
-                  {selectedAsset.objects.map((obj, idx) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', padding: '2px 4px', borderRadius: 4 }}>
-                      <span style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'capitalize' }}>
-                        {idx + 1}. {obj.geometry}
-                      </span>
-                      <SmoothColorPicker
-                        value={obj.color || '#4ECDC4'}
-                        onChange={(e) => {
-                          const newObjects = selectedAsset.objects.map((o, oIdx) => {
-                            if (oIdx === idx) {
-                              return { ...o, color: e.target.value };
-                            }
-                            return o;
-                          });
-                          updateAsset(selectedAsset.id, { objects: newObjects });
-                        }}
-                        disabled={selectedAsset.locked}
-                        style={{
-                          width: 18, height: 16, border: 'none', padding: 0,
-                          background: 'none', cursor: selectedAsset.locked ? 'not-allowed' : 'pointer'
-                        }}
-                      />
+                {/* Colors */}
+                {selectedAsset.objects && selectedAsset.objects.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginBottom: 4 }}>Object Colors</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 60, overflowY: 'auto' }}>
+                      {selectedAsset.objects.map((obj, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', padding: '2px 4px', borderRadius: 4 }}>
+                          <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', textTransform: 'capitalize' }}>
+                            {idx + 1}. {obj.geometry}
+                          </span>
+                          <SmoothColorPicker
+                            value={obj.color || '#4ECDC4'}
+                            onChange={(e) => {
+                              const newObjects = selectedAsset.objects.map((o, oIdx) => {
+                                  if (oIdx === idx) {
+                                    return { ...o, color: e.target.value };
+                                  }
+                                  return o;
+                                });
+                                updateAsset(selectedAsset.id, { objects: newObjects });
+                            }}
+                            disabled={selectedAsset.locked}
+                            style={{
+                              width: 14, height: 12, border: 'none', padding: 0,
+                              background: 'none'
+                            }}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                  <button
+                    className="glass-button danger"
+                    style={{ flex: 1, height: 22, fontSize: 9 }}
+                    onClick={() => {
+                      removeAsset(selectedAsset.id);
+                      selectAsset(null);
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className="glass-button"
+                    style={{ flex: 1, height: 22, fontSize: 9 }}
+                    onClick={() => {
+                      updateAsset(selectedAsset.id, { locked: !selectedAsset.locked });
+                    }}
+                  >
+                    {selectedAsset.locked ? 'Unlock' : 'Lock'}
+                  </button>
                 </div>
               </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-              <button
-                className="btn sm danger"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={() => {
-                  removeAsset(selectedAsset.id);
-                  selectAsset(null);
-                }}
-              >
-                🗑️ Delete
-              </button>
-              <button
-                className="btn sm"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={() => {
-                  updateAsset(selectedAsset.id, { locked: !selectedAsset.locked });
-                }}
-              >
-                {selectedAsset.locked ? '🔓 Unlock' : '🔒 Lock'}
-              </button>
-            </div>
-          </div>
-        )}
-        {selectedRoad && (
-          <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:8 }}>
-            <div>
-              <div style={{ fontSize:12, fontWeight:600, color:'var(--text)' }}>Selected Road</div>
-              <div style={{ fontSize:10, color:'var(--text3)', marginTop:2, textTransform: 'capitalize' }}>
-                Type: {selectedRoad.roadType || 'standard'}<br />
-                Nodes: {selectedRoad.points?.length || 0}
+            ) : selectedRoad ? (
+              <div style={{ padding: '8px 4px', borderBottom: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: '#ffffff' }}>Selected Road</div>
+                  <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', marginTop: 2, textTransform: 'capitalize' }}>
+                    Type: {selectedRoad.roadType || 'standard'} · Nodes: {selectedRoad.points?.length || 0}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                  <button
+                    className="glass-button danger"
+                    style={{ flex: 1, height: 22, fontSize: 9 }}
+                    onClick={() => {
+                      removeRoadSegment(selectedRoad.id);
+                      setSelectedRoadId(null);
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className="glass-button"
+                    style={{ flex: 1, height: 22, fontSize: 9 }}
+                    onClick={() => {
+                      updateRoad(selectedRoad.id, { locked: !selectedRoad.locked });
+                    }}
+                  >
+                    {selectedRoad.locked ? 'Unlock' : 'Lock'}
+                  </button>
+                </div>
               </div>
-            </div>
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-              <button
-                className="btn sm danger"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={() => {
-                  removeRoadSegment(selectedRoad.id);
-                  setSelectedRoadId(null);
-                }}
-              >
-                🗑️ Delete
-              </button>
-              <button
-                className="btn sm"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={() => {
-                  updateRoad(selectedRoad.id, { locked: !selectedRoad.locked });
-                }}
-              >
-                {selectedRoad.locked ? '🔓 Unlock' : '🔒 Lock'}
-              </button>
+            ) : null}
+
+            {/* Main Object List */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, paddingRight: 4 }}>
+              {/* Buildings & Trees Section */}
+              <div style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
+                Buildings & Trees ({(city?.placedAssets || []).length})
+              </div>
+              {(city?.placedAssets || []).length === 0 ? (
+                <div style={{ padding: '8px 0', fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                  No objects placed.
+                </div>
+              ) : (
+                (city?.placedAssets || []).map(asset => {
+                  const isSel = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
+                  return (
+                    <div key={asset.id}
+                      onClick={() => {
+                        selectAsset(asset.id === selectedAssetId ? null : asset.id);
+                        setSelectedRoadId(null);
+                      }}
+                      style={{
+                        padding: '4px 6px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        background: isSel ? 'rgba(78,205,196,0.15)' : 'rgba(255,255,255,0.03)',
+                        borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
+                        opacity: asset.locked ? 0.6 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 4
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: 1, background: asset.color || '#4ECDC4', flexShrink: 0 }} />
+                          <span style={{ fontSize: 10, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {asset.name}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateAsset(asset.id, { locked: !asset.locked });
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 10,
+                          padding: '2px',
+                          opacity: 0.8
+                        }}
+                      >
+                        {asset.locked ? '🔒' : '🔓'}
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+
+              {/* Roads Section */}
+              <div style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: 8 }}>
+                Roads ({(city?.roads || []).length})
+              </div>
+              {(city?.roads || []).length === 0 ? (
+                <div style={{ padding: '8px 0', fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                  No roads built.
+                </div>
+              ) : (
+                (city?.roads || []).map(road => {
+                  const isSel = road.id === selectedRoadId;
+                  const typeLabel = road.roadType === 'highway' ? 'Highway' : road.roadType === 'multilane' ? 'Multilane' : 'Standard Road';
+                  return (
+                    <div key={road.id}
+                      onClick={() => {
+                        setSelectedRoadId(isSel ? null : road.id);
+                        selectAsset(null);
+                      }}
+                      style={{
+                        padding: '4px 6px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        background: isSel ? 'rgba(78,205,196,0.15)' : 'rgba(255,255,255,0.03)',
+                        borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
+                        opacity: road.locked ? 0.6 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 4
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: 10, color: '#ffffff' }}>🛣️ {typeLabel}</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateRoad(road.id, { locked: !road.locked });
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 10,
+                          padding: '2px',
+                          opacity: 0.8
+                        }}
+                      >
+                        {road.locked ? '🔒' : '🔓'}
+                      </button>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}
       </div>
+
+      {/* ── Sub-menu Overlay for Build Categories (above build deck) ── */}
+      {activeCategory && (
+        <div className="glass-panel" style={{
+          position: 'absolute',
+          bottom: 76,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+          display: 'flex',
+          gap: 8,
+          padding: '8px 12px',
+          maxHeight: 140,
+          maxWidth: '90vw',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          alignItems: 'center',
+          borderRadius: 16
+        }}>
+          {activeCategory === 'roads' && [
+            { id: 'standard', name: 'Standard Road', icon: '🛣️', desc: '2 lanes' },
+            { id: 'multilane', name: 'Multi-lane Road', icon: '🛣️', desc: '4 lanes' },
+            { id: 'highway', name: 'Highway', icon: '🛣️', desc: '4 lanes + Median' },
+          ].map(r => {
+            const isAct = cityTool === 'road' && activeRoadType === r.id;
+            return (
+              <button
+                key={r.id}
+                className={`glass-button ${isAct ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveRoadType(r.id);
+                  useStore.setState({ cityTool: 'road', pendingPlacementAsset: null });
+                }}
+                style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 90, height: 56, gap: 2 }}
+              >
+                <span style={{ fontSize: 14 }}>{r.icon}</span>
+                <span style={{ fontSize: 10, fontWeight: 600 }}>{r.name}</span>
+                <span style={{ fontSize: 7, opacity: 0.7 }}>{r.desc}</span>
+              </button>
+            );
+          })}
+
+          {/* Preset templates for residential, commercial, industrial, civic, green */}
+          {['residential', 'commercial', 'industrial', 'civic', 'green'].includes(activeCategory) &&
+            TEMPLATES.filter(t => {
+              if (activeCategory === 'green') {
+                return t.category === 'green' || [
+                  'tree_oak', 'tree_pine', 'tree_birch', 'tree_maple', 'tree_cherry', 'tree_palm', 'tree_baobab', 'tree_cypress', 'tree_willow'
+                ].includes(t.id);
+              }
+              return t.category === activeCategory;
+            }).map(t => {
+              const isAct = pendingPlacementAsset?.name === t.name;
+              return (
+                <button
+                  key={t.id}
+                  className={`glass-button ${isAct ? 'active' : ''}`}
+                  onClick={() => {
+                    useStore.setState({
+                      pendingPlacementAsset: {
+                        name: t.name,
+                        objects: t.objects,
+                        color: t.objects[0]?.color || '#4ECDC4',
+                        width: t.width || 2.0,
+                        height: t.height || 2.0,
+                      },
+                      cityTool: 'select',
+                    });
+                  }}
+                  style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 56, gap: 2 }}
+                >
+                  <span style={{ fontSize: 14 }}>{t.icon}</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '85px', textAlign: 'center' }}>{t.name}</span>
+                  <span style={{ fontSize: 7, opacity: 0.7 }}>{t.width || 2}x{t.height || 2} units</span>
+                </button>
+              );
+            })
+          }
+
+          {/* Custom published buildings */}
+          {activeCategory === 'custom' && (
+            publishedBuildings && publishedBuildings.length === 0 ? (
+              <div style={{ padding: '8px 16px', fontSize: 10, color: 'rgba(255,255,255,0.7)', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                No custom buildings published yet.<br />Design a building in the 3D Editor and click "Publish Selected".
+              </div>
+            ) : (
+              (publishedBuildings || []).map(b => {
+                const isAct = pendingPlacementAsset?.name === b.name;
+                return (
+                  <div key={b.id} style={{ display: 'flex', position: 'relative' }}>
+                    <button
+                      className={`glass-button ${isAct ? 'active' : ''}`}
+                      onClick={() => {
+                        useStore.setState({
+                          pendingPlacementAsset: {
+                            name: b.name,
+                            objects: b.objects,
+                            color: b.objects[0]?.color || '#4ECDC4',
+                            width: b.width || 2.0,
+                            height: b.height || 2.0,
+                          },
+                          cityTool: 'select',
+                        });
+                      }}
+                      style={{ flexDirection: 'column', padding: '6px 20px 6px 10px', minWidth: 90, height: 56, gap: 2 }}
+                    >
+                      <span style={{ fontSize: 14 }}>📐</span>
+                      <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '65px', textAlign: 'center' }}>{b.name}</span>
+                      <span style={{ fontSize: 7, opacity: 0.7 }}>Custom</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete "${b.name}" from your library?`)) {
+                          deletePublishedBuilding(b.id);
+                        }
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        right: 2,
+                        background: 'none',
+                        border: 'none',
+                        color: 'rgba(255,255,255,0.6)',
+                        cursor: 'pointer',
+                        fontSize: 9,
+                        padding: 1,
+                      }}
+                      title="Delete custom building"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })
+            )
+          )}
+        </div>
+      )}
+
+      {/* ── Bottom-Center: Main Build Categories Dock ── */}
+      <div className="glass-panel" style={{
+        position: 'absolute',
+        bottom: 24,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 100,
+        display: 'flex',
+        gap: 6,
+        padding: '6px 12px',
+        borderRadius: 30,
+        alignItems: 'center'
+      }}>
+        {[
+          { id: 'roads', label: 'Roads', icon: '🛣️' },
+          { id: 'residential', label: 'Residency', icon: '🏠' },
+          { id: 'commercial', label: 'Commercial', icon: '🏢' },
+          { id: 'industrial', label: 'Industrial', icon: '🏭' },
+          { id: 'civic', label: 'Civic', icon: '🏛️' },
+          { id: 'green', label: 'Green', icon: '🌳' },
+          { id: 'custom', label: 'Custom', icon: '📐' },
+        ].map(cat => (
+          <button
+            key={cat.id}
+            className={`glass-button ${activeCategory === cat.id ? 'active' : ''}`}
+            onClick={() => {
+              setActiveCategory(activeCategory === cat.id ? null : cat.id);
+              useStore.setState({ pendingPlacementAsset: null }); // clear pending on tab switch
+            }}
+            style={{
+              borderRadius: 20,
+              padding: '6px 12px',
+              fontSize: 11,
+              fontWeight: 600,
+              height: 32
+            }}
+          >
+            <span>{cat.icon}</span>
+            <span style={{ fontSize: 10 }}>{cat.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Right-Side: Floating Zoom Controls ── */}
+      {!streetView && (
+        <div style={{ position:'absolute', bottom: 100, right: 16, display:'flex', flexDirection:'column', gap:6, zIndex: 100 }}>
+          <button className="glass-button" onClick={() => handleZoomButton(true)} style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14 }}>＋</button>
+          <button className="glass-button" onClick={() => handleZoomButton(false)} style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14 }}>－</button>
+          <button className="glass-button" onClick={() => { targetZoomRef.current = 1.0; targetOffsetRef.current = {x:16,y:16}; }} style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}>⟳</button>
+        </div>
+      )}
+
+      {/* ── Bottom-Left: Floating Legend ── */}
+      {!streetView && (
+        <div className="glass-panel" style={{ position:'absolute', bottom: 24, left: 16, padding:'8px 12px', zIndex: 100, borderRadius: 12 }}>
+          {Object.entries(ZONE_META).filter(([k])=>k!=='empty').map(([type,meta]) => (
+            <div key={type} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3, fontSize:10 }}>
+              <div style={{ width:8, height:8, borderRadius:2, background:meta.color, flexShrink:0 }} />
+              <span style={{ color: 'rgba(255,255,255,0.8)' }}>{meta.label}</span>
+            </div>
+          ))}
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:3, fontSize:10 }}>
+            <div style={{ width:8, height:8, borderRadius:2, background:'#1e2a38', border:'1px solid #445566', flexShrink:0 }} />
+            <span style={{ color: 'rgba(255,255,255,0.8)' }}>Road</span>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -2990,6 +3194,55 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           legSwing: Math.random() * 10
         });
       }
+    }
+
+    // Render zones in 3D (flat ground color, border loop, and floating sprite label)
+    if (city.zones && city.zones.length > 0) {
+      city.zones.forEach(zone => {
+        if (!zone.points || zone.points.length < 3) return;
+        
+        // 1. Draw flat color zone shape on ground
+        const shape = new THREE.Shape();
+        zone.points.forEach((pt, idx) => {
+          if (idx === 0) shape.moveTo(pt.x * cellS, -pt.z * cellS);
+          else shape.lineTo(pt.x * cellS, -pt.z * cellS);
+        });
+        const shapeGeo = new THREE.ShapeGeometry(shape);
+        const shapeMat = new THREE.MeshBasicMaterial({
+          color: zone.color,
+          transparent: true,
+          opacity: 0.15,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const shapeMesh = new THREE.Mesh(shapeGeo, shapeMat);
+        shapeMesh.rotation.x = -Math.PI / 2;
+        shapeMesh.position.y = 0.005;
+        scene.add(shapeMesh);
+        meshesRef.current.push(shapeMesh);
+        
+        // 2. Draw border line loop
+        const points = zone.points.map(pt => new THREE.Vector3(pt.x * cellS, 0.006, pt.z * cellS));
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+        const lineMat = new THREE.LineBasicMaterial({ color: zone.color });
+        const lineLoop = new THREE.LineLoop(lineGeo, lineMat);
+        scene.add(lineLoop);
+        meshesRef.current.push(lineLoop);
+        
+        // 3. Draw floating billboard label above centroid
+        let sumX = 0, sumZ = 0;
+        zone.points.forEach(pt => {
+          sumX += pt.x;
+          sumZ += pt.z;
+        });
+        const cx = sumX / zone.points.length;
+        const cz = sumZ / zone.points.length;
+        
+        const labelSprite = createZoneLabelSprite(zone.name, zone.color);
+        labelSprite.position.set(cx * cellS, 3.5, cz * cellS);
+        scene.add(labelSprite);
+        meshesRef.current.push(labelSprite);
+      });
     }
   }, [city, selectedAssetId, selectedRoadId, intersections]);
 
@@ -4096,6 +4349,44 @@ function createHumanMesh(clothingColor) {
   group.add(legR);
   
   return group;
+}
+
+function createZoneLabelSprite(name, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  
+  // Clear
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw nice pill background
+  ctx.fillStyle = 'rgba(22, 27, 38, 0.85)';
+  ctx.strokeStyle = color || '#4ECDC4';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(8, 8, canvas.width - 16, canvas.height - 16, 32);
+  ctx.fill();
+  ctx.stroke();
+  
+  // Draw text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(name, canvas.width / 2, canvas.height / 2);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false, // make it always draw on top
+    sizeAttenuation: true
+  });
+  
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(6.0, 1.5, 1.0);
+  return sprite;
 }
 
 // Need THREE in StreetView

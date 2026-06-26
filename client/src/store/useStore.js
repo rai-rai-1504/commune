@@ -158,6 +158,33 @@ export const useStore = create((set, get) => ({
         }));
         break;
 
+      case 'CITY_ZONE_ADDED':
+        set(state => ({
+          city: state.city ? {
+            ...state.city,
+            zones: [...(state.city.zones || []), msg.zone]
+          } : state.city
+        }));
+        break;
+
+      case 'CITY_ZONE_REMOVED':
+        set(state => ({
+          city: state.city ? {
+            ...state.city,
+            zones: (state.city.zones || []).filter(z => z.id !== msg.zoneId)
+          } : state.city
+        }));
+        break;
+
+      case 'CITY_ZONE_UPDATED':
+        set(state => ({
+          city: state.city ? {
+            ...state.city,
+            zones: (state.city.zones || []).map(z => z.id === msg.zone.id ? msg.zone : z)
+          } : state.city
+        }));
+        break;
+
       case 'CITY_STATS_UPDATE':
         set(state => ({ city: state.city ? { ...state.city, stats: msg.stats } : state.city }));
         break;
@@ -813,6 +840,32 @@ export const useStore = create((set, get) => ({
       city: state.city ? {
         ...state.city,
         roads: (state.city.roads || []).map(r => r.id === roadId ? { ...r, ...updates } : r)
+      } : state.city
+    }));
+  },
+
+  addZone(name, points, color = '#4ECDC4') {
+    const id = uuid();
+    const newZone = { id, name, points, color };
+    get().send({ type: 'CITY_ADD_ZONE', zone: newZone });
+    set(state => ({
+      city: state.city ? { ...state.city, zones: [...(state.city.zones || []), newZone] } : state.city
+    }));
+  },
+
+  removeZone(zoneId) {
+    get().send({ type: 'CITY_REMOVE_ZONE', zoneId });
+    set(state => ({
+      city: state.city ? { ...state.city, zones: (state.city.zones || []).filter(z => z.id !== zoneId) } : state.city
+    }));
+  },
+
+  updateZone(zoneId, updates) {
+    get().send({ type: 'CITY_UPDATE_ZONE', zoneId, ...updates });
+    set(state => ({
+      city: state.city ? {
+        ...state.city,
+        zones: (state.city.zones || []).map(z => z.id === zoneId ? { ...z, ...updates } : z)
       } : state.city
     }));
   },

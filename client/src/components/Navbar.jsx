@@ -14,7 +14,6 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <div className="nav-logo">commune<span>.build</span></div>
       {TABS.map(t => (
         <button key={t.id} className={`nav-tab ${activeModule === t.id ? 'active' : ''}`} onClick={() => setActiveModule(t.id)}>
           <span>{t.icon}</span> {t.label}
