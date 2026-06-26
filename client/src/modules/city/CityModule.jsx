@@ -1,10 +1,293 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
 import { useStore } from '../../store/useStore';
 import { TEMPLATES } from '../../components/AssetLibrary';
 
+function SmoothColorPicker({ value, onChange, disabled, style }) {
+  const [localVal, setLocalVal] = useState(value);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    const handleChange = (e) => {
+      onChange({ target: { value: e.target.value } });
+    };
+
+    input.addEventListener('change', handleChange);
+    return () => {
+      input.removeEventListener('change', handleChange);
+    };
+  }, [onChange]);
+
+  return (
+    <input
+      ref={inputRef}
+      type="color"
+      value={localVal}
+      disabled={disabled}
+      onChange={(e) => setLocalVal(e.target.value)}
+      style={style}
+    />
+  );
+}
+
 const CELL = 34;
+
+// Cache for road curves to prevent massive GC pressure and CPU overhead in the render loops
+const roadCurveCache = new Map();
+
+function getRoadSamples(roadId, roadPoints) {
+  if (!roadPoints || roadPoints.length < 2) return [];
+  const hash = roadPoints.map(p => `${p.x},${p.z}`).join('|');
+  const cached = roadCurveCache.get(roadId);
+  if (cached && cached.hash === hash) {
+    return cached.samples;
+  }
+  const points3d = roadPoints.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
+  const curve = new THREE.CatmullRomCurve3(points3d);
+  const samples = curve.getPoints(Math.max(30, roadPoints.length * 10));
+  roadCurveCache.set(roadId, { hash, samples });
+  return samples;
+}
+
+function findIntersections(roads) {
+  if (!roads || roads.length < 2) return [];
+  
+  const roadCurves = roads.map(r => {
+    if (r.points.length < 2) return null;
+    const samples = getRoadSamples(r.id, r.points);
+    const radius = r.roadType === 'highway' ? 2.2 : r.roadType === 'multilane' ? 1.5 : r.roadType === 'dirt' ? 0.75 : 0.9;
+    return { id: r.id, type: r.roadType || 'standard', radius, samples };
+  }).filter(Boolean);
+
+  const rawPoints = [];
+
+  for (let i = 0; i < roadCurves.length; i++) {
+    const rA = roadCurves[i];
+    for (let j = i + 1; j < roadCurves.length; j++) {
+      const rB = roadCurves[j];
+      
+      let closestDist = Infinity;
+      let closestPt = null;
+
+      for (let pA of rA.samples) {
+        for (let pB of rB.samples) {
+          const dx = pA.x - pB.x;
+          const dz = pA.z - pB.z;
+          const d = Math.sqrt(dx * dx + dz * dz);
+          if (d < 0.25 && d < closestDist) {
+            closestDist = d;
+            closestPt = { x: (pA.x + pB.x) / 2, z: (pA.z + pB.z) / 2 };
+          }
+        }
+      }
+
+      if (closestPt) {
+        rawPoints.push({ x: closestPt.x, z: closestPt.z, roads: [rA.id, rB.id] });
+      }
+    }
+  }
+
+  const nodes = [];
+  rawPoints.forEach(pt => {
+    let merged = false;
+    for (let n of nodes) {
+      const dx = n.x - pt.x;
+      const dz = n.z - pt.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 0.6) {
+        pt.roads.forEach(rId => {
+          if (!n.roads.includes(rId)) n.roads.push(rId);
+        });
+        merged = true;
+        break;
+      }
+    }
+    if (!merged) {
+      nodes.push({ x: pt.x, z: pt.z, roads: [...pt.roads] });
+    }
+  });
+
+  return nodes.map((n, idx) => {
+    let maxRadiusMeters = 0.9;
+    let primaryRoadType = 'standard';
+    
+    n.roads.forEach(rId => {
+      const r = roadCurves.find(rc => rc.id === rId);
+      if (r) {
+        if (r.radius > maxRadiusMeters) {
+          maxRadiusMeters = r.radius;
+          primaryRoadType = r.type;
+        }
+      }
+    });
+
+    let color = '#475569';
+    if (primaryRoadType === 'dirt') color = '#8b5a2b';
+    else if (primaryRoadType === 'brick') color = '#a63a3a';
+    else if (primaryRoadType === 'highway') color = '#1e293b';
+
+    return {
+      id: `node_${idx}`,
+      x: n.x,
+      z: n.z,
+      radiusGrid: maxRadiusMeters / 3.4,
+      radiusMeters: maxRadiusMeters,
+      roads: n.roads,
+      color,
+      primaryRoadType
+    };
+  });
+}
+
+function isSampleCulled(pt, roadId, intersections) {
+  for (const node of intersections) {
+    if (!node.roads.includes(roadId)) continue;
+    const dx = pt.x - node.x;
+    const dz = pt.z - node.z;
+    const dSq = dx * dx + dz * dz;
+    if (dSq < node.radiusGrid * node.radiusGrid) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const createGrassTexture = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Base grass color
+  ctx.fillStyle = '#689f38';
+  ctx.fillRect(0, 0, 256, 256);
+
+  // Add noise/blades
+  for (let i = 0; i < 4000; i++) {
+    const x = Math.random() * 256;
+    const y = Math.random() * 256;
+    const len = 2 + Math.random() * 3;
+    const angle = (Math.random() - 0.5) * 0.2;
+    
+    // Vary shade of green
+    const green = 110 + Math.floor(Math.random() * 40);
+    ctx.strokeStyle = `rgb(${Math.floor(green*0.55)}, ${green}, ${Math.floor(green*0.35)})`;
+    ctx.lineWidth = 0.8 + Math.random() * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.sin(angle) * len, y - Math.cos(angle) * len);
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1000, 1000);
+  return texture;
+};
+
+const createAsphaltTexture = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+
+  // Base asphalt grey
+  ctx.fillStyle = '#2a2e35';
+  ctx.fillRect(0, 0, 128, 128);
+
+  // Fine speckles
+  for (let i = 0; i < 3000; i++) {
+    const x = Math.random() * 128;
+    const y = Math.random() * 128;
+    const size = 0.5 + Math.random() * 0.8;
+    const shade = 30 + Math.floor(Math.random() * 15);
+    ctx.fillStyle = `rgb(${shade}, ${shade}, ${shade})`;
+    ctx.fillRect(x, y, size, size);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+};
+
+const createDirtTexture = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+
+  // Dirt brown
+  ctx.fillStyle = '#8b5a2b';
+  ctx.fillRect(0, 0, 128, 128);
+
+  // Pebbles and grit
+  for (let i = 0; i < 2000; i++) {
+    const x = Math.random() * 128;
+    const y = Math.random() * 128;
+    const size = 0.6 + Math.random() * 1.4;
+    const shade = 80 + Math.floor(Math.random() * 30);
+    ctx.fillStyle = `rgb(${shade}, ${Math.floor(shade * 0.68)}, ${Math.floor(shade * 0.38)})`;
+    ctx.fillRect(x, y, size, size);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+};
+
+const createBrickTexture = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+
+  // Brick red
+  ctx.fillStyle = '#a63a3a';
+  ctx.fillRect(0, 0, 128, 128);
+
+  // Add some brick texture variation
+  for (let i = 0; i < 800; i++) {
+    const x = Math.random() * 128;
+    const y = Math.random() * 128;
+    const size = 1.0 + Math.random() * 2.0;
+    const shade = 140 + Math.floor(Math.random() * 40);
+    ctx.fillStyle = `rgb(${shade}, ${Math.floor(shade * 0.3)}, ${Math.floor(shade * 0.3)})`;
+    ctx.fillRect(x, y, size, size);
+  }
+
+  // Draw mortar joints
+  ctx.fillStyle = '#bababa'; // Light grey mortar
+  
+  // Horizontal mortar lines
+  for (let y = 0; y < 128; y += 16) {
+    ctx.fillRect(0, y, 128, 1.5);
+  }
+
+  // Vertical mortar joints (staggered)
+  for (let y = 0; y < 128; y += 16) {
+    const isStaggered = (y % 32 === 0);
+    const startX = isStaggered ? 0 : 16;
+    for (let x = startX; x < 128; x += 32) {
+      ctx.fillRect(x, y, 1.5, 16);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+};
 
 const SHAPE_FACES = {
   box: ['Right', 'Left', 'Top', 'Bottom', 'Front', 'Back'],
@@ -47,13 +330,38 @@ function getStreetGeo(type) {
       case 'torus':    STREET_GEO[type] = new THREE.TorusGeometry(0.38, 0.16, 8, 16); break;
       case 'wedge': {
         const g = new THREE.BufferGeometry();
-        const v = new Float32Array([
-          -0.5,0,-0.5,  0.5,0,-0.5,  0.5,0,0.5,  -0.5,0,0.5,
-          -0.5,1,-0.5,  0.5,1,-0.5,
+        const pos = new Float32Array([
+          // Bottom face (y = 0, normal points down: 0, -1, 0)
+          -0.5, 0, -0.5,   0.5, 0,  0.5,  -0.5, 0,  0.5,
+          -0.5, 0, -0.5,   0.5, 0, -0.5,   0.5, 0,  0.5,
+          // Back face (z = -0.5, normal points back: 0, 0, -1)
+          -0.5, 0, -0.5,   0.5, 1, -0.5,   0.5, 0, -0.5,
+          -0.5, 0, -0.5,  -0.5, 1, -0.5,   0.5, 1, -0.5,
+          // Left face (x = -0.5, normal points left: -1, 0, 0)
+          -0.5, 0, -0.5,  -0.5, 0,  0.5,  -0.5, 1, -0.5,
+          // Right face (x = 0.5, normal points right: 1, 0, 0)
+           0.5, 0, -0.5,   0.5, 1, -0.5,   0.5, 0,  0.5,
+          // Slanted front face (normal points up/forward: 0, 0.707, 0.707)
+          -0.5, 0,  0.5,   0.5, 0,  0.5,   0.5, 1, -0.5,
+          -0.5, 0,  0.5,   0.5, 1, -0.5,  -0.5, 1, -0.5,
         ]);
-        const idx = [0,1,2, 0,2,3, 0,1,5, 0,5,4, 0,4,3, 1,2,5, 3,4,5, 2,3,5];
-        g.setAttribute('position', new THREE.BufferAttribute(v, 3));
-        g.setIndex(idx);
+        const uvs = new Float32Array([
+          // Bottom face
+          0, 0,   1, 1,   0, 1,
+          0, 0,   1, 0,   1, 1,
+          // Back face
+          0, 0,   1, 1,   1, 0,
+          0, 0,   0, 1,   1, 1,
+          // Left face
+          0, 0,   1, 0,   0, 1,
+          // Right face
+          0, 0,   0, 1,   1, 0,
+          // Slanted face
+          0, 0,   1, 0,   1, 1,
+          0, 0,   1, 1,   0, 1,
+        ]);
+        g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
         g.computeVertexNormals();
         STREET_GEO[type] = g;
         break;
@@ -66,7 +374,29 @@ function getStreetGeo(type) {
 
 const cityCSGEvaluator = new Evaluator();
 
+const cityCSGGeometriesSet = new Set();
+const cityCSGGeometryCache = new Map();
+
+const getCityCSGKey = (obj) => {
+  return (obj.children || []).map(c => 
+    `${c.id}_${c.geometry}_${c.color}_${c.isSubtractive}_` +
+    `${c.position?.x},${c.position?.y},${c.position?.z}_` +
+    `${c.rotation?.x},${c.rotation?.y},${c.rotation?.z}_` +
+    `${c.scale?.x},${c.scale?.y},${c.scale?.z}` +
+    (c.geometry === 'csg' ? `_CSG_${getCityCSGKey(c)}` : '')
+  ).join('|');
+};
+
 function buildCSGGeometryInStreetView(obj) {
+  const cacheKey = getCityCSGKey(obj);
+  if (cityCSGGeometryCache.has(cacheKey)) {
+    const cached = cityCSGGeometryCache.get(cacheKey);
+    const materials = Array.isArray(cached.materials)
+      ? cached.materials.map(m => m.clone())
+      : cached.materials.clone();
+    return { geometry: cached.geometry, materials };
+  }
+
   const children = obj.children || [];
   if (children.length === 0) {
     return { geometry: new THREE.BoxGeometry(0.1, 0.1, 0.1), materials: new THREE.MeshStandardMaterial({ color: 0xcccccc }) };
@@ -148,9 +478,19 @@ function buildCSGGeometryInStreetView(obj) {
     resultBrush = cityCSGEvaluator.evaluate(resultBrush, brush, SUBTRACTION);
   });
 
+  const resGeom = resultBrush.geometry;
+  const resMats = resultBrush.material || brushMaterials;
+
+  cityCSGGeometryCache.set(cacheKey, { geometry: resGeom, materials: resMats });
+  cityCSGGeometriesSet.add(resGeom);
+
+  const materials = Array.isArray(resMats)
+    ? resMats.map(m => m.clone())
+    : resMats.clone();
+
   return {
-    geometry: resultBrush.geometry,
-    materials: resultBrush.material || brushMaterials
+    geometry: resGeom,
+    materials
   };
 }
 
@@ -242,6 +582,7 @@ export default function CityModule() {
   const canvasRef = useRef(null);
   const [offset, setOffset] = useState({ x: 16, y: 16 });
   const [zoom, setZoom] = useState(1.0);
+  const intersections = useMemo(() => findIntersections(city?.roads || []), [city?.roads]);
   const [leftTab, setLeftTab] = useState('presets');
 
   const targetZoomRef = useRef(1.0);
@@ -252,6 +593,11 @@ export default function CityModule() {
   useEffect(() => {
     targetZoomRef.current = zoom;
     targetOffsetRef.current = offset;
+    return () => {
+      cityCSGGeometryCache.clear();
+      cityCSGGeometriesSet.clear();
+      roadCurveCache.clear();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -569,36 +915,67 @@ export default function CityModule() {
       ctx.stroke();
     }
 
-    const drawRoad = (roadPoints, type, isPreview, isSelected) => {
+    const drawRoad = (roadPoints, type, isPreview, isSelected, roadId) => {
       if (roadPoints.length < 2) return;
       
-      const points3d = roadPoints.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
-      const curve = new THREE.CatmullRomCurve3(points3d);
-      const samples = curve.getPoints(Math.max(30, roadPoints.length * 10));
+      const samples = roadId ? getRoadSamples(roadId, roadPoints) : (() => {
+        const points3d = roadPoints.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
+        const curve = new THREE.CatmullRomCurve3(points3d);
+        return curve.getPoints(Math.max(30, roadPoints.length * 10));
+      })();
       
-      const screenPoints = samples.map(pt => ({
+      const segments = [];
+      let currentSeg = [];
+      for (const pt of samples) {
+        const isCulled = roadId ? isSampleCulled(pt, roadId, intersections) : false;
+        if (isCulled) {
+          if (currentSeg.length >= 2) {
+            segments.push(currentSeg);
+          }
+          currentSeg = [];
+        } else {
+          currentSeg.push(pt);
+        }
+      }
+      if (currentSeg.length >= 2) {
+        segments.push(currentSeg);
+      }
+
+      const untrimmedScreenPoints = [samples.map(pt => ({
         x: offset.x + pt.x * cellSize,
         z: offset.y + pt.z * cellSize
-      }));
+      }))];
+
+      const segmentScreenPoints = segments.map(seg => seg.map(pt => ({
+        x: offset.x + pt.x * cellSize,
+        z: offset.y + pt.z * cellSize
+      })));
 
       const opacity = isPreview ? 0.6 : 1.0;
       
-      const drawCurvePoints = (points) => {
-        ctx.beginPath();
-        points.forEach((pt, idx) => {
-          if (idx === 0) ctx.moveTo(pt.x, pt.z);
-          else ctx.lineTo(pt.x, pt.z);
+      const drawCurvePoints = (segList) => {
+        segList.forEach(points => {
+          if (points.length < 2) return;
+          ctx.beginPath();
+          points.forEach((pt, idx) => {
+            if (idx === 0) ctx.moveTo(pt.x, pt.z);
+            else ctx.lineTo(pt.x, pt.z);
+          });
+          ctx.stroke();
         });
-        ctx.stroke();
+      };
+
+      const getOffsetSegments = (segmentsList, dist) => {
+        return segmentsList.map(seg => getOffsetPoints(seg, dist));
       };
 
       if (isSelected) {
         ctx.save();
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-        ctx.lineWidth = (type === 'highway' ? 52 : type === 'multilane' ? 36 : 24) * zoom;
+        ctx.lineWidth = (type === 'highway' ? 52 : type === 'multilane' ? 36 : type === 'dirt' ? 20 : 24) * zoom;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        drawCurvePoints(screenPoints);
+        drawCurvePoints(untrimmedScreenPoints);
         ctx.restore();
       }
 
@@ -608,21 +985,21 @@ export default function CityModule() {
         ctx.lineWidth = 28 * zoom;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        drawCurvePoints(screenPoints);
+        drawCurvePoints(untrimmedScreenPoints);
 
         // Double yellow center lines
         ctx.strokeStyle = `rgba(245, 158, 11, ${opacity})`;
         ctx.lineWidth = 1.5 * zoom;
         ctx.lineCap = 'butt';
-        drawCurvePoints(getOffsetPoints(screenPoints, 2 * zoom));
-        drawCurvePoints(getOffsetPoints(screenPoints, -2 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 2 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -2 * zoom));
 
         // Dashed lane lines
         ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45})`;
         ctx.lineWidth = 1.5 * zoom;
         ctx.setLineDash([5 * zoom, 8 * zoom]);
-        drawCurvePoints(getOffsetPoints(screenPoints, 8 * zoom));
-        drawCurvePoints(getOffsetPoints(screenPoints, -8 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 8 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -8 * zoom));
         ctx.setLineDash([]);
       } else if (type === 'highway') {
         // Main pavement
@@ -630,55 +1007,95 @@ export default function CityModule() {
         ctx.lineWidth = 44 * zoom;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        drawCurvePoints(screenPoints);
+        drawCurvePoints(untrimmedScreenPoints);
 
         // Concrete median (center)
         ctx.strokeStyle = `rgba(203, 213, 225, ${opacity})`;
         ctx.lineWidth = 4 * zoom;
         ctx.lineCap = 'round';
-        drawCurvePoints(screenPoints);
+        drawCurvePoints(untrimmedScreenPoints);
 
         // Solid yellow inner shoulders
         ctx.strokeStyle = `rgba(245, 158, 11, ${opacity})`;
         ctx.lineWidth = 1.5 * zoom;
         ctx.lineCap = 'butt';
-        drawCurvePoints(getOffsetPoints(screenPoints, 4.5 * zoom));
-        drawCurvePoints(getOffsetPoints(screenPoints, -4.5 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 4.5 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -4.5 * zoom));
 
         // Dashed lane lines
         ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45})`;
         ctx.lineWidth = 1.5 * zoom;
         ctx.setLineDash([6 * zoom, 10 * zoom]);
-        drawCurvePoints(getOffsetPoints(screenPoints, 12 * zoom));
-        drawCurvePoints(getOffsetPoints(screenPoints, -12 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 12 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -12 * zoom));
         ctx.setLineDash([]);
 
         // Solid white outer shoulders
         ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.6})`;
         ctx.lineWidth = 1.5 * zoom;
-        drawCurvePoints(getOffsetPoints(screenPoints, 19 * zoom));
-        drawCurvePoints(getOffsetPoints(screenPoints, -19 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 19 * zoom));
+        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -19 * zoom));
+      } else if (type === 'dirt') {
+        // Dirt Road pavement
+        ctx.strokeStyle = `rgba(139, 90, 43, ${opacity})`;
+        ctx.lineWidth = 12 * zoom;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        drawCurvePoints(untrimmedScreenPoints);
+
+        // Ground grit texture overlay
+        ctx.strokeStyle = `rgba(110, 68, 30, ${opacity * 0.45})`;
+        ctx.lineWidth = 10 * zoom;
+        ctx.setLineDash([2 * zoom, 4 * zoom]);
+        drawCurvePoints(untrimmedScreenPoints);
+        ctx.setLineDash([]);
+      } else if (type === 'brick') {
+        // Brick road pavement
+        ctx.strokeStyle = `rgba(166, 58, 58, ${opacity})`;
+        ctx.lineWidth = 16 * zoom;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        drawCurvePoints(untrimmedScreenPoints);
+
+        // Brick joints pattern
+        ctx.strokeStyle = `rgba(186, 186, 186, ${opacity * 0.4})`;
+        ctx.lineWidth = 16 * zoom;
+        ctx.setLineDash([1.5 * zoom, 4.5 * zoom]);
+        drawCurvePoints(untrimmedScreenPoints);
+        ctx.setLineDash([]);
       } else {
         // Standard
         ctx.strokeStyle = `rgba(71, 85, 105, ${opacity})`;
         ctx.lineWidth = 16 * zoom;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        drawCurvePoints(screenPoints);
+        drawCurvePoints(untrimmedScreenPoints);
 
         // Center dashes
         ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45})`;
         ctx.lineWidth = 2 * zoom;
         ctx.setLineDash([6 * zoom, 8 * zoom]);
-        drawCurvePoints(screenPoints);
+        drawCurvePoints(segmentScreenPoints);
         ctx.setLineDash([]);
       }
     };
 
-    // Render placed curvy roads
-    (city.roads || []).forEach(road => {
+    // Render placed curvy roads sorted by priority so higher-priority roads overlay lower-priority ones
+    const getRoadPriority = (rType) => {
+      if (rType === 'highway') return 4;
+      if (rType === 'multilane') return 3;
+      if (rType === 'brick') return 2;
+      if (rType === 'standard') return 1;
+      return 0; // dirt
+    };
+
+    const sortedRoads = [...(city.roads || [])].sort((a, b) => {
+      return getRoadPriority(a.roadType) - getRoadPriority(b.roadType);
+    });
+
+    sortedRoads.forEach(road => {
       const isSel = road.id === selectedRoadId;
-      drawRoad(road.points, road.roadType || 'standard', false, isSel);
+      drawRoad(road.points, road.roadType || 'standard', false, isSel, road.id);
     });
 
     // Render active road under construction
@@ -687,7 +1104,7 @@ export default function CityModule() {
       if (hoveredFloat) {
         pts.push({ x: hoveredFloat.col, z: hoveredFloat.row });
       }
-      drawRoad(pts, activeRoadType, true, false);
+      drawRoad(pts, activeRoadType, true, false, null);
 
       // Node circles
       ctx.fillStyle = '#4ECDC4';
@@ -858,7 +1275,7 @@ export default function CityModule() {
       ctx.strokeRect(sx + 1, sy + 1, cellSize - 2, cellSize - 2);
       ctx.setLineDash([]);
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections]);
 
   // Resize + redraw
   useEffect(() => {
@@ -891,18 +1308,49 @@ export default function CityModule() {
   function assetAtCell(col, row) {
     return (city?.placedAssets || []).find(a => {
       const scaleFactor = a.scaleMultiplier !== undefined ? a.scaleMultiplier : 1.0;
-      const hw = ((a.width || 2) * scaleFactor) / (2 * 3.4);
-      const hh = ((a.height || 2) * scaleFactor) / (2 * 3.4);
-
-      // Project click coordinates into the building's local rotated coordinate space
       const dx = col - a.col;
       const dy = row - a.row;
       const rot = a.rotation || 0;
       const localX = dx * Math.cos(rot) + dy * Math.sin(rot);
       const localY = -dx * Math.sin(rot) + dy * Math.cos(rot);
+      const localX_m = localX * 3.4;
+      const localY_m = localY * 3.4;
 
-      return localX >= -hw && localX <= hw &&
-             localY >= -hh && localY <= hh;
+      if (a.objects && a.objects.length > 0) {
+        // Precise check against individual objects
+        for (const obj of a.objects) {
+          const ox = (obj.position?.x || 0) * scaleFactor;
+          const oz = (obj.position?.z || 0) * scaleFactor;
+          const sX = (obj.scale?.x || 1) * scaleFactor;
+          const sZ = (obj.scale?.z || 1) * scaleFactor;
+          const oRot = obj.rotation?.y || 0;
+
+          const odx = localX_m - ox;
+          const ody = localY_m - oz;
+
+          const objLocalX = odx * Math.cos(oRot) + ody * Math.sin(oRot);
+          const objLocalY = -odx * Math.sin(oRot) + ody * Math.cos(oRot);
+
+          const rx = sX / 2;
+          const rz = sZ / 2;
+          if (rx <= 0 || rz <= 0) continue;
+
+          if (['cylinder', 'sphere', 'cone', 'torus'].includes(obj.geometry)) {
+            if ((objLocalX * objLocalX) / (rx * rx) + (objLocalY * objLocalY) / (rz * rz) <= 1.0) {
+              return true;
+            }
+          } else {
+            if (objLocalX >= -rx && objLocalX <= rx && objLocalY >= -rz && objLocalY <= rz) {
+              return true;
+            }
+          }
+        }
+        return false;
+      } else {
+        const hw = ((a.width || 2) * scaleFactor) / 2;
+        const hh = ((a.height || 2) * scaleFactor) / 2;
+        return localX_m >= -hw && localX_m <= hw && localY_m >= -hh && localY_m <= hh;
+      }
     });
   }
 
@@ -1522,6 +1970,7 @@ export default function CityModule() {
             onExit={() => setStreetView(false)}
             selectedRoadId={selectedRoadId}
             setSelectedRoadId={setSelectedRoadId}
+            intersections={intersections}
           />
         ) : (
           <canvas
@@ -1866,8 +2315,7 @@ export default function CityModule() {
                       <span style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'capitalize' }}>
                         {idx + 1}. {obj.geometry}
                       </span>
-                      <input
-                        type="color"
+                      <SmoothColorPicker
                         value={obj.color || '#4ECDC4'}
                         onChange={(e) => {
                           const newObjects = selectedAsset.objects.map((o, oIdx) => {
@@ -1951,7 +2399,7 @@ export default function CityModule() {
 }
 
 // ── Street View: simple Three.js first-person walk ────────────────────────
-function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
+function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [] }) {
   const mountRef = useRef(null);
   const animRef = useRef(null);
   const keys = useRef({});
@@ -1981,42 +2429,55 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
   const draggingAssetIdRef = useRef(null);
   const dragOffset3D = useRef({ x: 0, z: 0 });
   const dragStartPos3D = useRef(null);
+  const renderedAssetsRef = useRef(new Map()); // assetId -> { group, hash }
+  const minimapCanvasRef = useRef(null);
+  const minimapContainerRef = useRef(null);
+  const minimapZoomRef = useRef(18);
+  const grassTextureRef = useRef(null);
+  const asphaltTextureRef = useRef(null);
+  const dirtTextureRef = useRef(null);
+  const brickTextureRef = useRef(null);
+  const targetYRef = useRef(1.7);
+  const currentYRef = useRef(1.7);
+  const cloudsRef = useRef([]);
 
   const rebuildStreetScene = useCallback(() => {
     const scene = sceneRef.current;
-    if (!scene || !city) return;
+    if (!scene || !city) {
+      console.log("[StreetView] rebuildStreetScene skipped: scene or city not ready", { scene: !!scene, city: !!city });
+      return;
+    }
 
-    // Clear old meshes
+    console.log("[StreetView] rebuildStreetScene started", {
+      placedAssetsCount: (city.placedAssets || []).length,
+      cachedRenderedAssets: renderedAssetsRef.current.size
+    });
+
+    // Clear old road and markings meshes
     meshesRef.current.forEach(m => {
-      scene.remove(m);
-      if (m.geometry && !Object.values(STREET_GEO).includes(m.geometry)) {
-        m.geometry.dispose();
-      }
-      if (m.material) {
-        const mats = Array.isArray(m.material) ? m.material : [m.material];
-        mats.forEach(mat => {
-          const isCached = materialCacheRef.current && Object.values(materialCacheRef.current).includes(mat);
-          if (!isCached) {
-            if (mat.map) mat.map.dispose();
-            mat.dispose();
+      if (m.userData && m.userData.roadId) {
+        scene.remove(m);
+        
+        const disposeMeshObj = (obj) => {
+          if (obj.geometry && !Object.values(STREET_GEO).includes(obj.geometry)) {
+            obj.geometry.dispose();
           }
-        });
+          if (obj.material) {
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach(mat => {
+              const isCached = materialCacheRef.current && Object.values(materialCacheRef.current).includes(mat);
+              if (!isCached) {
+                if (mat.map) mat.map.dispose();
+                mat.dispose();
+              }
+            });
+          }
+          if (obj.children) {
+            obj.children.forEach(disposeMeshObj);
+          }
+        };
+        disposeMeshObj(m);
       }
-      if (m.children) m.children.forEach(child => {
-        if (child.geometry && !Object.values(STREET_GEO).includes(child.geometry)) {
-          child.geometry.dispose();
-        }
-        if (child.material) {
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach(mat => {
-            const isCached = materialCacheRef.current && Object.values(materialCacheRef.current).includes(mat);
-            if (!isCached) {
-              if (mat.map) mat.map.dispose();
-              mat.dispose();
-            }
-          });
-        }
-      });
     });
     meshesRef.current = [];
 
@@ -2040,38 +2501,11 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
       return materialCacheRef.current[key];
     };
 
-    const roadCurves = (city.roads || []).map(r => {
-      if (r.points.length < 2) return null;
-      const pts = r.points.map(pt => new THREE.Vector3(pt.x * cellS, 0.01, pt.z * cellS));
-      const cv = new THREE.CatmullRomCurve3(pts);
-      const rad = r.roadType === 'highway' ? 2.2 : r.roadType === 'multilane' ? 1.5 : 0.9;
-      const samples = cv.getPoints(100);
-      return { id: r.id, curve: cv, radius: rad, samples };
-    }).filter(Boolean);
-
-    const isPointInIntersection = (pos, currentRoadId, currentRadius) => {
-      for (const other of roadCurves) {
-        if (other.id === currentRoadId) continue;
-        const hasHigherPriority = other.radius > currentRadius || 
-          (Math.abs(other.radius - currentRadius) < 0.01 && other.id < currentRoadId);
-        if (!hasHigherPriority) continue;
-
-        let minDistSq = Infinity;
-        for (let j = 0; j < other.samples.length; j++) {
-          const distSq = pos.distanceToSquared(other.samples[j]);
-          if (distSq < minDistSq) {
-            minDistSq = distSq;
-          }
-        }
-        const intersectionRadius = other.radius * 1.05;
-        if (minDistSq < intersectionRadius * intersectionRadius) {
-          return true;
-        }
-      }
-      return false;
+    const isPointInIntersection = (pos, currentRoadId) => {
+      const gridPt = { x: pos.x / cellS, z: pos.z / cellS };
+      return isSampleCulled(gridPt, currentRoadId, intersections);
     };
 
-    const roadMat = new THREE.MeshStandardMaterial({ color: 0x1c1e22, roughness: 0.85 });
     const dashMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
     const yellowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.8 });
     const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
@@ -2080,23 +2514,61 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
     // Render curvy roads
     (city.roads || []).forEach(road => {
       if (road.points.length < 2) return;
-      const points3d = road.points.map(pt => new THREE.Vector3(pt.x * cellS, 0.01, pt.z * cellS));
-      const curve = new THREE.CatmullRomCurve3(points3d);
-
+      
       const type = road.roadType || 'standard';
       let radius = 0.9;
       if (type === 'multilane') radius = 1.5;
       else if (type === 'highway') radius = 2.2;
+      else if (type === 'dirt') radius = 0.75;
+      else if (type === 'brick') radius = 0.9;
+
+      const roadIndex = (city.roads || []).findIndex(r => r.id === road.id);
+      let yOffset = 0.01;
+      if (type === 'dirt') yOffset = 0.010;
+      else if (type === 'brick') yOffset = 0.011;
+      else if (type === 'standard') yOffset = 0.012;
+      else if (type === 'multilane') yOffset = 0.013;
+      else if (type === 'highway') yOffset = 0.014;
+      yOffset += roadIndex * 0.0001;
+
+      const points3d = road.points.map(pt => new THREE.Vector3(pt.x * cellS, yOffset, pt.z * cellS));
+      const curve = new THREE.CatmullRomCurve3(points3d);
  
       const isRoadSel = road.id === selectedRoadId;
-      const currentRoadMat = isRoadSel
-        ? new THREE.MeshStandardMaterial({
-            color: 0x3c1e22,
-            roughness: 0.85,
-            emissive: new THREE.Color(0xef4444),
-            emissiveIntensity: 0.35
-          })
-        : roadMat;
+      let currentRoadMat;
+      if (isRoadSel) {
+        currentRoadMat = new THREE.MeshStandardMaterial({
+          color: 0x3c1e22,
+          roughness: 0.85,
+          emissive: new THREE.Color(0xef4444),
+          emissiveIntensity: 0.35
+        });
+      } else {
+        let tex = null;
+        let roughness = 0.85;
+        if (type === 'dirt' && dirtTextureRef.current) {
+          tex = dirtTextureRef.current.clone();
+          roughness = 0.9;
+        } else if (type === 'brick' && brickTextureRef.current) {
+          tex = brickTextureRef.current.clone();
+          roughness = 0.75;
+        } else if (asphaltTextureRef.current) {
+          tex = asphaltTextureRef.current.clone();
+          roughness = 0.85;
+        }
+
+        if (tex) {
+          const rLen = curve.getLength();
+          const repeatScale = type === 'brick' ? 0.75 : type === 'dirt' ? 0.6 : 0.5;
+          tex.repeat.set(Math.max(2, Math.floor(rLen * repeatScale)), 1);
+          tex.needsUpdate = true;
+        }
+
+        currentRoadMat = new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: roughness
+        });
+      }
 
       // Squashed TubeGeometry for road surface
       const roadGeo = new THREE.TubeGeometry(curve, Math.max(30, road.points.length * 10), radius, 8, false);
@@ -2120,82 +2592,169 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
       const step = 0.4;
       const numSteps = Math.max(10, Math.floor(length / step));
  
-      for (let i = 0; i <= numSteps; i++) {
-        const t = i / numSteps;
-        const pos = curve.getPointAt(t);
-        const tangent = curve.getTangentAt(t);
-        const angle = Math.atan2(tangent.x, tangent.z);
- 
-        const len = Math.sqrt(tangent.x * tangent.x + tangent.z * tangent.z);
-        if (len === 0) continue;
-        const nx = -tangent.z / len;
-        const nz = tangent.x / len;
- 
-        const addMarking = (offsetDist, mWidth, mHeight, mLength, material) => {
-          const markingPos = new THREE.Vector3(
-            pos.x + nx * offsetDist,
-            pos.y + mHeight / 2 + 0.005,
-            pos.z + nz * offsetDist
-          );
-          if (isPointInIntersection(markingPos, road.id, radius)) {
-            return;
-          }
-          const m = new THREE.Mesh(new THREE.BoxGeometry(mWidth, mHeight, mLength), material);
-          m.position.copy(markingPos);
-          m.rotation.y = angle;
-          m.receiveShadow = true;
-          markingsGroup.add(m);
-        };
- 
-        if (type === 'multilane') {
-          // Double yellow lines in center
-          addMarking(0.08, 0.04, 0.015, 0.42, yellowMat);
-          addMarking(-0.08, 0.04, 0.015, 0.42, yellowMat);
- 
-          // Dashed lane lines (alternate)
-          if (i % 3 === 0) {
-            addMarking(0.75, 0.04, 0.015, 0.42, whiteMat);
-            addMarking(-0.75, 0.04, 0.015, 0.42, whiteMat);
-          }
-        } else if (type === 'highway') {
-          // Concrete median jersey barrier
-          addMarking(0, 0.24, 0.5, 0.42, concreteMat);
- 
-          // Solid yellow inner lines
-          addMarking(0.22, 0.04, 0.015, 0.42, yellowMat);
-          addMarking(-0.22, 0.04, 0.015, 0.42, yellowMat);
- 
-          // Dashed lane lines (alternate)
-          if (i % 3 === 0) {
-            addMarking(1.05, 0.04, 0.015, 0.42, whiteMat);
-            addMarking(-1.05, 0.04, 0.015, 0.42, whiteMat);
-          }
- 
-          // Solid white outer shoulders
-          addMarking(1.9, 0.04, 0.015, 0.42, whiteMat);
-          addMarking(-1.9, 0.04, 0.015, 0.42, whiteMat);
-        } else {
-          // Standard center dashes
-          if (i % 2 === 0) {
-            addMarking(0, 0.06, 0.015, 0.4, dashMat);
+      const whiteTransforms = [];
+      const yellowTransforms = [];
+      const concreteTransforms = [];
+
+      if (type !== 'dirt' && type !== 'brick') {
+        for (let i = 0; i <= numSteps; i++) {
+          const t = i / numSteps;
+          const pos = curve.getPointAt(t);
+          const tangent = curve.getTangentAt(t);
+          const angle = Math.atan2(tangent.x, tangent.z);
+
+          const len = Math.sqrt(tangent.x * tangent.x + tangent.z * tangent.z);
+          if (len === 0) continue;
+          const nx = -tangent.z / len;
+          const nz = tangent.x / len;
+
+          const addMarking = (offsetDist, mWidth, mHeight, mLength, material) => {
+            const markingPos = new THREE.Vector3(
+              pos.x + nx * offsetDist,
+              pos.y + mHeight / 2 + 0.005,
+              pos.z + nz * offsetDist
+            );
+            if (isPointInIntersection(markingPos, road.id)) {
+              return;
+            }
+            
+            const tObj = {
+              position: markingPos.clone(),
+              rotationY: angle,
+              scale: new THREE.Vector3(mWidth, mHeight, mLength)
+            };
+
+            if (material === yellowMat) {
+              yellowTransforms.push(tObj);
+            } else if (material === concreteMat) {
+              concreteTransforms.push(tObj);
+            } else {
+              whiteTransforms.push(tObj);
+            }
+          };
+
+          if (type === 'multilane') {
+            // Double yellow lines in center
+            addMarking(0.08, 0.04, 0.015, 0.42, yellowMat);
+            addMarking(-0.08, 0.04, 0.015, 0.42, yellowMat);
+
+            // Dashed lane lines (alternate)
+            if (i % 3 === 0) {
+              addMarking(0.75, 0.04, 0.015, 0.42, whiteMat);
+              addMarking(-0.75, 0.04, 0.015, 0.42, whiteMat);
+            }
+          } else if (type === 'highway') {
+            // Concrete median jersey barrier
+            addMarking(0, 0.24, 0.5, 0.42, concreteMat);
+
+            // Solid yellow inner lines
+            addMarking(0.22, 0.04, 0.015, 0.42, yellowMat);
+            addMarking(-0.22, 0.04, 0.015, 0.42, yellowMat);
+
+            // Dashed lane lines (alternate)
+            if (i % 3 === 0) {
+              addMarking(1.05, 0.04, 0.015, 0.42, whiteMat);
+              addMarking(-1.05, 0.04, 0.015, 0.42, whiteMat);
+            }
+
+            // Solid white outer shoulders
+            addMarking(1.9, 0.04, 0.015, 0.42, whiteMat);
+            addMarking(-1.9, 0.04, 0.015, 0.42, whiteMat);
+          } else {
+            // Standard center dashes
+            if (i % 2 === 0) {
+              addMarking(0, 0.06, 0.015, 0.4, dashMat);
+            }
           }
         }
       }
- 
+
+      const baseGeo = getStreetGeo('unit_box');
+
+      if (whiteTransforms.length > 0) {
+        const inst = new THREE.InstancedMesh(baseGeo, whiteMat, whiteTransforms.length);
+        inst.receiveShadow = true;
+        const dummy = new THREE.Object3D();
+        whiteTransforms.forEach((t, idx) => {
+          dummy.position.copy(t.position);
+          dummy.rotation.y = t.rotationY;
+          dummy.scale.copy(t.scale);
+          dummy.updateMatrix();
+          inst.setMatrixAt(idx, dummy.matrix);
+        });
+        inst.instanceMatrix.needsUpdate = true;
+        markingsGroup.add(inst);
+      }
+
+      if (yellowTransforms.length > 0) {
+        const inst = new THREE.InstancedMesh(baseGeo, yellowMat, yellowTransforms.length);
+        inst.receiveShadow = true;
+        const dummy = new THREE.Object3D();
+        yellowTransforms.forEach((t, idx) => {
+          dummy.position.copy(t.position);
+          dummy.rotation.y = t.rotationY;
+          dummy.scale.copy(t.scale);
+          dummy.updateMatrix();
+          inst.setMatrixAt(idx, dummy.matrix);
+        });
+        inst.instanceMatrix.needsUpdate = true;
+        markingsGroup.add(inst);
+      }
+
+      if (concreteTransforms.length > 0) {
+        const inst = new THREE.InstancedMesh(baseGeo, concreteMat, concreteTransforms.length);
+        inst.receiveShadow = true;
+        const dummy = new THREE.Object3D();
+        concreteTransforms.forEach((t, idx) => {
+          dummy.position.copy(t.position);
+          dummy.rotation.y = t.rotationY;
+          dummy.scale.copy(t.scale);
+          dummy.updateMatrix();
+          inst.setMatrixAt(idx, dummy.matrix);
+        });
+        inst.instanceMatrix.needsUpdate = true;
+        markingsGroup.add(inst);
+      }
+
       if (markingsGroup.children.length > 0) {
         scene.add(markingsGroup);
         meshesRef.current.push(markingsGroup);
       }
     });
 
-    // Render placed assets with exact 3D sub-objects
-    (city.placedAssets || []).forEach(asset => {
+    const disposeAsset3D = (group) => {
+      scene.remove(group);
+      
+      const disposeNode = (node) => {
+        if (node.geometry) {
+          const isStreetGeo = Object.values(STREET_GEO).includes(node.geometry);
+          const isCSGGeo = cityCSGGeometriesSet.has(node.geometry);
+          if (!isStreetGeo && !isCSGGeo) {
+            node.geometry.dispose();
+          }
+        }
+        if (node.material) {
+          const mats = Array.isArray(node.material) ? node.material : [node.material];
+          mats.forEach(mat => {
+            const isCached = materialCacheRef.current && Object.values(materialCacheRef.current).includes(mat);
+            if (!isCached) {
+              if (mat.map) mat.map.dispose();
+              mat.dispose();
+            }
+          });
+        }
+        if (node.children) {
+          node.children.forEach(disposeNode);
+        }
+      };
+      disposeNode(group);
+    };
+
+    const buildAssetGroup = (asset, isSel) => {
       const wx = asset.col * cellS; const wz = asset.row * cellS;
       const aw = (asset.width || 2) * cellS; const ah = (asset.height || 2) * cellS;
       const centerX = wx;
       const centerZ = wz;
-
-      const isSel = asset.id === selectedAssetId;
 
       const maxSF = getMaxScaleFactor(asset);
       const defaultSF = Math.min(1.0, maxSF);
@@ -2316,6 +2875,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
         lowDetailMesh.position.y = (maxHeight * cellS * scaleFactor) / 2;
         lowDetailMesh.castShadow = true;
         lowDetailMesh.receiveShadow = true;
+        lowDetailMesh.userData = { isLowDetail: true, assetId: asset.id };
         lod.addLevel(lowDetailMesh, 75); // Swap to low detail at 75 units distance
 
         buildingMainObject = lod;
@@ -2341,8 +2901,50 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
         buildingMainObject = buildingGroup;
       }
 
-      scene.add(buildingMainObject);
-      meshesRef.current.push(buildingMainObject);
+      return buildingMainObject;
+    };
+
+    // Diff and render buildings
+    const getAssetHash = (asset, isSelected) => {
+      const objectsHash = (asset.objects || []).map(o => `${o.id}_${o.color}_${o.position?.x}_${o.position?.y}_${o.position?.z}`).join('|');
+      return `${asset.id}_${asset.col}_${asset.row}_${asset.rotation || 0}_${asset.scaleMultiplier || 1.0}_${isSelected}_${objectsHash}`;
+    };
+
+    const newAssetsMap = new Map();
+    (city.placedAssets || []).forEach(asset => {
+      const isSelected = asset.id === selectedAssetId;
+      newAssetsMap.set(asset.id, { asset, hash: getAssetHash(asset, isSelected) });
+    });
+
+    // Remove deleted or changed assets
+    renderedAssetsRef.current.forEach((rendered, assetId) => {
+      const current = newAssetsMap.get(assetId);
+      if (!current || current.hash !== rendered.hash) {
+        disposeAsset3D(rendered.group);
+        renderedAssetsRef.current.delete(assetId);
+      }
+    });
+
+    // Build new or modified assets
+    (city.placedAssets || []).forEach(asset => {
+      if (!renderedAssetsRef.current.has(asset.id)) {
+        const isSelected = asset.id === selectedAssetId;
+        const group = buildAssetGroup(asset, isSelected);
+        scene.add(group);
+        console.log("[StreetView] Built and added asset to scene:", asset.id, asset.name, "at col/row", asset.col, asset.row);
+        
+        renderedAssetsRef.current.set(asset.id, {
+          group,
+          hash: getAssetHash(asset, isSelected)
+        });
+      } else {
+        console.log("[StreetView] Asset already rendered (hash match, skipped):", asset.id);
+      }
+    });
+
+    // Populate meshesRef.current for culling and raycasting
+    renderedAssetsRef.current.forEach(item => {
+      meshesRef.current.push(item.group);
     });
 
     // Spawn roaming humans on roads
@@ -2384,7 +2986,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
         });
       }
     }
-  }, [city, selectedAssetId, selectedRoadId]);
+  }, [city, selectedAssetId, selectedRoadId, intersections]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -2418,10 +3020,49 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
     }
     camera.position.set(startX, 1.7, startZ);
     camRef.current = camera;
+    renderedAssetsRef.current.clear();
+
+    grassTextureRef.current = createGrassTexture();
+    asphaltTextureRef.current = createAsphaltTexture();
+    dirtTextureRef.current = createDirtTexture();
+    brickTextureRef.current = createBrickTexture();
+
+    // Spawn fluffy clouds high in the sky
+    const clouds = [];
+    const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 });
+    for (let i = 0; i < 15; i++) {
+      const group = new THREE.Group();
+      const numParts = 3 + Math.floor(Math.random() * 3);
+      for (let j = 0; j < numParts; j++) {
+        const mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(1.5 + Math.random() * 2, 8, 8),
+          cloudMat
+        );
+        mesh.scale.set(1.5, 0.4, 2.0);
+        mesh.position.set(
+          (Math.random() - 0.5) * 4,
+          (Math.random() - 0.5) * 0.4,
+          (Math.random() - 0.5) * 4
+        );
+        group.add(mesh);
+      }
+      group.position.set(
+        (Math.random() - 0.5) * 350,
+        28 + Math.random() * 8,
+        (Math.random() - 0.5) * 350
+      );
+      scene.add(group);
+      clouds.push({
+        group,
+        speed: 0.02 + Math.random() * 0.04
+      });
+    }
+    cloudsRef.current = clouds;
 
     // Lights - warm sunlighting and soft shadows
     scene.add(new THREE.AmbientLight(0xffffff, 0.26));
     const sun = new THREE.DirectionalLight(0xfffbf0, 1.4);
+    sun.sunProperty = true;
     sun.position.set(40, 50, 20);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -2437,7 +3078,10 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
     // Ground plane
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(10000, 10000),
-      new THREE.MeshStandardMaterial({ color: 0x7cb342, roughness: 0.95 })
+      new THREE.MeshStandardMaterial({
+        map: grassTextureRef.current,
+        roughness: 0.95
+      })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
@@ -2653,6 +3297,26 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
 
+    const onWheel = (e) => {
+      if (birdsEyeRef.current) return;
+      e.preventDefault();
+      targetYRef.current = Math.max(0.2, Math.min(25.0, targetYRef.current + e.deltaY * 0.0035));
+    };
+    mount.addEventListener('wheel', onWheel, { passive: false });
+
+    const preventCtx = (e) => { e.preventDefault(); };
+    mount.addEventListener('contextmenu', preventCtx);
+
+    const handleMinimapWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      minimapZoomRef.current = Math.max(6, Math.min(60, minimapZoomRef.current - e.deltaY * 0.02));
+    };
+    const miniEl = minimapContainerRef.current;
+    if (miniEl) {
+      miniEl.addEventListener('wheel', handleMinimapWheel, { passive: false });
+    }
+
     const onResize = () => {
       const W = mount.clientWidth, H = mount.clientHeight;
       renderer.setSize(W, H);
@@ -2697,7 +3361,21 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
         dir.applyEuler(new THREE.Euler(0, yaw, 0));
         camera.position.add(dir);
       }
-      camera.position.y = isBirdsEye ? 40.0 : 1.7;
+      if (isBirdsEye) {
+        camera.position.y = 40.0;
+      } else {
+        currentYRef.current += (targetYRef.current - currentYRef.current) * 0.08;
+        camera.position.y = currentYRef.current;
+      }
+
+      // Move clouds
+      cloudsRef.current.forEach(c => {
+        c.group.position.x += c.speed;
+        if (c.group.position.x > 250) {
+          c.group.position.x = -250;
+          c.group.position.z = (Math.random() - 0.5) * 350;
+        }
+      });
 
       // Distance-based visibility culling for buildings and road markings
       const camX = camera.position.x;
@@ -2776,6 +3454,195 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
         }
       });
 
+      // Render minimap radar
+      const miniCanvas = minimapCanvasRef.current;
+      const currentCity = cityRef.current;
+      if (miniCanvas && currentCity) {
+        const miniCtx = miniCanvas.getContext('2d');
+        const W_mini = miniCanvas.width;
+        const H_mini = miniCanvas.height;
+        
+        miniCtx.save();
+        miniCtx.clearRect(0, 0, W_mini, H_mini);
+        
+        // Circular clip
+        miniCtx.beginPath();
+        miniCtx.arc(75, 75, 70, 0, 2 * Math.PI);
+        miniCtx.clip();
+        
+        // Draw minimap background (dark green ground)
+        miniCtx.fillStyle = '#1b4332';
+        miniCtx.fillRect(0, 0, W_mini, H_mini);
+        
+        const minimapCellSize = minimapZoomRef.current;
+        const playerCol = camX / 3.4;
+        const playerRow = camZ / 3.4;
+        
+        // Save context and apply translation/rotation for GTA-style map rotation
+        miniCtx.save();
+        miniCtx.translate(75, 75);
+        miniCtx.rotate(yaw + Math.PI / 2);
+
+        // 1. Draw roads (relative to player in rotated space)
+        const drawMinimapRoad = (roadPoints, rType, roadId) => {
+          if (roadPoints.length < 2) return;
+          const samples = roadId ? getRoadSamples(roadId, roadPoints) : (() => {
+            const points3d = roadPoints.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
+            const curve = new THREE.CatmullRomCurve3(points3d);
+            return curve.getPoints(30);
+          })();
+
+          const segments = [];
+          let currentSeg = [];
+          for (const pt of samples) {
+            const isCulled = roadId ? isSampleCulled(pt, roadId, intersections) : false;
+            if (isCulled) {
+              if (currentSeg.length >= 2) {
+                segments.push(currentSeg);
+              }
+              currentSeg = [];
+            } else {
+              currentSeg.push(pt);
+            }
+          }
+          if (currentSeg.length >= 2) {
+            segments.push(currentSeg);
+          }
+
+          const untrimmedScreenPoints = [samples.map(pt => ({
+            x: (pt.x - playerCol) * minimapCellSize,
+            z: (pt.z - playerRow) * minimapCellSize
+          }))];
+
+          const segmentScreenPoints = segments.map(seg => seg.map(pt => ({
+            x: (pt.x - playerCol) * minimapCellSize,
+            z: (pt.z - playerRow) * minimapCellSize
+          })));
+          
+          const drawCurve = (segList) => {
+            segList.forEach(points => {
+              if (points.length < 2) return;
+              miniCtx.beginPath();
+              points.forEach((pt, idx) => {
+                if (idx === 0) miniCtx.moveTo(pt.x, pt.z);
+                else miniCtx.lineTo(pt.x, pt.z);
+              });
+              miniCtx.stroke();
+            });
+          };
+
+          if (rType === 'dirt') {
+            miniCtx.strokeStyle = '#8b5a2b';
+            miniCtx.lineWidth = 6;
+          } else if (rType === 'brick') {
+            miniCtx.strokeStyle = '#a63a3a';
+            miniCtx.lineWidth = 8;
+          } else {
+            miniCtx.strokeStyle = '#334155';
+            miniCtx.lineWidth = (rType === 'highway' ? 18 : rType === 'multilane' ? 12 : 8);
+          }
+          miniCtx.lineCap = 'round';
+          miniCtx.lineJoin = 'round';
+          drawCurve(untrimmedScreenPoints);
+
+          // Center markings
+          if (rType === 'multilane') {
+            miniCtx.strokeStyle = '#f59e0b';
+            miniCtx.lineWidth = 1.0;
+            drawCurve(segmentScreenPoints);
+          } else if (rType === 'highway') {
+            miniCtx.strokeStyle = '#cbd5e1';
+            miniCtx.lineWidth = 1.5;
+            drawCurve(segmentScreenPoints);
+          } else if (rType === 'standard') {
+            miniCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            miniCtx.lineWidth = 0.8;
+            miniCtx.setLineDash([2, 3]);
+            drawCurve(segmentScreenPoints);
+            miniCtx.setLineDash([]);
+          }
+        };
+
+        const getRoadPriority = (type) => {
+          if (type === 'highway') return 4;
+          if (type === 'multilane') return 3;
+          if (type === 'brick') return 2;
+          if (type === 'standard') return 1;
+          return 0; // dirt
+        };
+
+        const sortedRoads = [...(currentCity.roads || [])].sort((a, b) => {
+          return getRoadPriority(a.roadType) - getRoadPriority(b.roadType);
+        });
+
+        sortedRoads.forEach(road => {
+          drawMinimapRoad(road.points, road.roadType || 'standard', road.id);
+        });
+
+        // 2. Draw placed assets with detailed constituent sub-objects (relative to player position)
+        (currentCity.placedAssets || []).forEach(asset => {
+          const scaleFactor = asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0;
+          const aw = (asset.width || 2) * minimapCellSize * scaleFactor;
+          const ah = (asset.height || 2) * minimapCellSize * scaleFactor;
+          
+          const cx = (asset.col - playerCol) * minimapCellSize;
+          const cy = (asset.row - playerRow) * minimapCellSize;
+
+          // Distance culling from player center
+          if (cx * cx + cy * cy > 95 * 95) return;
+
+          miniCtx.save();
+          miniCtx.translate(cx, cy);
+          miniCtx.rotate(-(asset.rotation || 0));
+
+          const ax = -aw / 2;
+          const ay = -ah / 2;
+
+          if (asset.objects && asset.objects.length > 0) {
+            asset.objects.forEach(obj => {
+              miniCtx.save();
+              const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * minimapCellSize * scaleFactor;
+              const oz = (obj.position?.z !== undefined ? obj.position.z : 0) * minimapCellSize * scaleFactor;
+              miniCtx.translate(ox, oz);
+              miniCtx.rotate(-(obj.rotation?.y || 0));
+              drawObject2D(miniCtx, obj, minimapCellSize * scaleFactor, asset.color);
+              miniCtx.restore();
+            });
+          } else {
+            miniCtx.fillStyle = asset.color || '#4ECDC4';
+            miniCtx.fillRect(ax, ay, aw, ah);
+            
+            // Draw outline to separate buildings
+            miniCtx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
+            miniCtx.lineWidth = 0.8;
+            miniCtx.strokeRect(ax, ay, aw, ah);
+          }
+          miniCtx.restore();
+        });
+
+        // Restore context to static clipped space
+        miniCtx.restore();
+
+        // 3. Draw player white teardrop at center (75, 75) pointing straight UP (static, GTA-style)
+        miniCtx.save();
+        miniCtx.translate(75, 75);
+        miniCtx.rotate(-Math.PI / 2); // Always pointing straight UP
+
+        miniCtx.fillStyle = '#ffffff';
+        miniCtx.strokeStyle = '#0f172a';
+        miniCtx.lineWidth = 2.0;
+
+        miniCtx.beginPath();
+        miniCtx.moveTo(9, 0); // pointing forward
+        miniCtx.bezierCurveTo(4, 5.5, -6, 5.5, -6, 0);
+        miniCtx.bezierCurveTo(-6, -5.5, 4, -5.5, 9, 0);
+        miniCtx.fill();
+        miniCtx.stroke();
+        miniCtx.restore();
+
+        miniCtx.restore(); // end of circular clip
+      }
+
       renderer.render(scene, camera);
     };
     animate();
@@ -2789,6 +3656,11 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
       mount.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      mount.removeEventListener('wheel', onWheel);
+      mount.removeEventListener('contextmenu', preventCtx);
+      if (miniEl) {
+        miniEl.removeEventListener('wheel', handleMinimapWheel);
+      }
       window.removeEventListener('resize', onResize);
       
       // Clean up humans meshes
@@ -2840,6 +3712,11 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
         Object.values(materialCacheRef.current).forEach(mat => mat.dispose());
         materialCacheRef.current = {};
       }
+
+      if (grassTextureRef.current) { grassTextureRef.current.dispose(); grassTextureRef.current = null; }
+      if (asphaltTextureRef.current) { asphaltTextureRef.current.dispose(); asphaltTextureRef.current = null; }
+      if (dirtTextureRef.current) { dirtTextureRef.current.dispose(); dirtTextureRef.current = null; }
+      if (brickTextureRef.current) { brickTextureRef.current.dispose(); brickTextureRef.current = null; }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -2851,7 +3728,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
   const selectedAsset = selectedAssetId ? (city?.placedAssets || []).find(a => a.id === selectedAssetId) : null;
 
   return (
-    <div ref={mountRef} style={{ width:'100%', height:'100%', position:'relative', cursor:'crosshair' }}>
+    <div ref={mountRef} onContextMenu={(e) => e.preventDefault()} style={{ width:'100%', height:'100%', position:'relative', cursor:'crosshair' }}>
       <div style={{ position:'absolute', top:12, left:12, background:'rgba(0,0,0,0.55)', borderRadius:8, padding:'8px 14px', fontSize:12, color:'#fff', lineHeight:1.8, pointerEvents:'none' }}>
         🚶 <strong>Street View</strong><br />
         WASD / Arrows: walk<br />
@@ -3038,8 +3915,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
                     <span style={{ fontSize: 10, color: '#ddd', textTransform: 'capitalize' }}>
                       {idx + 1}. {obj.geometry}
                     </span>
-                    <input
-                      type="color"
+                    <SmoothColorPicker
                       value={obj.color || '#4ECDC4'}
                       onChange={(e) => {
                         const newObjects = selectedAsset.objects.map((o, oIdx) => {
@@ -3151,6 +4027,26 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId }) {
           </div>
         </div>
       )}
+      {/* GTA Minimap Radar Overlay */}
+      <div 
+        ref={minimapContainerRef}
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          left: 20,
+          width: 150,
+          height: 150,
+          borderRadius: '50%',
+          border: '4px solid rgba(22, 27, 38, 0.95)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          overflow: 'hidden',
+          background: '#1b4332',
+          zIndex: 10,
+          cursor: 'zoom-in'
+        }}
+      >
+        <canvas ref={minimapCanvasRef} width={150} height={150} />
+      </div>
     </div>
   );
 }

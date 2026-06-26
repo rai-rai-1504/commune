@@ -4,6 +4,40 @@ import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
 import { useStore } from '../../store/useStore';
 import AssetLibrary from '../../components/AssetLibrary';
 
+function SmoothColorPicker({ value, onChange, disabled, style }) {
+  const [localVal, setLocalVal] = useState(value);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    const handleChange = (e) => {
+      onChange({ target: { value: e.target.value } });
+    };
+
+    input.addEventListener('change', handleChange);
+    return () => {
+      input.removeEventListener('change', handleChange);
+    };
+  }, [onChange]);
+
+  return (
+    <input
+      ref={inputRef}
+      type="color"
+      value={localVal}
+      disabled={disabled}
+      onChange={(e) => setLocalVal(e.target.value)}
+      style={style}
+    />
+  );
+}
+
 const evaluator = new Evaluator();
 
 const getCSGKey = (obj) => {
@@ -115,13 +149,38 @@ function getGeo(type) {
       case 'torus':    GEO[type] = new THREE.TorusGeometry(0.38, 0.16, 14, 28); break;
       case 'wedge': {
         const g = new THREE.BufferGeometry();
-        const v = new Float32Array([
-          -0.5,0,-0.5,  0.5,0,-0.5,  0.5,0,0.5,  -0.5,0,0.5,
-          -0.5,1,-0.5,  0.5,1,-0.5,
+        const pos = new Float32Array([
+          // Bottom face (y = 0, normal points down: 0, -1, 0)
+          -0.5, 0, -0.5,   0.5, 0,  0.5,  -0.5, 0,  0.5,
+          -0.5, 0, -0.5,   0.5, 0, -0.5,   0.5, 0,  0.5,
+          // Back face (z = -0.5, normal points back: 0, 0, -1)
+          -0.5, 0, -0.5,   0.5, 1, -0.5,   0.5, 0, -0.5,
+          -0.5, 0, -0.5,  -0.5, 1, -0.5,   0.5, 1, -0.5,
+          // Left face (x = -0.5, normal points left: -1, 0, 0)
+          -0.5, 0, -0.5,  -0.5, 0,  0.5,  -0.5, 1, -0.5,
+          // Right face (x = 0.5, normal points right: 1, 0, 0)
+           0.5, 0, -0.5,   0.5, 1, -0.5,   0.5, 0,  0.5,
+          // Slanted front face (normal points up/forward: 0, 0.707, 0.707)
+          -0.5, 0,  0.5,   0.5, 0,  0.5,   0.5, 1, -0.5,
+          -0.5, 0,  0.5,   0.5, 1, -0.5,  -0.5, 1, -0.5,
         ]);
-        const idx = [0,1,2, 0,2,3, 0,1,5, 0,5,4, 0,4,3, 1,2,5, 3,4,5, 2,3,5];
-        g.setAttribute('position', new THREE.BufferAttribute(v, 3));
-        g.setIndex(idx);
+        const uvs = new Float32Array([
+          // Bottom face
+          0, 0,   1, 1,   0, 1,
+          0, 0,   1, 0,   1, 1,
+          // Back face
+          0, 0,   1, 1,   1, 0,
+          0, 0,   0, 1,   1, 1,
+          // Left face
+          0, 0,   1, 0,   0, 1,
+          // Right face
+          0, 0,   0, 1,   1, 0,
+          // Slanted face
+          0, 0,   1, 0,   1, 1,
+          0, 0,   1, 1,   0, 1,
+        ]);
+        g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
         g.computeVertexNormals();
         GEO[type] = g;
         break;
@@ -1240,7 +1299,7 @@ export default function EditorModule() {
             <div className="panel-section">
               <div className="panel-label">Color</div>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-                <input type="color" value={selected.color}
+                <SmoothColorPicker value={selected.color}
                   onChange={e => {
                     const color = e.target.value;
                     if (selectedObjectIds.length > 1) {
@@ -1314,7 +1373,7 @@ export default function EditorModule() {
                       <div>
                         <label style={{ fontSize:10, color:'var(--text3)', display:'block', marginBottom:3 }}>Text Color</label>
                         <div style={{ display: 'flex', gap: 4 }}>
-                          <input type="color" value={selected.textColor || '#ffffff'}
+                          <SmoothColorPicker value={selected.textColor || '#ffffff'}
                             onChange={e => updateObjectProp(selectedObjectId, 'textColor', e.target.value)}
                             style={{ width: 28, height: 24, border: 'none', borderRadius: 4, cursor: 'pointer', padding: 0 }} />
                           <input className="form-input" value={selected.textColor || '#ffffff'}
@@ -1430,7 +1489,7 @@ function PropSection({ title, obj, prop, fields, id, update, step, deg }) {
       <div className="panel-label">{title}</div>
       {fields.map(f => {
         const raw = (obj[prop] && obj[prop][f] !== undefined) ? obj[prop][f] : (prop === 'scale' ? 1.0 : 0.0);
-        const display = deg ? +(raw * 180 / Math.PI).toFixed(1) : +raw.toFixed(3);
+        const display = deg ? +(raw * 180 / Math.PI).toFixed(2) : +raw.toFixed(3);
         return (
           <div key={f} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
             <span style={{ fontSize:10, color:'var(--text3)', width:12, textAlign:'center', fontWeight:700, textTransform:'uppercase' }}>{f}</span>
