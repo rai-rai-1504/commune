@@ -4737,13 +4737,6 @@ function createHumanMesh(clothingColor) {
   return group;
 }
 
-function doSegmentsIntersect(p1, q1, p2, q2) {
-  function ccw(A, B, C) {
-    return (C.z - A.z) * (B.x - A.x) > (B.z - A.z) * (C.x - A.x);
-  }
-  return (ccw(p1, p2, q2) !== ccw(q1, p2, q2)) && (ccw(p1, q1, p2) !== ccw(p1, q1, q2));
-}
-
 function isPointInPolygon(pt, poly) {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -4757,42 +4750,88 @@ function isPointInPolygon(pt, poly) {
   return inside;
 }
 
+function doSegmentsCross(A, B, C, D) {
+  function isSamePoint(p1, p2, epsilon = 0.01) {
+    return Math.abs(p1.x - p2.x) < epsilon && Math.abs(p1.z - p2.z) < epsilon;
+  }
+  if (isSamePoint(A, C) || isSamePoint(A, D) || isSamePoint(B, C) || isSamePoint(B, D)) {
+    return false;
+  }
+  function ccw(p1, p2, p3) {
+    return (p3.z - p1.z) * (p2.x - p1.x) - (p2.z - p1.z) * (p3.x - p1.x);
+  }
+  const cp1 = ccw(A, B, C);
+  const cp2 = ccw(A, B, D);
+  const cp3 = ccw(C, D, A);
+  const cp4 = ccw(C, D, B);
+  if (((cp1 > 0.0001 && cp2 < -0.0001) || (cp1 < -0.0001 && cp2 > 0.0001)) &&
+      ((cp3 > 0.0001 && cp4 < -0.0001) || (cp3 < -0.0001 && cp4 > 0.0001))) {
+    return true;
+  }
+  return false;
+}
+
+function getInteriorPoint(poly, idx, epsilon = 0.05) {
+  const n = poly.length;
+  const len = poly[0].x === poly[n-1].x && poly[0].z === poly[n-1].z ? n - 1 : n;
+  const curr = poly[idx];
+  const prev = poly[(idx - 1 + len) % len];
+  const next = poly[(idx + 1) % len];
+  let dx1 = prev.x - curr.x;
+  let dz1 = prev.z - curr.z;
+  let dx2 = next.x - curr.x;
+  let dz2 = next.z - curr.z;
+  let len1 = Math.sqrt(dx1*dx1 + dz1*dz1);
+  let len2 = Math.sqrt(dx2*dx2 + dz2*dz2);
+  if (len1 === 0 || len2 === 0) return curr;
+  dx1 /= len1; dz1 /= len1;
+  dx2 /= len2; dz2 /= len2;
+  let bx = dx1 + dx2;
+  let bz = dz1 + dz2;
+  let blen = Math.sqrt(bx*bx + bz*bz);
+  if (blen < 0.0001) {
+    bx = -dz1;
+    bz = dx1;
+  } else {
+    bx /= blen;
+    bz /= blen;
+  }
+  const p1 = { x: curr.x + bx * epsilon, z: curr.z + bz * epsilon };
+  const p2 = { x: curr.x - bx * epsilon, z: curr.z - bz * epsilon };
+  if (isPointInPolygon(p1, poly)) return p1;
+  if (isPointInPolygon(p2, poly)) return p2;
+  let sumX = 0, sumZ = 0;
+  for (let i = 0; i < len; i++) {
+    sumX += poly[i].x;
+    sumZ += poly[i].z;
+  }
+  const centroid = { x: sumX / len, z: sumZ / len };
+  return { x: (curr.x + centroid.x) / 2, z: (curr.z + centroid.z) / 2 };
+}
+
 function doPolygonsOverlap(polyA, polyB) {
   if (!polyA || !polyB || polyA.length < 3 || polyB.length < 3) return false;
-  
-  // 1. Check edge-to-edge intersections
   for (let i = 0; i < polyA.length - 1; i++) {
     for (let j = 0; j < polyB.length - 1; j++) {
-      if (doSegmentsIntersect(polyA[i], polyA[i+1], polyB[j], polyB[j+1])) {
-        // Special check: if they only share a vertex or boundary point, it's not a real overlap
-        // but if they cross each other, they definitely overlap.
-        // To be safe, we can check if the midpoint of segment A is inside polygon B.
-        const midPt = { x: (polyA[i].x + polyA[i+1].x) / 2, z: (polyA[i].z + polyA[i+1].z) / 2 };
-        if (isPointInPolygon(midPt, polyB)) return true;
-        
-        const midPtB = { x: (polyB[j].x + polyB[j+1].x) / 2, z: (polyB[j].z + polyB[j+1].z) / 2 };
-        if (isPointInPolygon(midPtB, polyA)) return true;
-        
-        // Also if they cross but don't share vertices, let's treat segment intersection as overlap
-        // except when they are exactly snapping onto the same vertices.
-        // Let's check if the intersection point is not one of the shared endpoints
+      if (doSegmentsCross(polyA[i], polyA[i+1], polyB[j], polyB[j+1])) {
         return true;
       }
     }
   }
-  
-  // 2. Check if one polygon is entirely inside the other
-  // Test centroids of polygons to avoid endpoint sharing false positives
-  let sumAx = 0, sumAz = 0;
-  polyA.forEach(p => { sumAx += p.x; sumAz += p.z; });
-  const centerA = { x: sumAx / polyA.length, z: sumAz / polyA.length };
-  if (isPointInPolygon(centerA, polyB)) return true;
-
-  let sumBx = 0, sumBz = 0;
-  polyB.forEach(p => { sumBx += p.x; sumBz += p.z; });
-  const centerB = { x: sumBx / polyB.length, z: sumBz / polyB.length };
-  if (isPointInPolygon(centerB, polyA)) return true;
-
+  const lenA = polyA[0].x === polyA[polyA.length-1].x && polyA[0].z === polyA[polyA.length-1].z ? polyA.length - 1 : polyA.length;
+  for (let i = 0; i < lenA; i++) {
+    const ptA = getInteriorPoint(polyA, i);
+    if (isPointInPolygon(ptA, polyB)) {
+      return true;
+    }
+  }
+  const lenB = polyB[0].x === polyB[polyB.length-1].x && polyB[0].z === polyB[polyB.length-1].z ? polyB.length - 1 : polyB.length;
+  for (let j = 0; j < lenB; j++) {
+    const ptB = getInteriorPoint(polyB, j);
+    if (isPointInPolygon(ptB, polyA)) {
+      return true;
+    }
+  }
   return false;
 }
 
