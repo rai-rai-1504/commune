@@ -577,7 +577,7 @@ export default function CityModule() {
     addRoadSegment, removeRoadSegment,
     selectedAssetIds, selectAssets, removeAssets, undoCity,
     publishedBuildings, deletePublishedBuilding, lockAllAssets,
-    updateRoad, addZone, removeZone
+    updateRoad, addZone, removeZone, updateZone
   } = useStore();
 
   const canvasRef = useRef(null);
@@ -586,6 +586,10 @@ export default function CityModule() {
   const intersections = useMemo(() => findIntersections(city?.roads || []), [city?.roads]);
   const [activeCategory, setActiveCategory] = useState(null);
   const [showObjectsPanel, setShowObjectsPanel] = useState(false);
+  const [zoneView, setZoneView] = useState(false);
+  const [selectedZoneId, setSelectedZoneId] = useState(null);
+  const [zoneShape, setZoneShape] = useState('pencil');
+  const zoneAnchorRef = useRef(null);
   
   const [activeZonePoints, setActiveZonePoints] = useState([]);
   const isDrawingZoneRef = useRef(false);
@@ -871,20 +875,19 @@ export default function CityModule() {
     }
     return null;
   }, [city]);
-
-  const draw = useCallback(() => {
+const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !city) return;
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    // Background - soft grass green
-    ctx.fillStyle = '#b7e4c7';
+    // Background - soft grass green, off-white in zone view
+    ctx.fillStyle = zoneView ? '#f0f4f8' : '#b7e4c7';
     ctx.fillRect(0, 0, W, H);
 
     // Decorative infinite grid overlay
-    ctx.strokeStyle = 'rgba(0,0,0,0.03)';
+    ctx.strokeStyle = zoneView ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.03)';
     ctx.lineWidth = 0.5;
     const startX = ((offset.x % cellSize) + cellSize) % cellSize;
     const startY = ((offset.y % cellSize) + cellSize) % cellSize;
@@ -973,6 +976,28 @@ export default function CityModule() {
       const getOffsetSegments = (segmentsList, dist) => {
         return segmentsList.map(seg => getOffsetPoints(seg, dist));
       };
+
+      if (zoneView) {
+        const roadW = (type === 'highway' ? 24 : type === 'multilane' ? 18 : type === 'dirt' ? 10 : 12) * zoom;
+        // 1. Outer border
+        ctx.save();
+        ctx.strokeStyle = isSelected ? 'rgba(239, 68, 68, 0.5)' : 'rgba(15, 23, 42, 0.12)';
+        ctx.lineWidth = roadW + 2.5 * zoom;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        drawCurvePoints(untrimmedScreenPoints);
+        ctx.restore();
+
+        // 2. Inner lane
+        ctx.save();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = roadW;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        drawCurvePoints(untrimmedScreenPoints);
+        ctx.restore();
+        return;
+      }
 
       if (isSelected) {
         ctx.save();
@@ -1129,24 +1154,103 @@ export default function CityModule() {
         if (!zone.points || zone.points.length < 3) return;
         ctx.save();
         
-        // 1. Draw filled polygon
-        ctx.fillStyle = zone.color;
-        ctx.globalAlpha = 0.12;
-        ctx.beginPath();
-        zone.points.forEach((pt, idx) => {
-          const sx = offset.x + pt.x * cellSize;
-          const sy = offset.y + pt.z * cellSize;
-          if (idx === 0) ctx.moveTo(sx, sy);
-          else ctx.lineTo(sx, sy);
-        });
-        ctx.closePath();
-        ctx.fill();
+        const isSel = zone.id === selectedZoneId;
         
-        // 2. Draw border
-        ctx.globalAlpha = 0.5;
-        ctx.strokeStyle = zone.color;
-        ctx.lineWidth = 1.8 * zoom;
-        ctx.stroke();
+        if (zoneView) {
+          ctx.save();
+          // Draw base path
+          const path = new Path2D();
+          zone.points.forEach((pt, idx) => {
+            const sx = offset.x + pt.x * cellSize;
+            const sy = offset.y + pt.z * cellSize;
+            if (idx === 0) path.moveTo(sx, sy);
+            else path.lineTo(sx, sy);
+          });
+          path.closePath();
+
+          // 1. Draw outer drop shadow (glowing red if selected, soft slate shadow if not)
+          ctx.shadowColor = isSel ? 'rgba(239, 68, 68, 0.45)' : 'rgba(15, 23, 42, 0.16)';
+          ctx.shadowBlur = isSel ? 20 * zoom : 12 * zoom;
+          ctx.shadowOffsetX = isSel ? 0 : 3 * zoom;
+          ctx.shadowOffsetY = isSel ? 2 * zoom : 5 * zoom;
+          ctx.fillStyle = zone.color;
+          ctx.fill(path);
+          
+          // 2. Draw soft inner white highlight (top-left inner shadow)
+          ctx.save();
+          ctx.shadowColor = 'transparent';
+          ctx.clip(path);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+          ctx.lineWidth = 4 * zoom;
+          ctx.translate(-2 * zoom, -2 * zoom);
+          ctx.stroke(path);
+          ctx.restore();
+
+          // 3. Draw soft inner dark shadow (bottom-right inner shadow)
+          ctx.save();
+          ctx.shadowColor = 'transparent';
+          ctx.clip(path);
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+          ctx.lineWidth = 4 * zoom;
+          ctx.translate(2 * zoom, 2 * zoom);
+          ctx.stroke(path);
+          ctx.restore();
+          
+          // 4. Draw outer border line (thick red if selected)
+          ctx.shadowColor = 'transparent';
+          ctx.strokeStyle = isSel ? '#ef4444' : 'rgba(255, 255, 255, 0.25)';
+          ctx.lineWidth = isSel ? 2.5 * zoom : 1.0 * zoom;
+          if (isSel) {
+            ctx.setLineDash([4 * zoom, 4 * zoom]);
+          }
+          ctx.stroke(path);
+          if (isSel) {
+            ctx.setLineDash([]);
+          }
+          
+          ctx.restore();
+        } else {
+          // Normal rendering
+          ctx.save();
+          
+          // 1. Draw filled polygon
+          ctx.fillStyle = zone.color;
+          ctx.globalAlpha = 0.32;
+          ctx.beginPath();
+          zone.points.forEach((pt, idx) => {
+            const sx = offset.x + pt.x * cellSize;
+            const sy = offset.y + pt.z * cellSize;
+            if (idx === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+          });
+          ctx.closePath();
+          ctx.fill();
+          
+          // 2. Draw border
+          ctx.globalAlpha = 0.85;
+          ctx.strokeStyle = zone.color;
+          ctx.lineWidth = 1.8 * zoom;
+          ctx.stroke();
+          
+          // If selected in normal map view, draw a bold outer border!
+          if (isSel) {
+            ctx.restore();
+            ctx.save();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3.0 * zoom;
+            ctx.setLineDash([4 * zoom, 4 * zoom]);
+            ctx.beginPath();
+            zone.points.forEach((pt, idx) => {
+              const sx = offset.x + pt.x * cellSize;
+              const sy = offset.y + pt.z * cellSize;
+              if (idx === 0) ctx.moveTo(sx, sy);
+              else ctx.lineTo(sx, sy);
+            });
+            ctx.closePath();
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
         
         // 3. Draw zone name at centroid
         let sumX = 0, sumZ = 0;
@@ -1158,17 +1262,18 @@ export default function CityModule() {
         const cz = offset.y + (sumZ / zone.points.length) * cellSize;
         
         ctx.globalAlpha = 1.0;
-        ctx.font = `bold ${Math.max(10, 12 * zoom)}px sans-serif`;
+        const upperName = zone.name.toUpperCase();
+        ctx.font = `bold ${Math.max(9, 10 * zoom)}px "Courier New", Courier, monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
         // Draw small shadow/outline for readability
         ctx.fillStyle = 'rgba(22, 27, 38, 0.82)';
-        const textWidth = ctx.measureText(zone.name).width;
+        const textWidth = ctx.measureText(upperName).width;
         ctx.fillRect(cx - textWidth / 2 - 6, cz - 8, textWidth + 12, 16);
         
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(zone.name, cx, cz);
+        ctx.fillText(upperName, cx, cz);
         
         ctx.restore();
       });
@@ -1178,7 +1283,7 @@ export default function CityModule() {
     if (cityTool === 'pencil' && activeZonePoints.length > 0) {
       ctx.save();
       ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 2.5 * zoom;
+      ctx.lineWidth = 6.0 * zoom;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       
@@ -1190,13 +1295,22 @@ export default function CityModule() {
         else ctx.lineTo(sx, sy);
       });
       
-      // Draw line to current hover point if moving mouse
-      if (hoveredFloat) {
+      // Draw line to current hover point if moving mouse and in freeform mode
+      if (zoneShape === 'pencil' && hoveredFloat) {
         const hx = offset.x + hoveredFloat.col * cellSize;
         const hy = offset.y + hoveredFloat.row * cellSize;
         ctx.lineTo(hx, hy);
       }
+      
+      if (zoneShape !== 'pencil' && activeZonePoints.length >= 3) {
+        ctx.closePath();
+      }
       ctx.stroke();
+      
+      if (zoneShape !== 'pencil' && activeZonePoints.length >= 3) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+        ctx.fill();
+      }
       
       // Draw starting node circle
       ctx.fillStyle = '#ef4444';
@@ -1231,85 +1345,87 @@ export default function CityModule() {
     // Placed assets are rendered below
 
     // Placed assets
-    (city.placedAssets || []).forEach(asset => {
-      const scaleFactor = asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0;
-      const aw = (asset.width || 2) * (cellSize / 3.4) * scaleFactor;
-      const ah = (asset.height || 2) * (cellSize / 3.4) * scaleFactor;
-      const isSelected = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
+    if (!zoneView) {
+      (city.placedAssets || []).forEach(asset => {
+        const scaleFactor = asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0;
+        const aw = (asset.width || 2) * (cellSize / 3.4) * scaleFactor;
+        const ah = (asset.height || 2) * (cellSize / 3.4) * scaleFactor;
+        const isSelected = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
 
-      // 1. Viewport frustum culling check
-      const cx = offset.x + asset.col * cellSize;
-      const cy = offset.y + asset.row * cellSize;
-      const maxDim = Math.max(aw, ah) * 1.5;
+        // 1. Viewport frustum culling check
+        const cx = offset.x + asset.col * cellSize;
+        const cy = offset.y + asset.row * cellSize;
+        const maxDim = Math.max(aw, ah) * 1.5;
 
-      if (canvasRef.current) {
-        const canvas = canvasRef.current;
-        if (
-          cx + maxDim < 0 ||
-          cx - maxDim > canvas.width ||
-          cy + maxDim < 0 ||
-          cy - maxDim > canvas.height
-        ) {
-          return; // Skip rendering this building entirely!
+        if (canvasRef.current) {
+          const canvas = canvasRef.current;
+          if (
+            cx + maxDim < 0 ||
+            cx - maxDim > canvas.width ||
+            cy + maxDim < 0 ||
+            cy - maxDim > canvas.height
+          ) {
+            return; // Skip rendering this building entirely!
+          }
         }
-      }
 
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(-(asset.rotation || 0));
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(-(asset.rotation || 0));
 
-      const ax = -aw / 2;
-      const ay = -ah / 2;
+        const ax = -aw / 2;
+        const ay = -ah / 2;
 
-      // 1. Draw generic footprint shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.18)';
-      ctx.fillRect(ax + 2, ay + 2, aw, ah);
+        // 1. Draw generic footprint shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.fillRect(ax + 2, ay + 2, aw, ah);
 
-      // 2. Draw actual constituent 3D primitives in 2D top view
-      const drawDetailed = aw >= 16 && ah >= 16 && zoom >= 0.65;
+        // 2. Draw actual constituent 3D primitives in 2D top view
+        const drawDetailed = aw >= 16 && ah >= 16 && zoom >= 0.65;
 
-      if (drawDetailed && asset.objects && asset.objects.length > 0) {
-        const objScale = (cellSize / 3.4) * scaleFactor;
-        asset.objects.forEach(obj => {
-          ctx.save();
-          // Position relative to asset center
-          const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
-          const oz = (obj.position?.z !== undefined ? obj.position.z : 0) * objScale;
-          ctx.translate(ox, oz);
-          ctx.rotate(-(obj.rotation?.y || 0));
+        if (drawDetailed && asset.objects && asset.objects.length > 0) {
+          const objScale = (cellSize / 3.4) * scaleFactor;
+          asset.objects.forEach(obj => {
+            ctx.save();
+            // Position relative to asset center
+            const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
+            const oz = (obj.position?.z !== undefined ? obj.position.z : 0) * objScale;
+            ctx.translate(ox, oz);
+            ctx.rotate(-(obj.rotation?.y || 0));
 
-          drawObject2D(ctx, obj, objScale, asset.color);
-          ctx.restore();
-        });
-      } else {
-        // Fallback generic bounding box if no sub-objects or zoomed out
-        ctx.fillStyle = asset.color || '#4ECDC4';
-        ctx.globalAlpha = 0.82;
-        ctx.beginPath();
-        ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = asset.color || '#4ECDC4';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
-        ctx.stroke();
-      }
+            drawObject2D(ctx, obj, objScale, asset.color);
+            ctx.restore();
+          });
+        } else {
+          // Fallback generic bounding box if no sub-objects or zoomed out
+          ctx.fillStyle = asset.color || '#4ECDC4';
+          ctx.globalAlpha = 0.82;
+          ctx.beginPath();
+          ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = asset.color || '#4ECDC4';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
+          ctx.stroke();
+        }
 
-      // 3. Draw white select border highlight around building bounds
-      if (isSelected) {
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2.0;
-        ctx.beginPath();
-        ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
-        ctx.stroke();
-      }
+        // 3. Draw white select border highlight around building bounds
+        if (isSelected) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2.0;
+          ctx.beginPath();
+          ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
+          ctx.stroke();
+        }
 
-      ctx.restore();
-    });
+        ctx.restore();
+      });
+    }
 
     // Hover highlight or pending placement
-    if (hoveredFloat && pendingPlacementAsset) {
+    if (hoveredFloat && pendingPlacementAsset && !zoneView) {
       const isValid = isPlacementValid(hoveredFloat.col, hoveredFloat.row);
       const hx = offset.x + hoveredFloat.col * cellSize;
       const hy = offset.y + hoveredFloat.row * cellSize;
@@ -1363,7 +1479,7 @@ export default function CityModule() {
       ctx.strokeRect(sx + 1, sy + 1, cellSize - 2, cellSize - 2);
       ctx.setLineDash([]);
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints, zoneShape, zoneView, selectedZoneId]);
 
   // Resize + redraw
   useEffect(() => {
@@ -1594,6 +1710,7 @@ export default function CityModule() {
       if (cityTool === 'pencil') {
         e.preventDefault();
         isDrawingZoneRef.current = true;
+        zoneAnchorRef.current = { x: floatCoords.col, z: floatCoords.row };
         setActiveZonePoints([{ x: floatCoords.col, z: floatCoords.row }]);
         return;
       }
@@ -1646,10 +1763,47 @@ export default function CityModule() {
     setHoveredFloat(floatCoords);
 
     if (cityTool === 'pencil' && isDrawingZoneRef.current) {
-      const lastPt = activeZonePoints[activeZonePoints.length - 1];
-      const dist = lastPt ? Math.sqrt((floatCoords.col - lastPt.x)**2 + (floatCoords.row - lastPt.z)**2) : 999;
-      if (dist > 0.15) { // 0.15 cell threshold for fine-grained drawing detail
-        setActiveZonePoints(prev => [...prev, { x: floatCoords.col, z: floatCoords.row }]);
+      if (zoneShape === 'pencil') {
+        const lastPt = activeZonePoints[activeZonePoints.length - 1];
+        const dist = lastPt ? Math.sqrt((floatCoords.col - lastPt.x)**2 + (floatCoords.row - lastPt.z)**2) : 999;
+        if (dist > 0.15) { // 0.15 cell threshold for fine-grained drawing detail
+          setActiveZonePoints(prev => [...prev, { x: floatCoords.col, z: floatCoords.row }]);
+        }
+      } else {
+        const startPt = zoneAnchorRef.current;
+        if (startPt) {
+          const sx = startPt.x;
+          const sz = startPt.z;
+          const cx = floatCoords.col;
+          const cz = floatCoords.row;
+          
+          if (zoneShape === 'rectangle') {
+            setActiveZonePoints([
+              { x: sx, z: sz },
+              { x: cx, z: sz },
+              { x: cx, z: cz },
+              { x: sx, z: cz }
+            ]);
+          } else if (zoneShape === 'square') {
+            const dx = cx - sx;
+            const dz = cz - sz;
+            const side = Math.max(Math.abs(dx), Math.abs(dz));
+            const adjCx = sx + Math.sign(dx) * side;
+            const adjCz = sz + Math.sign(dz) * side;
+            setActiveZonePoints([
+              { x: sx, z: sz },
+              { x: adjCx, z: sz },
+              { x: adjCx, z: adjCz },
+              { x: sx, z: adjCz }
+            ]);
+          } else if (zoneShape === 'triangle') {
+            setActiveZonePoints([
+              { x: (sx + cx) / 2, z: sz },
+              { x: cx, z: cz },
+              { x: sx, z: cz }
+            ]);
+          }
+        }
       }
       return;
     }
@@ -1678,7 +1832,23 @@ export default function CityModule() {
           if (name) {
             const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
             const color = colors[Math.floor(Math.random() * colors.length)];
-            addZone(name, closedPoints, color);
+            const snappedPoints = snapZonePointsToSurrounding(closedPoints, city?.zones || [], 4.0);
+            
+            let overlaps = false;
+            if (city?.zones) {
+              for (const z of city.zones) {
+                if (doPolygonsOverlap(snappedPoints, z.points)) {
+                  overlaps = true;
+                  break;
+                }
+              }
+            }
+            
+            if (overlaps) {
+              alert("Zone overlaps with an existing zone! Overlapping zones are not allowed.");
+            } else {
+              addZone(name, snappedPoints, color);
+            }
           }
           setActiveZonePoints([]);
         }, 50);
@@ -1791,9 +1961,21 @@ export default function CityModule() {
             setSelectedRoadId(road.id);
             setSelectedCell(null);
           } else {
-            // Single click empty space: clear selections
-            selectAsset(null);
-            setSelectedRoadId(null);
+            // Check if we clicked inside a zone polygon!
+            const clickedZone = (city?.zones || []).find(z => isPointInPolygon({ x: clickCol, z: clickRow }, z.points));
+            if (clickedZone) {
+              selectAsset(null);
+              setSelectedRoadId(null);
+              setSelectedCell(null);
+              setSelectedZoneId(clickedZone.id);
+              setShowObjectsPanel(true); // auto-open objects panel to edit the zone!
+            } else {
+              // Single click empty space: clear selections
+              selectAsset(null);
+              setSelectedRoadId(null);
+              setSelectedCell(null);
+              setSelectedZoneId(null);
+            }
           }
         }
       }
@@ -1826,6 +2008,7 @@ export default function CityModule() {
 
   const selectedAsset = selectedAssetId ? (city?.placedAssets || []).find(a => a.id === selectedAssetId) : null;
   const selectedRoad = selectedRoadId ? (city?.roads || []).find(r => r.id === selectedRoadId) : null;
+  const selectedZone = selectedZoneId ? (city?.zones || []).find(z => z.id === selectedZoneId) : null;
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
@@ -1920,7 +2103,7 @@ export default function CityModule() {
       )}
 
       {/* ── Left-Side: Floating Tools Toolbar ── */}
-      <div className="glass-panel" style={{
+      <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
         position: 'absolute',
         left: 16,
         top: 136,
@@ -1934,105 +2117,186 @@ export default function CityModule() {
         borderRadius: 25
       }}>
         <button
-          className={`glass-button ${cityTool === 'select' && !pendingPlacementAsset ? 'active' : ''}`}
+          className={zoneView ? `clay-button ${cityTool === 'select' && !pendingPlacementAsset ? 'active' : ''}` : `glass-button ${cityTool === 'select' && !pendingPlacementAsset ? 'active' : ''}`}
           onClick={() => {
             useStore.setState({ cityTool: 'select', pendingPlacementAsset: null });
           }}
           title="Select Tool"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14 }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14, border: 'none' }}
         >
           🖱️
         </button>
         <button
-          className={`glass-button ${cityTool === 'pencil' ? 'active' : ''}`}
+          className={zoneView ? `clay-button ${cityTool === 'pencil' ? 'active' : ''}` : `glass-button ${cityTool === 'pencil' ? 'active' : ''}`}
           onClick={() => {
             useStore.setState({ cityTool: 'pencil', pendingPlacementAsset: null });
             setActiveCategory(null);
           }}
           title="Zone Pencil"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14 }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14, border: 'none' }}
         >
           ✏️
         </button>
         <button
-          className={`glass-button ${cityTool === 'erase' ? 'active' : ''}`}
+          className={zoneView ? `clay-button ${cityTool === 'erase' ? 'active' : ''}` : `glass-button ${cityTool === 'erase' ? 'active' : ''}`}
           onClick={() => {
             useStore.setState({ cityTool: 'erase', pendingPlacementAsset: null });
             setActiveCategory(null);
           }}
           title="Erase Tool"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14 }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14, border: 'none' }}
         >
           🗑️
         </button>
         
-        <div style={{ height: 1, width: '70%', background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+        <div style={{ height: 1, width: '70%', background: zoneView ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
         
         <button
-          className="glass-button"
+          className={zoneView ? "clay-button" : "glass-button"}
           onClick={() => { lockAllAssets(true); setSelectedRoadId(null); }}
           title="Lock all objects"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none' }}
         >
           🔒
         </button>
         <button
-          className="glass-button"
+          className={zoneView ? "clay-button" : "glass-button"}
           onClick={() => lockAllAssets(false)}
           title="Unlock all objects"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none' }}
         >
           🔓
         </button>
-
-        <div style={{ height: 1, width: '70%', background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
-
+ 
+        <div style={{ height: 1, width: '70%', background: zoneView ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+ 
         <button
-          className="glass-button"
+          className={zoneView ? "clay-button" : "glass-button"}
           onClick={() => undoCity()}
           title="Undo (Ctrl+Z)"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none' }}
         >
           ↩️
         </button>
-
+ 
         <button
-          className="glass-button danger"
+          className={zoneView ? "clay-button danger" : "glass-button danger"}
           onClick={() => {
             if (window.confirm("Are you sure you want to clean the entire city? This will remove all zones, roads, and placed buildings!")) {
               clearCity();
             }
           }}
           title="Clean City"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none' }}
         >
           🧹
         </button>
       </div>
 
+      {/* Flyout shape options for Pencil Tool */}
+      {cityTool === 'pencil' && (
+        <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+          position: 'absolute',
+          left: 74,
+          top: 176, // aligned with the pencil tool button
+          zIndex: 100,
+          display: 'flex',
+          gap: 6,
+          padding: 6,
+          borderRadius: 20,
+          animation: 'fadeIn 0.2s ease'
+        }}>
+          {[
+            { id: 'pencil', label: 'Freeform', icon: '✏️' },
+            { id: 'rectangle', label: 'Rectangle', icon: '⬜' },
+            { id: 'square', label: 'Square', icon: '⏹️' },
+            { id: 'triangle', label: 'Triangle', icon: '🔺' }
+          ].map(s => (
+            <button
+              key={s.id}
+              className={zoneView ? `clay-button ${zoneShape === s.id ? 'active' : ''}` : `glass-button ${zoneShape === s.id ? 'active' : ''}`}
+              onClick={() => {
+                setZoneShape(s.id);
+                setActiveZonePoints([]);
+              }}
+              style={{
+                borderRadius: 14,
+                padding: '4px 10px',
+                fontSize: 10,
+                fontWeight: 600,
+                height: 28
+              }}
+              title={s.label}
+            >
+              <span>{s.icon}</span>
+              <span style={{ fontSize: 9 }}>{s.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Top-Right: View Toggles & Placed Objects Menu ── */}
       <div style={{ position: 'absolute', top: 80, right: 16, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            className={`glass-button ${streetView ? 'active' : ''}`}
-            onClick={() => setStreetView(!streetView)}
-            style={{ height: 36, padding: '0 14px', fontWeight: 600 }}
-          >
-            {streetView ? '🗺️ Map View' : '🚶 Street View'}
-          </button>
+          <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+            display: 'flex',
+            gap: 4,
+            padding: 4,
+            borderRadius: 20,
+            pointerEvents: 'auto'
+          }}>
+            {[
+              { id: 'map', label: 'Map', icon: '🗺️' },
+              { id: 'street', label: 'Street', icon: '🚶' },
+              { id: 'zone', label: 'Zone', icon: '📐' }
+            ].map(v => {
+              const isAct = v.id === 'street' ? streetView : (v.id === 'zone' ? zoneView : (!streetView && !zoneView));
+              return (
+                <button
+                  key={v.id}
+                  className={zoneView ? `clay-button ${isAct ? 'active' : ''}` : `glass-button ${isAct ? 'active' : ''}`}
+                  onClick={() => {
+                    if (v.id === 'street') {
+                      setStreetView(true);
+                      setZoneView(false);
+                    } else if (v.id === 'zone') {
+                      setStreetView(false);
+                      setZoneView(true);
+                      setSelectedZoneId(null); // Clear selected zone
+                      useStore.setState({ cityTool: 'pencil' }); // Auto-select pencil shape drawing in Zone View
+                    } else {
+                      setStreetView(false);
+                      setZoneView(false);
+                    }
+                  }}
+                  style={{
+                    borderRadius: 16,
+                    padding: '4px 10px',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    height: 28,
+                    border: 'none'
+                  }}
+                >
+                  <span>{v.icon}</span>
+                  <span>{v.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
           <button
-            className={`glass-button ${showObjectsPanel ? 'active' : ''}`}
+            className={zoneView ? `clay-button ${showObjectsPanel ? 'active' : ''}` : `glass-button ${showObjectsPanel ? 'active' : ''}`}
             onClick={() => setShowObjectsPanel(!showObjectsPanel)}
-            style={{ height: 36, padding: '0 14px', fontWeight: 600 }}
+            style={{ height: 36, padding: '0 14px', fontWeight: 600, border: 'none' }}
           >
-            📊 Objects ({(city?.placedAssets || []).length + (city?.roads || []).length})
+            📊 {zoneView ? 'Zones' : 'Objects'} ({zoneView ? (city?.zones || []).length : ((city?.placedAssets || []).length + (city?.roads || []).length)})
           </button>
         </div>
 
         {/* Objects Panel Overlay */}
         {showObjectsPanel && (
-          <div className="glass-panel" style={{
+          <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
             width: 240,
             maxHeight: '60vh',
             display: 'flex',
@@ -2042,8 +2306,14 @@ export default function CityModule() {
             gap: 8,
             animation: 'fadeIn 0.2s ease'
           }}>
-            <div style={{ fontSize: 11, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: 6 }}>
-              🏢 Placed Objects
+            <div style={{
+              fontSize: 11,
+              fontWeight: 700,
+              borderBottom: zoneView ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.15)',
+              paddingBottom: 6,
+              color: zoneView ? '#1e293b' : '#ffffff'
+            }}>
+              {zoneView ? '📐 City Zones' : '🏢 Placed Objects'}
             </div>
             
             {/* Selected item details when open */}
@@ -2269,122 +2539,228 @@ export default function CityModule() {
                   </button>
                 </div>
               </div>
+            ) : selectedZone ? (
+              <div style={{ padding: '8px 4px', borderBottom: zoneView ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: zoneView ? '#1e293b' : '#ffffff' }}>Edit Zone</div>
+                  
+                  {/* Name Input */}
+                  <div style={{ marginTop: 6 }}>
+                    <div style={{ fontSize: 8, color: zoneView ? '#64748b' : 'rgba(255,255,255,0.8)', fontWeight: 600, marginBottom: 2 }}>Zone Name</div>
+                    <input
+                      type="text"
+                      value={selectedZone.name}
+                      onChange={(e) => {
+                        updateZone(selectedZone.id, { name: e.target.value });
+                      }}
+                      className={zoneView ? "clay-input" : ""}
+                      style={{
+                        width: '100%',
+                        fontSize: 10,
+                        padding: '4px 6px',
+                        background: zoneView ? '#ffffff' : 'rgba(0,0,0,0.3)',
+                        border: zoneView ? '1px solid #cbd5e1' : '1px solid rgba(255,255,255,0.15)',
+                        borderRadius: 6,
+                        color: zoneView ? '#1e293b' : '#ffffff',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+
+                  {/* Color Picker */}
+                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 8, color: zoneView ? '#64748b' : 'rgba(255,255,255,0.8)', fontWeight: 600 }}>Zone Color</span>
+                    <SmoothColorPicker
+                      value={selectedZone.color || '#4ECDC4'}
+                      onChange={(e) => {
+                        updateZone(selectedZone.id, { color: e.target.value });
+                      }}
+                      style={{
+                        width: 24, height: 16, border: 'none', padding: 0,
+                        background: 'none', cursor: 'pointer'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                  <button
+                    className={zoneView ? "clay-button danger" : "glass-button danger"}
+                    style={{ flex: 1, height: 24, fontSize: 9 }}
+                    onClick={() => {
+                      removeZone(selectedZone.id);
+                      setSelectedZoneId(null);
+                    }}
+                  >
+                    🗑️ Delete Zone
+                  </button>
+                </div>
+              </div>
             ) : null}
 
             {/* Main Object List */}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, paddingRight: 4 }}>
-              {/* Buildings & Trees Section */}
-              <div style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
-                Buildings & Trees ({(city?.placedAssets || []).length})
-              </div>
-              {(city?.placedAssets || []).length === 0 ? (
-                <div style={{ padding: '8px 0', fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                  No objects placed.
-                </div>
-              ) : (
-                (city?.placedAssets || []).map(asset => {
-                  const isSel = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
-                  return (
-                    <div key={asset.id}
-                      onClick={() => {
-                        selectAsset(asset.id === selectedAssetId ? null : asset.id);
-                        setSelectedRoadId(null);
-                      }}
-                      style={{
-                        padding: '4px 6px',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        background: isSel ? 'rgba(78,205,196,0.15)' : 'rgba(255,255,255,0.03)',
-                        borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
-                        opacity: asset.locked ? 0.6 : 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 4
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: 1, background: asset.color || '#4ECDC4', flexShrink: 0 }} />
-                          <span style={{ fontSize: 10, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {asset.name}
-                          </span>
+              {zoneView ? (
+                <>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: '#64748b', marginTop: 4 }}>
+                    📐 Zones ({(city?.zones || []).length})
+                  </div>
+                  {(city?.zones || []).length === 0 ? (
+                    <div style={{ padding: '8px 0', fontSize: 10, color: '#94a3b8', textAlign: 'center' }}>
+                      No zones created yet.
+                    </div>
+                  ) : (
+                    (city?.zones || []).map(zone => {
+                      const isSel = zone.id === selectedZoneId;
+                      return (
+                        <div key={zone.id}
+                          onClick={() => {
+                            setSelectedZoneId(isSel ? null : zone.id);
+                            selectAsset(null);
+                            setSelectedRoadId(null);
+                          }}
+                          className={`clay-button ${isSel ? 'active' : ''}`}
+                          style={{
+                            padding: '6px 8px',
+                            borderRadius: 10,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 4,
+                            marginBottom: 4,
+                            border: '1px solid rgba(255, 255, 255, 0.65)'
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: zone.color || '#4ECDC4', flexShrink: 0 }} />
+                              <span style={{ fontSize: 10, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                                {zone.name.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateAsset(asset.id, { locked: !asset.locked });
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: 10,
-                          padding: '2px',
-                          opacity: 0.8
-                        }}
-                      >
-                        {asset.locked ? '🔒' : '🔓'}
-                      </button>
-                    </div>
-                  );
-                })
-              )}
-
-              {/* Roads Section */}
-              <div style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: 8 }}>
-                Roads ({(city?.roads || []).length})
-              </div>
-              {(city?.roads || []).length === 0 ? (
-                <div style={{ padding: '8px 0', fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                  No roads built.
-                </div>
+                      );
+                    })
+                  )}
+                </>
               ) : (
-                (city?.roads || []).map(road => {
-                  const isSel = road.id === selectedRoadId;
-                  const typeLabel = road.roadType === 'highway' ? 'Highway' : road.roadType === 'multilane' ? 'Multilane' : 'Standard Road';
-                  return (
-                    <div key={road.id}
-                      onClick={() => {
-                        setSelectedRoadId(isSel ? null : road.id);
-                        selectAsset(null);
-                      }}
-                      style={{
-                        padding: '4px 6px',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        background: isSel ? 'rgba(78,205,196,0.15)' : 'rgba(255,255,255,0.03)',
-                        borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
-                        opacity: road.locked ? 0.6 : 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 4
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                        <span style={{ fontSize: 10, color: '#ffffff' }}>🛣️ {typeLabel}</span>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateRoad(road.id, { locked: !road.locked });
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: 10,
-                          padding: '2px',
-                          opacity: 0.8
-                        }}
-                      >
-                        {road.locked ? '🔒' : '🔓'}
-                      </button>
+                <>
+                  {/* Buildings & Trees Section */}
+                  <div style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
+                    Buildings & Trees ({(city?.placedAssets || []).length})
+                  </div>
+                  {(city?.placedAssets || []).length === 0 ? (
+                    <div style={{ padding: '8px 0', fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                      No objects placed.
                     </div>
-                  );
-                })
+                  ) : (
+                    (city?.placedAssets || []).map(asset => {
+                      const isSel = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
+                      return (
+                        <div key={asset.id}
+                          onClick={() => {
+                            selectAsset(asset.id === selectedAssetId ? null : asset.id);
+                            setSelectedRoadId(null);
+                          }}
+                          style={{
+                            padding: '4px 6px',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            background: isSel ? 'rgba(78,205,196,0.15)' : 'rgba(255,255,255,0.03)',
+                            borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
+                            opacity: asset.locked ? 0.6 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 4
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <div style={{ width: 6, height: 6, borderRadius: 1, background: asset.color || '#4ECDC4', flexShrink: 0 }} />
+                              <span style={{ fontSize: 10, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {asset.name}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateAsset(asset.id, { locked: !asset.locked });
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: 10,
+                              padding: '2px',
+                              opacity: 0.8
+                            }}
+                          >
+                            {asset.locked ? '🔒' : '🔓'}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+
+                  {/* Roads Section */}
+                  <div style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: 8 }}>
+                    Roads ({(city?.roads || []).length})
+                  </div>
+                  {(city?.roads || []).length === 0 ? (
+                    <div style={{ padding: '8px 0', fontSize: 10, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                      No roads built.
+                    </div>
+                  ) : (
+                    (city?.roads || []).map(road => {
+                      const isSel = road.id === selectedRoadId;
+                      const typeLabel = road.roadType === 'highway' ? 'Highway' : road.roadType === 'multilane' ? 'Multilane' : 'Standard Road';
+                      return (
+                        <div key={road.id}
+                          onClick={() => {
+                            setSelectedRoadId(isSel ? null : road.id);
+                            selectAsset(null);
+                          }}
+                          style={{
+                            padding: '4px 6px',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            background: isSel ? 'rgba(78,205,196,0.15)' : 'rgba(255,255,255,0.03)',
+                            borderLeft: isSel ? '2px solid var(--accent)' : '2px solid transparent',
+                            opacity: road.locked ? 0.6 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 4
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: 10, color: '#ffffff' }}>🛣️ {typeLabel}</span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateRoad(road.id, { locked: !road.locked });
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: 10,
+                              padding: '2px',
+                              opacity: 0.8
+                            }}
+                          >
+                            {road.locked ? '🔒' : '🔓'}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -2392,7 +2768,7 @@ export default function CityModule() {
       </div>
 
       {/* ── Sub-menu Overlay for Build Categories (above build deck) ── */}
-      {activeCategory && (
+      {activeCategory && !zoneView && (
         <div className="glass-panel" style={{
           position: 'absolute',
           bottom: 76,
@@ -2531,47 +2907,49 @@ export default function CityModule() {
       )}
 
       {/* ── Bottom-Center: Main Build Categories Dock ── */}
-      <div className="glass-panel" style={{
-        position: 'absolute',
-        bottom: 24,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 100,
-        display: 'flex',
-        gap: 6,
-        padding: '6px 12px',
-        borderRadius: 30,
-        alignItems: 'center'
-      }}>
-        {[
-          { id: 'roads', label: 'Roads', icon: '🛣️' },
-          { id: 'residential', label: 'Residency', icon: '🏠' },
-          { id: 'commercial', label: 'Commercial', icon: '🏢' },
-          { id: 'industrial', label: 'Industrial', icon: '🏭' },
-          { id: 'civic', label: 'Civic', icon: '🏛️' },
-          { id: 'green', label: 'Green', icon: '🌳' },
-          { id: 'custom', label: 'Custom', icon: '📐' },
-        ].map(cat => (
-          <button
-            key={cat.id}
-            className={`glass-button ${activeCategory === cat.id ? 'active' : ''}`}
-            onClick={() => {
-              setActiveCategory(activeCategory === cat.id ? null : cat.id);
-              useStore.setState({ pendingPlacementAsset: null }); // clear pending on tab switch
-            }}
-            style={{
-              borderRadius: 20,
-              padding: '6px 12px',
-              fontSize: 11,
-              fontWeight: 600,
-              height: 32
-            }}
-          >
-            <span>{cat.icon}</span>
-            <span style={{ fontSize: 10 }}>{cat.label}</span>
-          </button>
-        ))}
-      </div>
+      {!zoneView && (
+        <div className="glass-panel" style={{
+          position: 'absolute',
+          bottom: 24,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+          display: 'flex',
+          gap: 6,
+          padding: '6px 12px',
+          borderRadius: 30,
+          alignItems: 'center'
+        }}>
+          {[
+            { id: 'roads', label: 'Roads', icon: '🛣️' },
+            { id: 'residential', label: 'Residency', icon: '🏠' },
+            { id: 'commercial', label: 'Commercial', icon: '🏢' },
+            { id: 'industrial', label: 'Industrial', icon: '🏭' },
+            { id: 'civic', label: 'Civic', icon: '🏛️' },
+            { id: 'green', label: 'Green', icon: '🌳' },
+            { id: 'custom', label: 'Custom', icon: '🎨' },
+          ].map(cat => (
+            <button
+              key={cat.id}
+              className={`glass-button ${activeCategory === cat.id ? 'active' : ''}`}
+              onClick={() => {
+                setActiveCategory(activeCategory === cat.id ? null : cat.id);
+                useStore.setState({ pendingPlacementAsset: null }); // clear pending on tab switch
+              }}
+              style={{
+                borderRadius: 20,
+                padding: '6px 12px',
+                fontSize: 11,
+                fontWeight: 600,
+                height: 32
+              }}
+            >
+              <span>{cat.icon}</span>
+              <span style={{ fontSize: 10 }}>{cat.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Right-Side: Floating Zoom Controls ── */}
       {!streetView && (
@@ -2584,16 +2962,24 @@ export default function CityModule() {
 
       {/* ── Bottom-Left: Floating Legend ── */}
       {!streetView && (
-        <div className="glass-panel" style={{ position:'absolute', bottom: 24, left: 16, padding:'8px 12px', zIndex: 100, borderRadius: 12 }}>
+        <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+          position:'absolute',
+          bottom: 24,
+          left: 16,
+          padding:'8px 12px',
+          zIndex: 100,
+          borderRadius: 12,
+          border: zoneView ? '1px solid rgba(255, 255, 255, 0.6)' : undefined
+        }}>
           {Object.entries(ZONE_META).filter(([k])=>k!=='empty').map(([type,meta]) => (
             <div key={type} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3, fontSize:10 }}>
               <div style={{ width:8, height:8, borderRadius:2, background:meta.color, flexShrink:0 }} />
-              <span style={{ color: 'rgba(255,255,255,0.8)' }}>{meta.label}</span>
+              <span style={{ color: zoneView ? '#475569' : 'rgba(255,255,255,0.8)' }}>{meta.label}</span>
             </div>
           ))}
           <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:3, fontSize:10 }}>
-            <div style={{ width:8, height:8, borderRadius:2, background:'#1e2a38', border:'1px solid #445566', flexShrink:0 }} />
-            <span style={{ color: 'rgba(255,255,255,0.8)' }}>Road</span>
+            <div style={{ width:8, height:8, borderRadius:2, background: zoneView ? '#ffffff' : '#1e2a38', border: zoneView ? '1px solid rgba(15,23,42,0.12)' : '1px solid #445566', flexShrink:0 }} />
+            <span style={{ color: zoneView ? '#475569' : 'rgba(255,255,255,0.8)' }}>Road</span>
           </div>
         </div>
       )}
@@ -4351,6 +4737,121 @@ function createHumanMesh(clothingColor) {
   return group;
 }
 
+function doSegmentsIntersect(p1, q1, p2, q2) {
+  function ccw(A, B, C) {
+    return (C.z - A.z) * (B.x - A.x) > (B.z - A.z) * (C.x - A.x);
+  }
+  return (ccw(p1, p2, q2) !== ccw(q1, p2, q2)) && (ccw(p1, q1, p2) !== ccw(p1, q1, q2));
+}
+
+function isPointInPolygon(pt, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].x, zi = poly[i].z;
+    const xj = poly[j].x, zj = poly[j].z;
+    
+    const intersect = ((zi > pt.z) !== (zj > pt.z))
+        && (pt.x < (xj - xi) * (pt.z - zi) / (zj - zi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function doPolygonsOverlap(polyA, polyB) {
+  if (!polyA || !polyB || polyA.length < 3 || polyB.length < 3) return false;
+  
+  // 1. Check edge-to-edge intersections
+  for (let i = 0; i < polyA.length - 1; i++) {
+    for (let j = 0; j < polyB.length - 1; j++) {
+      if (doSegmentsIntersect(polyA[i], polyA[i+1], polyB[j], polyB[j+1])) {
+        // Special check: if they only share a vertex or boundary point, it's not a real overlap
+        // but if they cross each other, they definitely overlap.
+        // To be safe, we can check if the midpoint of segment A is inside polygon B.
+        const midPt = { x: (polyA[i].x + polyA[i+1].x) / 2, z: (polyA[i].z + polyA[i+1].z) / 2 };
+        if (isPointInPolygon(midPt, polyB)) return true;
+        
+        const midPtB = { x: (polyB[j].x + polyB[j+1].x) / 2, z: (polyB[j].z + polyB[j+1].z) / 2 };
+        if (isPointInPolygon(midPtB, polyA)) return true;
+        
+        // Also if they cross but don't share vertices, let's treat segment intersection as overlap
+        // except when they are exactly snapping onto the same vertices.
+        // Let's check if the intersection point is not one of the shared endpoints
+        return true;
+      }
+    }
+  }
+  
+  // 2. Check if one polygon is entirely inside the other
+  // Test centroids of polygons to avoid endpoint sharing false positives
+  let sumAx = 0, sumAz = 0;
+  polyA.forEach(p => { sumAx += p.x; sumAz += p.z; });
+  const centerA = { x: sumAx / polyA.length, z: sumAz / polyA.length };
+  if (isPointInPolygon(centerA, polyB)) return true;
+
+  let sumBx = 0, sumBz = 0;
+  polyB.forEach(p => { sumBx += p.x; sumBz += p.z; });
+  const centerB = { x: sumBx / polyB.length, z: sumBz / polyB.length };
+  if (isPointInPolygon(centerB, polyA)) return true;
+
+  return false;
+}
+
+function getClosestPointOnSegment(p, a, b) {
+  const abX = b.x - a.x;
+  const abZ = b.z - a.z;
+  const apX = p.x - a.x;
+  const apZ = p.z - a.z;
+  
+  const abLen2 = abX * abX + abZ * abZ;
+  if (abLen2 === 0) return a;
+  
+  let t = (apX * abX + apZ * abZ) / abLen2;
+  t = Math.max(0, Math.min(1, t)); // clamp to segment
+  
+  return {
+    x: a.x + t * abX,
+    z: a.z + t * abZ
+  };
+}
+
+function snapZonePointsToSurrounding(newPoints, existingZones, threshold = 0.8) {
+  if (!existingZones || existingZones.length === 0) return newPoints;
+  
+  const snapped = newPoints.map((pt, idx) => {
+    if (idx === newPoints.length - 1 && idx > 0) {
+      return pt; // handle closing loop separately
+    }
+    
+    let closestPt = null;
+    let minD = Infinity;
+    
+    existingZones.forEach(zone => {
+      if (!zone.points || zone.points.length < 2) return;
+      
+      for (let i = 0; i < zone.points.length - 1; i++) {
+        const a = zone.points[i];
+        const b = zone.points[i+1];
+        const q = getClosestPointOnSegment(pt, a, b);
+        const dist = Math.sqrt((pt.x - q.x)**2 + (pt.z - q.z)**2);
+        if (dist < minD) {
+          minD = dist;
+          closestPt = q;
+        }
+      }
+    });
+    
+    if (minD < threshold && closestPt) {
+      return closestPt;
+    }
+    return pt;
+  });
+  
+  if (snapped.length > 0) {
+    snapped[snapped.length - 1] = { x: snapped[0].x, z: snapped[0].z };
+  }
+  return snapped;
+}
+
 function createZoneLabelSprite(name, color) {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -4369,12 +4870,12 @@ function createZoneLabelSprite(name, color) {
   ctx.fill();
   ctx.stroke();
   
-  // Draw text
+  // Draw text in uppercase with monospace map font
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 36px sans-serif';
+  ctx.font = 'bold 32px "Courier New", Courier, monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(name, canvas.width / 2, canvas.height / 2);
+  ctx.fillText(name.toUpperCase(), canvas.width / 2, canvas.height / 2);
   
   const texture = new THREE.CanvasTexture(canvas);
   const mat = new THREE.SpriteMaterial({
