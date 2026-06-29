@@ -3222,6 +3222,9 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
   const ambientLightRef = useRef(null);
   const rendererRef = useRef(null);
   const gameTimeRef = useRef(360);
+  const streetlightsRef = useRef([]);
+  const bulbOnMatRef = useRef(null);
+  const bulbOffMatRef = useRef(null);
   
   useEffect(() => {
     gameTimeRef.current = gameTime;
@@ -3268,6 +3271,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
       console.log("[StreetView] rebuildStreetScene skipped: scene or city not ready", { scene: !!scene, city: !!city });
       return;
     }
+    streetlightsRef.current = [];
 
     console.log("[StreetView] rebuildStreetScene started", {
       placedAssetsCount: (city.placedAssets || []).length,
@@ -3605,13 +3609,18 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           pointLight.visible = false;
           streetlightGroup.add(pointLight);
           
-          // 5. Light bulb mesh
+          // 5. Light bulb mesh (utilize shared flat material reference to prevent GC/shader allocation overhead)
           const bulbGeo = new THREE.SphereGeometry(0.06, 6, 6);
-          const bulbMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
-          const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+          const bulb = new THREE.Mesh(bulbGeo, bulbOffMatRef.current);
           bulb.position.set(0, 3.1, 0.8);
           bulb.userData = { isStreetlightBulb: true };
           streetlightGroup.add(bulb);
+          
+          streetlightsRef.current.push({
+            position: lightPos,
+            source: pointLight,
+            bulb: bulb
+          });
           
           scene.add(streetlightGroup);
           meshesRef.current.push(streetlightGroup);
@@ -3936,7 +3945,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
   }, [city, selectedAssetId, selectedRoadId, intersections]);
 
   useEffect(() => {
-    const mount = mountRef.current;
+const mount = mountRef.current;
     if (!mount || !city) return;
 
     const W = mount.clientWidth || 600, H = mount.clientHeight || 400;
@@ -3952,6 +3961,8 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
+    bulbOnMatRef.current = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    bulbOffMatRef.current = new THREE.MeshBasicMaterial({ color: 0x1e293b });
     scene.fog = new THREE.Fog(0x87CEEB, 15, 60);
     scene.background = new THREE.Color(0x87CEEB);
 
@@ -4390,32 +4401,32 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         }
       }
 
-      // Toggle 3D Streetlights PointLights and Bulbs (with Camera-Distance Culling)
+      // Toggle 3D Streetlights PointLights and Bulbs (Optimized with Flat Array + Material Swapping + State Change Guards)
       const lightsOn = hours >= 19.0 || hours < 6.0;
       const camPos = camera.position;
+      const targetBulbMat = lightsOn ? bulbOnMatRef.current : bulbOffMatRef.current;
       
-      meshesRef.current.forEach(m => {
-        if (m.userData && m.userData.isStreetlight) {
-          // Check distance to camera in X-Z plane
-          const dx = m.position.x - camPos.x;
-          const dz = m.position.z - camPos.z;
-          const distSq = dx * dx + dz * dz;
-          
-          // Cull distance: 45 units (distSq = 2025)
-          const isNearby = distSq < 2025;
-          const shouldLightBeOn = lightsOn && isNearby;
-          
-          m.children.forEach(child => {
-            if (child.userData && child.userData.isStreetlightSource) {
-              child.visible = shouldLightBeOn;
-              if (shouldLightBeOn) {
-                child.intensity = 1.8;
-              }
-            }
-            if (child.userData && child.userData.isStreetlightBulb) {
-              child.material.color.setHex(lightsOn ? 0xfef08a : 0x1e293b);
-            }
-          });
+      (streetlightsRef.current || []).forEach(sl => {
+        // Check distance to camera in X-Z plane
+        const dx = sl.position.x - camPos.x;
+        const dz = sl.position.z - camPos.z;
+        const distSq = dx * dx + dz * dz;
+        
+        // Cull distance: 45 units (distSq = 2025)
+        const isNearby = distSq < 2025;
+        const shouldLightBeOn = lightsOn && isNearby;
+        
+        // PointLight visibility / intensity update (State change guard)
+        if (sl.source.visible !== shouldLightBeOn) {
+          sl.source.visible = shouldLightBeOn;
+          if (shouldLightBeOn) {
+            sl.source.intensity = 1.8;
+          }
+        }
+        
+        // Bulb material swap (State change guard)
+        if (sl.bulb.material !== targetBulbMat) {
+          sl.bulb.material = targetBulbMat;
         }
       });
 
@@ -4795,6 +4806,9 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         }
       });
       
+      if (bulbOnMatRef.current) { bulbOnMatRef.current.dispose(); bulbOnMatRef.current = null; }
+      if (bulbOffMatRef.current) { bulbOffMatRef.current.dispose(); bulbOffMatRef.current = null; }
+
       renderer.dispose();
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
 
