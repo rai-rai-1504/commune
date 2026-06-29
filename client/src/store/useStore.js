@@ -802,6 +802,28 @@ export const useStore = create((set, get) => ({
   },
 
   addRoadSegment(points, roadType = 'standard', skipUndo = false) {
+    // Collision check for railways/roads vs assets
+    const city = get().city;
+    if (city && city.placedAssets) {
+      const distanceToSegment = (p, a, z) => {
+        const l2 = (a.x - z.x)**2 + (a.z - z.z)**2;
+        if (l2 === 0) return Math.sqrt((p.x - a.x)**2 + (p.z - a.z)**2);
+        let t = ((p.x - a.x) * (z.x - a.x) + (p.z - a.z) * (z.z - a.z)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.sqrt((p.x - (a.x + t * (z.x - a.x)))**2 + (p.z - (a.z + t * (z.z - a.z)))**2);
+      };
+      for (const asset of city.placedAssets) {
+        const assetRadius = ((asset.width || 2) + (asset.height || 2)) / 4 + 0.4;
+        for (let i = 0; i < points.length - 1; i++) {
+          const dist = distanceToSegment({ x: asset.col, z: asset.row }, points[i], points[i+1]);
+          if (dist < assetRadius) {
+            get().pushNotif(`Cannot lay network: overlaps with "${asset.name}"!`);
+            return;
+          }
+        }
+      }
+    }
+
     const id = uuid();
     const newRoad = { id, points, roadType };
     if (!skipUndo) {

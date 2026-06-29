@@ -106,6 +106,9 @@ const ICONS = {
   roadInfo: (
     <><path d="M4 10h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M7 7l-3 3 3 3M13 7l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></>
   ),
+  train: (
+    <><rect x="4" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/><rect x="6" y="5" width="8" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2" fill="none"/><circle cx="7" cy="11" r="1" fill="currentColor"/><circle cx="13" cy="11" r="1" fill="currentColor"/><path d="M5 14l-2 3M15 14l2 3M2 17h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></>
+  ),
 };
 
 export default function Icon({ name, size = 16, color = 'currentColor', style = {} }) {

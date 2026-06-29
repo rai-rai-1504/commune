@@ -925,6 +925,21 @@ function generateCyberHabitationDome() {
 // Prebuilt building templates — collections of primitives
 export const TEMPLATES = [
   {
+    id: 'metro_station',
+    name: 'Metro Station',
+    category: 'metro',
+    isMetroStation: true,
+    width: 6.0,
+    height: 3.0,
+    objects: [
+      { geometry: 'box', position: {x:0, y:0.1, z:0}, scale: {x:6, y:0.2, z:3}, color: '#334155', name: 'Platform' },
+      { geometry: 'box', position: {x:0, y:0.8, z:-1.35}, scale: {x:5.8, y:1.4, z:0.2}, color: '#475569', name: 'BackWall' },
+      { geometry: 'box', position: {x:0, y:1.6, z:0}, scale: {x:6, y:0.1, z:3}, color: '#0f172a', name: 'Roof' },
+      { geometry: 'cylinder', position: {x:-2.8, y:0.8, z:1.3}, scale: {x:0.15, y:1.4, z:0.15}, color: '#94a3b8', name: 'PillarLeft' },
+      { geometry: 'cylinder', position: {x:2.8, y:0.8, z:1.3}, scale: {x:0.15, y:1.4, z:0.15}, color: '#94a3b8', name: 'PillarRight' },
+    ],
+  },
+  {
     id: 'neo_arcology',
     name: 'Neo-Arcology Complex',
     icon: '🏙️',

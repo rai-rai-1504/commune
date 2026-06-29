@@ -602,13 +602,14 @@ export default function CityModule() {
   const [activeCategory, setActiveCategory] = useState(null);
   const [showObjectsPanel, setShowObjectsPanel] = useState(false);
   const [zoneView, setZoneView] = useState(false);
+  const [metroView, setMetroView] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState(null);
   const [zoneShape, setZoneShape] = useState('pencil');
   const [assetContextMenu, setAssetContextMenu] = useState(null); // { x, y, asset }
   const zoneAnchorRef = useRef(null);
-  const [gameTime, setGameTime] = useState(360);
+  const [gameTime, setGameTime] = useState(780);
   const [transitionProgress, setTransitionProgress] = useState(0.0);
-  const gameTimeRef = useRef(360);
+  const gameTimeRef = useRef(780);
   
   const [activeZonePoints, setActiveZonePoints] = useState([]);
   const isDrawingZoneRef = useRef(false);
@@ -633,13 +634,10 @@ export default function CityModule() {
   }, [gameTime]);
 
   useEffect(() => {
-    let lastTime = performance.now();
     let frameId;
     const tick = () => {
-      const now = performance.now();
-      const deltaMs = now - lastTime;
-      lastTime = now;
-      setGameTime(prev => (prev + deltaMs * 0.0008) % 1440);
+      // Frozen at 1:00 PM (780 mins) for testing
+      setGameTime(780);
       frameId = requestAnimationFrame(tick);
     };
     frameId = requestAnimationFrame(tick);
@@ -850,8 +848,43 @@ export default function CityModule() {
   }, [offset, cellSize]);
 
   const isPlacementValid = useCallback((col, row) => {
-    return !!city && !!pendingPlacementAsset;
-  }, [city, pendingPlacementAsset]);
+    if (!city || !pendingPlacementAsset) return false;
+
+    // Enforce view placement constraint
+    const isStation = pendingPlacementAsset.isMetroStation;
+    if (isStation && !metroView) return false;
+    if (!isStation && metroView) return false;
+
+    const w = pendingPlacementAsset.width || 2.0;
+    const h = pendingPlacementAsset.height || 2.0;
+    const padding = 0.5;
+
+    // 1. Check overlaps with existing placed assets
+    for (const asset of city.placedAssets || []) {
+      const dx = Math.abs(asset.col - col);
+      const dz = Math.abs(asset.row - row);
+      const minX = (w + (asset.width || 2.0)) / 2 - padding;
+      const minZ = (h + (asset.height || 2.0)) / 2 - padding;
+      if (dx < minX && dz < minZ) {
+        return false;
+      }
+    }
+
+    // 2. Check overlaps with roads and railway tracks
+    for (const road of city.roads || []) {
+      if (road.points.length < 2) continue;
+      for (let i = 0; i < road.points.length - 1; i++) {
+        const a = road.points[i];
+        const b = road.points[i + 1];
+        const dist = distanceToSegment({ x: col, z: row }, a, b);
+        if (dist < (w / 2 + 0.8)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }, [city, pendingPlacementAsset, metroView]);
 
   const getRoadAlignment = useCallback((col, row) => {
     if (!city || !city.roads || city.roads.length === 0) return null;
@@ -938,16 +971,19 @@ const draw = useCallback(() => {
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    // Background - soft grass green, off-white in zone view (smooth transition)
-    const bgR = Math.round(183 * (1 - transitionProgress) + 240 * transitionProgress);
-    const bgG = Math.round(228 * (1 - transitionProgress) + 244 * transitionProgress);
-    const bgB = Math.round(199 * (1 - transitionProgress) + 248 * transitionProgress);
+    // Background - soft grass green, off-white in zone view, dark blueprint in metro view
+    let bgR = Math.round(183 * (1 - transitionProgress) + 240 * transitionProgress);
+    let bgG = Math.round(228 * (1 - transitionProgress) + 244 * transitionProgress);
+    let bgB = Math.round(199 * (1 - transitionProgress) + 248 * transitionProgress);
+    if (metroView) {
+      bgR = 15; bgG = 23; bgB = 42; // Slate 900
+    }
     ctx.fillStyle = `rgb(${bgR}, ${bgG}, ${bgB})`;
     ctx.fillRect(0, 0, W, H);
 
     // Decorative infinite grid overlay
     const gridAlpha = 0.03 * (1 - transitionProgress) + 0.05 * transitionProgress;
-    ctx.strokeStyle = `rgba(0,0,0,${gridAlpha})`;
+    ctx.strokeStyle = metroView ? 'rgba(255, 255, 255, 0.07)' : `rgba(0,0,0,${gridAlpha})`;
     ctx.lineWidth = 0.5;
     const startX = ((offset.x % cellSize) + cellSize) % cellSize;
     const startY = ((offset.y % cellSize) + cellSize) % cellSize;
@@ -1063,7 +1099,11 @@ const draw = useCallback(() => {
 
       if (transitionProgress < 1.0) {
         ctx.save();
-        ctx.globalAlpha = (1 - transitionProgress) * opacity;
+        let rAlpha = (1 - transitionProgress) * opacity;
+        if (metroView) {
+          rAlpha = type === 'railway' ? 1.0 : 0.12;
+        }
+        ctx.globalAlpha = rAlpha;
 
         if (isSelected) {
           ctx.save();
@@ -1159,6 +1199,26 @@ const draw = useCallback(() => {
           ctx.setLineDash([1.5 * zoom, 4.5 * zoom]);
           drawCurvePoints(untrimmedScreenPoints);
           ctx.setLineDash([]);
+        } else if (type === 'railway') {
+          // 1. Gravel/Ballast base
+          ctx.strokeStyle = '#475569';
+          ctx.lineWidth = 14 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
+
+          // 2. Sleepers / Ties
+          ctx.strokeStyle = '#78350f';
+          ctx.lineWidth = 11 * zoom;
+          ctx.setLineDash([2 * zoom, 4 * zoom]);
+          drawCurvePoints(untrimmedScreenPoints);
+          ctx.setLineDash([]);
+
+          // 3. Steel Rails
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 1.5 * zoom;
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 2.5 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -2.5 * zoom));
         } else {
           // Standard
           ctx.strokeStyle = `rgba(71, 85, 105, 1.0)`;
@@ -1194,6 +1254,58 @@ const draw = useCallback(() => {
     sortedRoads.forEach(road => {
       const isSel = road.id === selectedRoadId;
       drawRoad(road.points, road.roadType || 'standard', false, isSel, road.id);
+    });
+
+    // Render trains moving along railways
+    city.roads.forEach(road => {
+      if (road.roadType !== 'railway' || road.points.length < 2) return;
+      try {
+        const points3d = road.points.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
+        const curve = new THREE.CatmullRomCurve3(points3d);
+        const totalLen = curve.getLength();
+        if (totalLen <= 0.1) return;
+
+        const speedFactor = 0.02; // units per frame
+        const now = performance.now();
+        const cycleMs = (totalLen / speedFactor) * 16.7; // scaled loop cycle
+        const t = (now / cycleMs) % 1.0;
+
+        const carriageCount = 3;
+        const spacing = 1.0 / totalLen; // Carriage spacing factor
+
+        for (let c = 0; c < carriageCount; c++) {
+          const cartT = (t - c * spacing + 1.0) % 1.0;
+          const pt = curve.getPointAt(cartT);
+          const sx = offset.x + pt.x * cellSize;
+          const sz = offset.y + pt.z * cellSize;
+
+          const tangent = curve.getTangentAt(cartT);
+          const angle = Math.atan2(tangent.z, tangent.x);
+
+          ctx.save();
+          ctx.translate(sx, sz);
+          ctx.rotate(angle);
+
+          if (c === 0) {
+            ctx.fillStyle = '#ef4444'; // Locomotive cab
+            ctx.fillRect(-8 * zoom, -4 * zoom, 16 * zoom, 8 * zoom);
+            ctx.fillStyle = '#38bdf8'; // Windshield
+            ctx.fillRect(4 * zoom, -3 * zoom, 3 * zoom, 6 * zoom);
+          } else {
+            ctx.fillStyle = '#1e3a8a'; // Carriage
+            ctx.fillRect(-7 * zoom, -3.5 * zoom, 14 * zoom, 7 * zoom);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1 * zoom;
+            ctx.beginPath();
+            ctx.moveTo(-10 * zoom, 0);
+            ctx.lineTo(-7 * zoom, 0);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      } catch (err) {
+        // Curve build failguard
+      }
     });
 
     // Render active road under construction
@@ -1444,7 +1556,11 @@ const draw = useCallback(() => {
         }
 
         ctx.save();
-        ctx.globalAlpha = 1 - transitionProgress;
+        let assetAlpha = 1 - transitionProgress;
+        if (metroView) {
+          assetAlpha = asset.isMetroStation || asset.name === 'Metro Station' ? 1.0 : 0.12;
+        }
+        ctx.globalAlpha = assetAlpha;
         ctx.translate(cx, cy);
         ctx.rotate(-(asset.rotation || 0));
 
@@ -1474,11 +1590,11 @@ const draw = useCallback(() => {
         } else {
           // Fallback generic bounding box if no sub-objects or zoomed out
           ctx.fillStyle = asset.color || '#4ECDC4';
-          ctx.globalAlpha = 0.82 * (1 - transitionProgress);
+          ctx.globalAlpha = 0.82 * assetAlpha;
           ctx.beginPath();
           ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
           ctx.fill();
-          ctx.globalAlpha = 1 - transitionProgress;
+          ctx.globalAlpha = assetAlpha;
           ctx.strokeStyle = asset.color || '#4ECDC4';
           ctx.lineWidth = 1.5;
           ctx.beginPath();
@@ -1614,7 +1730,7 @@ const draw = useCallback(() => {
         ctx.restore();
       }
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints, zoneShape, zoneView, selectedZoneId, gameTime, transitionProgress]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints, zoneShape, zoneView, metroView, selectedZoneId, gameTime, transitionProgress]);
 
   // Resize + redraw
   useEffect(() => {
@@ -2703,25 +2819,35 @@ const draw = useCallback(() => {
             {[
               { id: 'map', label: 'Map', iconName: 'map' },
               { id: 'street', label: 'Street', iconName: 'street' },
-              { id: 'zone', label: 'Zone', iconName: 'zone' }
+              { id: 'zone', label: 'Zone', iconName: 'zone' },
+              { id: 'metro', label: 'Metro', iconName: 'train' }
             ].map(v => {
-              const isAct = v.id === 'street' ? streetView : (v.id === 'zone' ? zoneView : (!streetView && !zoneView));
+              const isAct = v.id === 'street' ? streetView : (v.id === 'zone' ? zoneView : (v.id === 'metro' ? metroView : (!streetView && !zoneView && !metroView)));
+              const activeTheme = zoneView || metroView;
               return (
                 <button
                   key={v.id}
-                  className={zoneView ? `clay-button ${isAct ? 'active' : ''}` : `glass-button ${isAct ? 'active' : ''}`}
+                  className={activeTheme ? `clay-button ${isAct ? 'active' : ''}` : `glass-button ${isAct ? 'active' : ''}`}
                   onClick={() => {
                     if (v.id === 'street') {
                       setStreetView(true);
                       setZoneView(false);
+                      setMetroView(false);
                     } else if (v.id === 'zone') {
                       setStreetView(false);
                       setZoneView(true);
-                      setSelectedZoneId(null); // Clear selected zone
-                      useStore.setState({ cityTool: 'pencil' }); // Auto-select pencil shape drawing in Zone View
+                      setMetroView(false);
+                      setSelectedZoneId(null);
+                      useStore.setState({ cityTool: 'pencil' });
+                    } else if (v.id === 'metro') {
+                      setStreetView(false);
+                      setZoneView(false);
+                      setMetroView(true);
+                      useStore.setState({ cityTool: 'select', pendingPlacementAsset: null });
                     } else {
                       setStreetView(false);
                       setZoneView(false);
+                      setMetroView(false);
                     }
                   }}
                   style={{
@@ -3241,6 +3367,36 @@ const draw = useCallback(() => {
           alignItems: 'center',
           borderRadius: 16
         }}>
+          {activeCategory === 'metro_stations' &&
+            TEMPLATES.filter(t => t.id === 'metro_station').map(t => {
+              const isAct = pendingPlacementAsset?.name === t.name;
+              return (
+                <button
+                  key={t.id}
+                  className={`glass-button ${isAct ? 'active' : ''}`}
+                  onClick={() => {
+                    useStore.setState({
+                      pendingPlacementAsset: {
+                        name: t.name,
+                        objects: t.objects,
+                        color: '#334155',
+                        width: t.width || 6.0,
+                        height: t.height || 3.0,
+                        isMetroStation: true
+                      },
+                      cityTool: 'select',
+                    });
+                  }}
+                  style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 74, gap: 4 }}
+                >
+                  <BuildingThumbnail asset={t} />
+                  <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '85px', textAlign: 'center' }}>{t.name}</span>
+                  <span style={{ fontSize: 7, opacity: 0.7 }}>{t.width || 6}x{t.height || 3} units</span>
+                </button>
+              );
+            })
+          }
+
           {activeCategory === 'roads' && [
             { id: 'standard', name: 'Standard Road', icon: '🛣️', desc: '2 lanes' },
             { id: 'multilane', name: 'Multi-lane Road', icon: '🛣️', desc: '4 lanes' },
@@ -3376,34 +3532,93 @@ const draw = useCallback(() => {
           borderRadius: 30,
           alignItems: 'center'
         }}>
-          {[
-            { id: 'roads', label: 'Roads', icon: '🛣️' },
-            { id: 'residential', label: 'Residency', icon: '🏠' },
-            { id: 'commercial', label: 'Commercial', icon: '🏢' },
-            { id: 'industrial', label: 'Industrial', icon: '🏭' },
-            { id: 'civic', label: 'Civic', icon: '🏛️' },
-            { id: 'green', label: 'Green', icon: '🌳' },
-            { id: 'custom', label: 'Custom', icon: '🎨' },
-          ].map(cat => (
-            <button
-              key={cat.id}
-              className={`glass-button ${activeCategory === cat.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveCategory(activeCategory === cat.id ? null : cat.id);
-                useStore.setState({ pendingPlacementAsset: null }); // clear pending on tab switch
-              }}
-              style={{
-                borderRadius: 20,
-                padding: '6px 12px',
-                fontSize: 11,
-                fontWeight: 600,
-                height: 32
-              }}
-            >
-              <span>{cat.icon}</span>
-              <span style={{ fontSize: 10 }}>{cat.label}</span>
-            </button>
-          ))}
+          {metroView ? (
+            // Metro-specific categories
+            [
+              { id: 'metro_tracks', label: 'Tracks', iconName: 'road' },
+              { id: 'metro_stations', label: 'Stations', iconName: 'building' },
+            ].map(cat => {
+              const isAct = activeCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  className={`glass-button ${isAct ? 'active' : ''}`}
+                  onClick={() => {
+                    const nextCat = activeCategory === cat.id ? null : cat.id;
+                    setActiveCategory(nextCat);
+                    if (nextCat === 'metro_tracks') {
+                      setActiveRoadType('railway');
+                      useStore.setState({ cityTool: 'road', pendingPlacementAsset: null });
+                    } else if (nextCat === 'metro_stations') {
+                      const stationTemplate = TEMPLATES.find(t => t.id === 'metro_station');
+                      useStore.setState({
+                        cityTool: 'select',
+                        pendingPlacementAsset: {
+                          name: stationTemplate.name,
+                          objects: stationTemplate.objects,
+                          color: '#334155',
+                          width: stationTemplate.width,
+                          height: stationTemplate.height,
+                          isMetroStation: true,
+                        }
+                      });
+                    } else {
+                      useStore.setState({ pendingPlacementAsset: null, cityTool: 'select' });
+                    }
+                  }}
+                  style={{
+                    borderRadius: 20,
+                    padding: '6px 12px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    height: 32,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <Icon name={cat.iconName} size={13} />
+                  <span style={{ fontSize: 10 }}>{cat.label}</span>
+                </button>
+              );
+            })
+          ) : (
+            // Standard categories
+            [
+              { id: 'roads', label: 'Roads', iconName: 'road' },
+              { id: 'residential', label: 'Residency', iconName: 'building' },
+              { id: 'commercial', label: 'Commercial', iconName: 'city' },
+              { id: 'industrial', label: 'Industrial', iconName: 'stats' },
+              { id: 'civic', label: 'Civic', iconName: 'zone' },
+              { id: 'green', label: 'Green', iconName: 'palette' },
+              { id: 'custom', label: 'Custom', iconName: 'pencil' },
+            ].map(cat => {
+              const isAct = activeCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  className={`glass-button ${isAct ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveCategory(activeCategory === cat.id ? null : cat.id);
+                    useStore.setState({ pendingPlacementAsset: null });
+                  }}
+                  style={{
+                    borderRadius: 20,
+                    padding: '6px 12px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    height: 32,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <Icon name={cat.iconName} size={13} />
+                  <span style={{ fontSize: 10 }}>{cat.label}</span>
+                </button>
+              );
+            })
+          )}
         </div>
       )}
 
