@@ -3598,12 +3598,11 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           head.position.set(0, 3.2, 0.8);
           streetlightGroup.add(head);
           
-          // 4. PointLight (actual light source, turned on dynamically based on gameTime)
+          // 4. PointLight (actual light source, turned on dynamically based on gameTime and culling)
           const pointLight = new THREE.PointLight(0xfde047, 0, 15, 1.2);
           pointLight.position.set(0, 3.1, 0.8);
-          pointLight.castShadow = true;
-          pointLight.shadow.bias = -0.002;
           pointLight.userData = { isStreetlightSource: true };
+          pointLight.visible = false;
           streetlightGroup.add(pointLight);
           
           // 5. Light bulb mesh
@@ -4296,6 +4295,15 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
     const SPEED = 0.25;
     const dir = new THREE.Vector3();
+
+    // Persistent helper objects for day/night color lerps (prevents GC allocations inside animate loop)
+    const skyColor = new THREE.Color(0xcbe6ff);
+    const sunColorA = new THREE.Color(0xfffbf0);
+    const sunColorB = new THREE.Color(0xf97316);
+    const sunsetColor = new THREE.Color(0xf97316);
+    const nightColor = new THREE.Color(0x0a0f1d);
+    const dayColor = new THREE.Color(0xcbe6ff);
+
     const animate = () => {
       animRef.current = requestAnimationFrame(animate);
 
@@ -4313,17 +4321,17 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         sunLightRef.current.position.set(lightX, Math.max(0.1, lightY), lightZ);
         if (hours >= 6.0 && hours < 18.0) {
           sunLightRef.current.intensity = 1.4;
-          sunLightRef.current.color.setHex(0xfffbf0);
+          sunLightRef.current.color.copy(sunColorA);
           sunLightRef.current.visible = true;
         } else if (hours >= 18.0 && hours < 19.5) {
           const t = (hours - 18.0) / 1.5;
           sunLightRef.current.intensity = 1.4 * (1 - t);
-          sunLightRef.current.color.lerpColors(new THREE.Color(0xfffbf0), new THREE.Color(0xf97316), t); // Lerp to sunset orange
+          sunLightRef.current.color.copy(sunColorA).lerp(sunColorB, t);
           sunLightRef.current.visible = true;
         } else if (hours >= 4.5 && hours < 6.0) {
           const t = (hours - 4.5) / 1.5;
           sunLightRef.current.intensity = 1.4 * t;
-          sunLightRef.current.color.lerpColors(new THREE.Color(0xf97316), new THREE.Color(0xfffbf0), t);
+          sunLightRef.current.color.copy(sunColorB).lerp(sunColorA, t);
           sunLightRef.current.visible = true;
         } else {
           sunLightRef.current.visible = false;
@@ -4335,7 +4343,6 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         const isNight = hours >= 19.0 || hours < 5.0;
         moonLightRef.current.visible = isNight;
         if (isNight) {
-          // Moon moves opposite to sun
           moonLightRef.current.position.set(-lightX, Math.max(0.1, -lightY), -lightZ);
           moonLightRef.current.intensity = 0.35;
         }
@@ -4358,42 +4365,52 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
       // Sky Background & Fog Color
       if (rendererRef.current && sceneRef.current) {
-        const skyColor = new THREE.Color(0xcbe6ff);
+        skyColor.copy(dayColor);
         if (hours >= 19.5 || hours < 4.5) {
-          skyColor.setHex(0x0a0f1d);
+          skyColor.copy(nightColor);
         } else if (hours >= 18.0 && hours < 19.5) {
           const t = (hours - 18.0) / 1.5;
-          const sunsetColor = new THREE.Color(0xf97316);
-          const nightColor = new THREE.Color(0x0a0f1d);
           if (t < 0.5) {
-            skyColor.lerpColors(new THREE.Color(0xcbe6ff), sunsetColor, t * 2);
+            skyColor.copy(dayColor).lerp(sunsetColor, t * 2);
           } else {
-            skyColor.lerpColors(sunsetColor, nightColor, (t - 0.5) * 2);
+            skyColor.copy(sunsetColor).lerp(nightColor, (t - 0.5) * 2);
           }
         } else if (hours >= 4.5 && hours < 6.0) {
           const t = (hours - 4.5) / 1.5;
-          const sunsetColor = new THREE.Color(0xf97316);
-          const nightColor = new THREE.Color(0x0a0f1d);
           if (t < 0.5) {
-            skyColor.lerpColors(nightColor, sunsetColor, t * 2);
+            skyColor.copy(nightColor).lerp(sunsetColor, t * 2);
           } else {
-            skyColor.lerpColors(sunsetColor, new THREE.Color(0xcbe6ff), (t - 0.5) * 2);
+            skyColor.copy(sunsetColor).lerp(dayColor, (t - 0.5) * 2);
           }
         }
         rendererRef.current.setClearColor(skyColor);
         sceneRef.current.background = skyColor;
         if (sceneRef.current.fog) {
-          sceneRef.current.fog.color = skyColor;
+          sceneRef.current.fog.color.copy(skyColor);
         }
       }
 
-      // Toggle 3D Streetlights PointLights and Bulbs
+      // Toggle 3D Streetlights PointLights and Bulbs (with Camera-Distance Culling)
       const lightsOn = hours >= 19.0 || hours < 6.0;
+      const camPos = camera.position;
+      
       meshesRef.current.forEach(m => {
         if (m.userData && m.userData.isStreetlight) {
+          // Check distance to camera in X-Z plane
+          const dx = m.position.x - camPos.x;
+          const dz = m.position.z - camPos.z;
+          const distSq = dx * dx + dz * dz;
+          
+          // Cull distance: 45 units (distSq = 2025)
+          const isNearby = distSq < 2025;
+          const shouldLightBeOn = lightsOn && isNearby;
+          
           m.children.forEach(child => {
             if (child.userData && child.userData.isStreetlightSource) {
-              child.intensity = lightsOn ? 1.8 : 0;
+              child.visible = shouldLightBeOn;
+              if (shouldLightBeOn) {
+                child.intensity = 1.8;
+              }
             }
             if (child.userData && child.userData.isStreetlightBulb) {
               child.material.color.setHex(lightsOn ? 0xfef08a : 0x1e293b);
