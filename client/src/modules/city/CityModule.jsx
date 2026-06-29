@@ -4,18 +4,20 @@ import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
 import { useStore } from '../../store/useStore';
 import { TEMPLATES } from '../../components/AssetLibrary';
 import BuildingThumbnail from './BuildingThumbnail';
+import Icon from '../../components/Icon';
 const formatGameTime = (minutes) => {
   const h24 = Math.floor(minutes / 60) % 24;
   const m = Math.floor(minutes % 60);
   const ampm = h24 >= 12 ? 'PM' : 'AM';
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
   const mmStr = m.toString().padStart(2, '0');
-  let emoji = '🌅';
-  if (h24 >= 8 && h24 < 17) emoji = '☀️';
-  else if (h24 >= 17 && h24 < 19) emoji = '🌇';
-  else emoji = '🌙';
-  return `${emoji} ${h12}:${mmStr} ${ampm}`;
+  let period = 'DAWN';
+  if (h24 >= 8 && h24 < 17) period = 'DAY';
+  else if (h24 >= 17 && h24 < 19) period = 'DUSK';
+  else if (h24 >= 19 || h24 < 6) period = 'NIGHT';
+  return `${h12}:${mmStr} ${ampm}  ·  ${period}`;
 };
+
 
 function SmoothColorPicker({ value, onChange, disabled, style }) {
   const [localVal, setLocalVal] = useState(value);
@@ -1770,7 +1772,7 @@ const draw = useCallback(() => {
       return;
     }
 
-    // Right click completes the road segment
+    // Right click completes the road segment OR opens context menu for road
     if (e.button === 2 && cityTool === 'road') {
       e.preventDefault();
       if (activeRoadPoints.length >= 2) {
@@ -1794,6 +1796,30 @@ const draw = useCallback(() => {
       return;
     }
 
+    // Right click in select mode: open context menu on asset or road
+    if (e.button === 2 && cityTool === 'select') {
+      e.preventDefault();
+      const rect = canvasRef.current?.getBoundingClientRect();
+      const mx = rect ? e.clientX - rect.left : e.clientX;
+      const my = rect ? e.clientY - rect.top : e.clientY;
+      const asset = assetAtCell(floatCoords.col, floatCoords.row);
+      if (asset) {
+        selectAsset(asset.id);
+        setSelectedRoadId(null);
+        setAssetContextMenu({ x: mx, y: my, asset, type: 'asset' });
+        return;
+      }
+      const road = roadAtCoords(floatCoords.col, floatCoords.row);
+      if (road) {
+        setSelectedRoadId(road.id);
+        selectAsset(null);
+        setAssetContextMenu({ x: mx, y: my, road, type: 'road' });
+        return;
+      }
+      setAssetContextMenu(null);
+      return;
+    }
+
     if (e.button === 0) {
       if (pendingPlacementAsset) {
         if (isPlacementValid(floatCoords.col, floatCoords.row)) {
@@ -1808,16 +1834,10 @@ const draw = useCallback(() => {
         const asset = assetAtCell(floatCoords.col, floatCoords.row);
         if (asset && !asset.locked) {
           e.preventDefault();
-          // If clicking an already-selected asset: open context menu instead of dragging
-          if (asset.id === selectedAssetId) {
-            const rect = canvasRef.current.getBoundingClientRect();
-            setAssetContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, asset });
-            return;
-          }
           setAssetContextMenu(null);
           selectAsset(asset.id);
           setSelectedRoadId(null);
-          setSelectedCell(null); // Clear confusing grid selection box
+          setSelectedCell(null);
           setDraggingAssetId(asset.id);
           dragOffset.current = {
             col: floatCoords.col - asset.col,
@@ -1830,12 +1850,11 @@ const draw = useCallback(() => {
           const road = roadAtCoords(floatCoords.col, floatCoords.row);
           if (road && !road.locked) {
             setSelectedRoadId(road.id);
-            setSelectedCell(null); // Clear confusing grid selection box
+            setSelectedCell(null);
           } else {
             setSelectedRoadId(null);
-            setSelectedCell(cell); // Show grid selection box only on empty tile click
+            setSelectedCell(cell);
           }
-          // Start marquee selection on empty space
           setMarqueeStart(floatCoords);
           setMarqueeEnd(floatCoords);
         }
@@ -2258,156 +2277,215 @@ const draw = useCallback(() => {
         </div>
       )}
 
-      {/* ── Glassmorphic Asset Context Menu ── */}
+      {/* ── Glassmorphic Context Menu (Asset & Road) ── */}
       {assetContextMenu && !streetView && (() => {
-        const { x, y, asset } = assetContextMenu;
-        // Smart positioning: flip left if too close to right edge, flip up if too close to bottom
-        const menuW = 210, menuH = 340;
+        const { x, y, type } = assetContextMenu;
+        const isAsset = type === 'asset';
+        const asset = isAsset ? assetContextMenu.asset : null;
+        const road  = !isAsset ? assetContextMenu.road : null;
+
+        const menuW = 222, menuH = isAsset ? 420 : 200;
         const containerW = canvasRef.current?.offsetWidth || window.innerWidth;
         const containerH = canvasRef.current?.offsetHeight || window.innerHeight;
         const menuX = x + menuW > containerW - 12 ? x - menuW : x + 10;
         const menuY = y + menuH > containerH - 12 ? y - menuH : y + 10;
 
+        const rotDeg = isAsset ? Math.round(((asset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360 : 0;
+
         return (
           <div
             className="asset-ctx-menu"
-            style={{ left: menuX, top: menuY }}
+            style={{ left: menuX, top: menuY, width: menuW }}
             onMouseDown={(e) => e.stopPropagation()}
+            onContextMenu={(e) => e.preventDefault()}
           >
-            {/* Header */}
+            {/* ── Header ── */}
             <div className="asset-ctx-header">
-              <div className="asset-ctx-icon">🏢</div>
+              <div className="asset-ctx-icon" style={{ background: isAsset ? 'linear-gradient(135deg,rgba(99,102,241,.55),rgba(168,85,247,.55))' : 'linear-gradient(135deg,rgba(16,185,129,.45),rgba(6,182,212,.45))' }}>
+                <Icon name={isAsset ? 'building' : 'roadInfo'} size={15} color="#fff" />
+              </div>
               <div style={{ overflow: 'hidden' }}>
-                <div className="asset-ctx-name">{asset.name}</div>
+                <div className="asset-ctx-name">
+                  {isAsset ? asset.name : `${road.roadType || 'Standard'} Road`}
+                </div>
                 <div className="asset-ctx-sub">
-                  ({asset.col.toFixed(1)}, {asset.row.toFixed(1)}) · @{asset.placedBy}
+                  {isAsset
+                    ? `(${asset.col.toFixed(1)}, ${asset.row.toFixed(1)}) · @${asset.placedBy}`
+                    : `${road.points?.length || 0} nodes · Right-click to manage`}
                 </div>
               </div>
             </div>
 
-            {/* Scale slider */}
-            <div className="asset-ctx-scale-row">
-              <label>Scale</label>
-              <input
-                type="range"
-                min={Math.min(0.1, getMaxScaleFactor(asset)).toFixed(2)}
-                max={getMaxScaleFactor(asset).toFixed(2)}
-                step="0.05"
-                value={asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : getDefaultScaleFactor(asset)}
-                onChange={(e) => {
-                  updateAsset(asset.id, { scaleMultiplier: parseFloat(e.target.value) });
-                  setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, scaleMultiplier: parseFloat(e.target.value) } } : null);
-                }}
-              />
-              <span className="asset-ctx-scale-val">
-                {(asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : getDefaultScaleFactor(asset)).toFixed(2)}×
-              </span>
-            </div>
+            {/* ── ASSET-ONLY sections ── */}
+            {isAsset && (
+              <>
+                {/* Scale */}
+                <div className="asset-ctx-scale-row">
+                  <label>Scale</label>
+                  <input
+                    type="range"
+                    min={Math.min(0.1, getMaxScaleFactor(asset)).toFixed(2)}
+                    max={getMaxScaleFactor(asset).toFixed(2)}
+                    step="0.05"
+                    value={asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : getDefaultScaleFactor(asset)}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      updateAsset(asset.id, { scaleMultiplier: v });
+                      setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, scaleMultiplier: v } } : null);
+                    }}
+                  />
+                  <span className="asset-ctx-scale-val">
+                    {(asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : getDefaultScaleFactor(asset)).toFixed(2)}×
+                  </span>
+                </div>
 
-            <div className="asset-ctx-divider" />
+                <div className="asset-ctx-divider" />
 
-            {/* Actions */}
+                {/* Rotation row: slider + number input + 15°/90° buttons */}
+                <div style={{ padding: '6px 10px 6px' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 5 }}>
+                    <span style={{ fontSize:10, color:'rgba(255,255,255,0.5)', display:'flex', alignItems:'center', gap:4 }}>
+                      <Icon name="rotateCW" size={11} /> Rotation
+                    </span>
+                    <input
+                      type="number"
+                      min={0} max={359} step={1}
+                      value={rotDeg}
+                      onChange={(e) => {
+                        let deg = parseInt(e.target.value) || 0;
+                        deg = ((deg % 360) + 360) % 360;
+                        const rad = deg * Math.PI / 180;
+                        updateAsset(asset.id, { rotation: rad });
+                        setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, rotation: rad } } : null);
+                      }}
+                      style={{ width: 48, background:'rgba(0,0,0,0.4)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:6, color:'#818cf8', fontSize:11, fontWeight:700, textAlign:'center', padding:'1px 4px' }}
+                    />
+                  </div>
+                  <input
+                    type="range" min={0} max={359} step={1}
+                    value={rotDeg}
+                    onChange={(e) => {
+                      const deg = parseInt(e.target.value);
+                      const rad = deg * Math.PI / 180;
+                      updateAsset(asset.id, { rotation: rad });
+                      setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, rotation: rad } } : null);
+                    }}
+                    style={{ width:'100%', accentColor:'#818cf8', marginBottom: 6 }}
+                  />
+                  {/* 15° / 90° buttons in one row */}
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:4 }}>
+                    {[
+                      { label:'-90°', delta:-90 }, { label:'-15°', delta:-15 },
+                      { label:'+15°', delta:15  }, { label:'+90°', delta:90  }
+                    ].map(btn => (
+                      <button
+                        key={btn.label}
+                        className="asset-ctx-item accent"
+                        style={{ padding:'4px 2px', justifyContent:'center', borderRadius:8, fontSize:10, fontWeight:700 }}
+                        onClick={() => {
+                          const newDeg = ((rotDeg + btn.delta) % 360 + 360) % 360;
+                          const rad = newDeg * Math.PI / 180;
+                          updateAsset(asset.id, { rotation: rad });
+                          setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, rotation: rad } } : null);
+                        }}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="asset-ctx-divider" />
+
+                {/* Per-object color pickers */}
+                {asset.objects && asset.objects.length > 0 && (
+                  <div style={{ padding:'4px 10px 6px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:5 }}>
+                      <Icon name="palette" size={11} color="rgba(255,255,255,0.45)" />
+                      <span style={{ fontSize:10, color:'rgba(255,255,255,0.45)' }}>Object Colors</span>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:3, maxHeight:72, overflowY:'auto' }}>
+                      {asset.objects.map((obj, idx) => (
+                        <div key={idx} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(255,255,255,0.04)', padding:'3px 6px', borderRadius:6 }}>
+                          <span style={{ fontSize:9, color:'rgba(255,255,255,0.55)', textTransform:'capitalize', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:120 }}>
+                            {idx + 1}. {obj.geometry}
+                          </span>
+                          <SmoothColorPicker
+                            value={obj.color || '#4ECDC4'}
+                            onChange={(e) => {
+                              const newObjects = asset.objects.map((o, oIdx) => oIdx === idx ? { ...o, color: e.target.value } : o);
+                              updateAsset(asset.id, { objects: newObjects });
+                              setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, objects: newObjects } } : null);
+                            }}
+                            style={{ width:16, height:14, border:'none', padding:0, background:'none' }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="asset-ctx-divider" />
+              </>
+            )}
+
+            {/* ── Shared action buttons ── */}
             <div className="asset-ctx-items">
-              {/* Rotate CW */}
-              <button
-                className="asset-ctx-item accent"
-                onClick={() => {
-                  const nextRot = ((asset.rotation || 0) + Math.PI / 2) % (Math.PI * 2);
-                  updateAsset(asset.id, { rotation: nextRot });
-                  setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, rotation: nextRot } } : null);
-                }}
-              >
-                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(129,140,248,0.15)' }}>↻</span>
-                Rotate 90° Clockwise
-              </button>
-
-              {/* Rotate CCW */}
-              <button
-                className="asset-ctx-item accent"
-                onClick={() => {
-                  const nextRot = ((asset.rotation || 0) - Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
-                  updateAsset(asset.id, { rotation: nextRot });
-                  setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, rotation: nextRot } } : null);
-                }}
-              >
-                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(129,140,248,0.15)' }}>↺</span>
-                Rotate 90° Counter-CW
-              </button>
-
-              <div className="asset-ctx-divider" />
-
-              {/* Nudge up / down / left / right */}
-              <button
-                className="asset-ctx-item"
-                onClick={() => { updateAsset(asset.id, { row: asset.row - 0.5 }); setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, row: prev.asset.row - 0.5 } } : null); }}
-              >
-                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.06)' }}>▲</span>
-                Nudge North
-              </button>
-              <button
-                className="asset-ctx-item"
-                onClick={() => { updateAsset(asset.id, { row: asset.row + 0.5 }); setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, row: prev.asset.row + 0.5 } } : null); }}
-              >
-                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.06)' }}>▼</span>
-                Nudge South
-              </button>
-              <button
-                className="asset-ctx-item"
-                onClick={() => { updateAsset(asset.id, { col: asset.col - 0.5 }); setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, col: prev.asset.col - 0.5 } } : null); }}
-              >
-                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.06)' }}>◀</span>
-                Nudge West
-              </button>
-              <button
-                className="asset-ctx-item"
-                onClick={() => { updateAsset(asset.id, { col: asset.col + 0.5 }); setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, col: prev.asset.col + 0.5 } } : null); }}
-              >
-                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.06)' }}>▶</span>
-                Nudge East
-              </button>
-
-              <div className="asset-ctx-divider" />
-
               {/* Lock / Unlock */}
               <button
                 className="asset-ctx-item success"
                 onClick={() => {
-                  updateAsset(asset.id, { locked: !asset.locked });
-                  setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, locked: !prev.asset.locked } } : null);
+                  if (isAsset) {
+                    updateAsset(asset.id, { locked: !asset.locked });
+                    setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, locked: !prev.asset.locked } } : null);
+                  } else {
+                    updateRoad(road.id, { locked: !road.locked });
+                    setAssetContextMenu(prev => prev ? { ...prev, road: { ...prev.road, locked: !prev.road.locked } } : null);
+                  }
                 }}
               >
-                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(52,211,153,0.12)' }}>
-                  {asset.locked ? '🔓' : '🔒'}
+                <span className="asset-ctx-icon-badge" style={{ background:'rgba(52,211,153,0.12)' }}>
+                  <Icon name={((isAsset ? asset.locked : road.locked)) ? 'unlock' : 'lock'} size={13} color="#34d399" />
                 </span>
-                {asset.locked ? 'Unlock Building' : 'Lock Building'}
+                {((isAsset ? asset.locked : road.locked)) ? 'Unlock' : 'Lock'}
               </button>
 
               {/* Delete */}
               <button
                 className="asset-ctx-item danger"
                 onClick={() => {
-                  removeAsset(asset.id);
-                  selectAsset(null);
+                  if (isAsset) {
+                    removeAsset(asset.id);
+                    selectAsset(null);
+                  } else {
+                    removeRoadSegment(road.id);
+                    setSelectedRoadId(null);
+                  }
                   setAssetContextMenu(null);
                 }}
               >
-                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(239,68,68,0.12)' }}>🗑️</span>
-                Delete Building
+                <span className="asset-ctx-icon-badge" style={{ background:'rgba(239,68,68,0.12)' }}>
+                  <Icon name="trash" size={13} color="#f87171" />
+                </span>
+                Delete {isAsset ? 'Building' : 'Road'}
               </button>
 
-              {/* Close */}
+              {/* Dismiss */}
               <button
                 className="asset-ctx-item"
                 onClick={() => setAssetContextMenu(null)}
-                style={{ marginTop: 2, opacity: 0.5 }}
+                style={{ opacity: 0.45, marginTop: 1 }}
               >
-                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.04)' }}>✕</span>
+                <span className="asset-ctx-icon-badge" style={{ background:'rgba(255,255,255,0.04)' }}>
+                  <Icon name="close" size={12} />
+                </span>
                 Dismiss
               </button>
             </div>
           </div>
         );
       })()}
+
 
       {/* ── Top-Left: City Info Pill ── */}
       <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
@@ -2423,7 +2501,7 @@ const draw = useCallback(() => {
         pointerEvents: 'none',
         border: zoneView ? '1px solid rgba(255, 255, 255, 0.6)' : undefined
       }}>
-        <span style={{ fontSize: 16 }}>🏙️</span>
+        <Icon name="city" size={18} color={zoneView ? '#1e293b' : 'rgba(255,255,255,0.9)'} />
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', color: zoneView ? '#1e293b' : '#ffffff' }}>{city?.name || 'Loading…'}</div>
           <div style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap', color: zoneView ? '#64748b' : 'rgba(255,255,255,0.8)' }}>{presence.length} player{presence.length!==1?'s':''} online</div>
@@ -2448,7 +2526,7 @@ const draw = useCallback(() => {
           gap: 12,
           border: '1px solid var(--accent)'
         }}>
-          <span style={{ fontSize: 14 }}>🏗️</span>
+          <Icon name="place" size={16} color="#60a5fa" />
           <span style={{ fontSize: 11, color: '#ffffff', fontWeight: 600 }}>
             Click to place "{pendingPlacementAsset.name}" ({pendingPlacementAsset.width.toFixed(0)}x{pendingPlacementAsset.height.toFixed(0)})
           </span>
@@ -2475,7 +2553,7 @@ const draw = useCallback(() => {
           whiteSpace:'nowrap',
           zIndex: 100
         }}>
-          ({hoveredFloat.col.toFixed(1)}, {hoveredFloat.row.toFixed(1)}) · {assetAtCell(hoveredFloat.col, hoveredFloat.row) ? `🏢 ${assetAtCell(hoveredFloat.col, hoveredFloat.row).name}` : (roadAtCoords(hoveredFloat.col, hoveredFloat.row) ? '🛣️ Road' : 'Empty')} · Tool: {TOOLS.find(t=>t.id===cityTool)?.label || 'Place'}
+          ({hoveredFloat.col.toFixed(1)}, {hoveredFloat.row.toFixed(1)}) · {assetAtCell(hoveredFloat.col, hoveredFloat.row) ? assetAtCell(hoveredFloat.col, hoveredFloat.row).name : (roadAtCoords(hoveredFloat.col, hoveredFloat.row) ? 'Road' : 'Empty')} · Tool: {TOOLS.find(t=>t.id===cityTool)?.label || 'Place'}
         </div>
       )}
 
@@ -2499,9 +2577,9 @@ const draw = useCallback(() => {
             useStore.setState({ cityTool: 'select', pendingPlacementAsset: null });
           }}
           title="Select Tool"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14, border: 'none' }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14, border: 'none', display:'flex', alignItems:'center', justifyContent:'center' }}
         >
-          🖱️
+          <Icon name="select" size={14} />
         </button>
         <button
           className={zoneView ? `clay-button ${cityTool === 'pencil' ? 'active' : ''}` : `glass-button ${cityTool === 'pencil' ? 'active' : ''}`}
@@ -2510,9 +2588,9 @@ const draw = useCallback(() => {
             setActiveCategory(null);
           }}
           title="Zone Pencil"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14, border: 'none' }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14, border: 'none', display:'flex', alignItems:'center', justifyContent:'center' }}
         >
-          ✏️
+          <Icon name="pencil" size={14} />
         </button>
         <button
           className={zoneView ? `clay-button ${cityTool === 'erase' ? 'active' : ''}` : `glass-button ${cityTool === 'erase' ? 'active' : ''}`}
@@ -2521,9 +2599,9 @@ const draw = useCallback(() => {
             setActiveCategory(null);
           }}
           title="Erase Tool"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14, border: 'none' }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 14, border: 'none', display:'flex', alignItems:'center', justifyContent:'center' }}
         >
-          🗑️
+          <Icon name="erase" size={14} />
         </button>
         
         <div style={{ height: 1, width: '70%', background: zoneView ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
@@ -2532,17 +2610,17 @@ const draw = useCallback(() => {
           className={zoneView ? "clay-button" : "glass-button"}
           onClick={() => { lockAllAssets(true); setSelectedRoadId(null); }}
           title="Lock all objects"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none' }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none', display:'flex', alignItems:'center', justifyContent:'center' }}
         >
-          🔒
+          <Icon name="lock" size={14} />
         </button>
         <button
           className={zoneView ? "clay-button" : "glass-button"}
           onClick={() => lockAllAssets(false)}
           title="Unlock all objects"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none' }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none', display:'flex', alignItems:'center', justifyContent:'center' }}
         >
-          🔓
+          <Icon name="unlock" size={14} />
         </button>
  
         <div style={{ height: 1, width: '70%', background: zoneView ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
@@ -2551,9 +2629,9 @@ const draw = useCallback(() => {
           className={zoneView ? "clay-button" : "glass-button"}
           onClick={() => undoCity()}
           title="Undo (Ctrl+Z)"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none' }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none', display:'flex', alignItems:'center', justifyContent:'center' }}
         >
-          ↩️
+          <Icon name="undo" size={14} />
         </button>
  
         <button
@@ -2564,9 +2642,9 @@ const draw = useCallback(() => {
             }
           }}
           title="Clean City"
-          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none' }}
+          style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12, border: 'none', display:'flex', alignItems:'center', justifyContent:'center' }}
         >
-          🧹
+          <Icon name="sweep" size={14} />
         </button>
       </div>
 
@@ -2584,10 +2662,10 @@ const draw = useCallback(() => {
           animation: 'fadeIn 0.2s ease'
         }}>
           {[
-            { id: 'pencil', label: 'Freeform', icon: '✏️' },
-            { id: 'rectangle', label: 'Rectangle', icon: '⬜' },
-            { id: 'square', label: 'Square', icon: '⏹️' },
-            { id: 'triangle', label: 'Triangle', icon: '🔺' }
+            { id: 'pencil', label: 'Freeform', iconName: 'freeform' },
+            { id: 'rectangle', label: 'Rect', iconName: 'rectangle' },
+            { id: 'square', label: 'Square', iconName: 'square' },
+            { id: 'triangle', label: 'Triangle', iconName: 'triangle' }
           ].map(s => (
             <button
               key={s.id}
@@ -2605,7 +2683,7 @@ const draw = useCallback(() => {
               }}
               title={s.label}
             >
-              <span>{s.icon}</span>
+              <Icon name={s.iconName} size={12} />
               <span style={{ fontSize: 9 }}>{s.label}</span>
             </button>
           ))}
@@ -2623,9 +2701,9 @@ const draw = useCallback(() => {
             pointerEvents: 'auto'
           }}>
             {[
-              { id: 'map', label: 'Map', icon: '🗺️' },
-              { id: 'street', label: 'Street', icon: '🚶' },
-              { id: 'zone', label: 'Zone', icon: '📐' }
+              { id: 'map', label: 'Map', iconName: 'map' },
+              { id: 'street', label: 'Street', iconName: 'street' },
+              { id: 'zone', label: 'Zone', iconName: 'zone' }
             ].map(v => {
               const isAct = v.id === 'street' ? streetView : (v.id === 'zone' ? zoneView : (!streetView && !zoneView));
               return (
@@ -2655,7 +2733,7 @@ const draw = useCallback(() => {
                     border: 'none'
                   }}
                 >
-                  <span>{v.icon}</span>
+                  <Icon name={v.iconName} size={12} />
                   <span>{v.label}</span>
                 </button>
               );
@@ -2665,9 +2743,10 @@ const draw = useCallback(() => {
           <button
             className={zoneView ? `clay-button ${showObjectsPanel ? 'active' : ''}` : `glass-button ${showObjectsPanel ? 'active' : ''}`}
             onClick={() => setShowObjectsPanel(!showObjectsPanel)}
-            style={{ height: 36, padding: '0 14px', fontWeight: 600, border: 'none' }}
+            style={{ height: 36, padding: '0 14px', fontWeight: 600, border: 'none', display:'flex', alignItems:'center', gap: 6 }}
           >
-            📊 {zoneView ? 'Zones' : 'Objects'} ({zoneView ? (city?.zones || []).length : ((city?.placedAssets || []).length + (city?.roads || []).length)})
+            <Icon name="stats" size={13} />
+            {zoneView ? 'Zones' : 'Objects'} ({zoneView ? (city?.zones || []).length : ((city?.placedAssets || []).length + (city?.roads || []).length)})
           </button>
         </div>
 
@@ -2690,7 +2769,7 @@ const draw = useCallback(() => {
               paddingBottom: 6,
               color: zoneView ? '#1e293b' : '#ffffff'
             }}>
-              {zoneView ? '📐 City Zones' : '🏢 Placed Objects'}
+              <span style={{display:'flex',alignItems:'center',gap:5}}><Icon name={zoneView ? 'zone' : 'building'} size={12}/>{zoneView ? 'City Zones' : 'Placed Objects'}</span>
             </div>
             
             {/* Selected item details when open */}
@@ -2701,10 +2780,10 @@ const draw = useCallback(() => {
                 </div>
                 <button
                   className="glass-button danger"
-                  style={{ width: '100%', padding: '4px', fontSize: 10 }}
+                  style={{ width: '100%', padding: '4px', fontSize: 10, display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'center' }}
                   onClick={() => removeAssets(selectedAssetIds)}
                 >
-                  🗑️ Delete Selected
+                  <Icon name="trash" size={11}/> Delete Selected
                 </button>
               </div>
             ) : selectedAsset ? (

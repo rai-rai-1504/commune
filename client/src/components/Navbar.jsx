@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
+import Icon from './Icon';
 
 const TABS = [
-  { id: 'city', label: 'City', icon: '🏙️' },
-  { id: 'editor', label: '3D Editor', icon: '✏️' },
-  { id: 'governance', label: 'Governance', icon: '🏛️' },
+  { id: 'city', label: 'City', iconName: 'city' },
+  { id: 'editor', label: '3D Editor', iconName: 'pencil' },
+  { id: 'governance', label: 'Governance', iconName: 'zone' },
 ];
 
 export default function Navbar() {
@@ -16,9 +17,10 @@ export default function Navbar() {
     <nav className="navbar">
       {TABS.map(t => (
         <button key={t.id} className={`nav-tab ${activeModule === t.id ? 'active' : ''}`} onClick={() => setActiveModule(t.id)}>
-          <span>{t.icon}</span> {t.label}
+          <Icon name={t.iconName} size={14} style={{ marginRight: 6 }} /> {t.label}
         </button>
       ))}
+
       <div className="nav-right">
         <div className="presence-avatars">
           {presence.slice(0, 6).map((p, i) => (

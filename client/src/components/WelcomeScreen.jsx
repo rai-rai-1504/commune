@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
+import Icon from './Icon';
 
 export default function WelcomeScreen({ onEnter }) {
   const { username, setUsername } = useStore();
@@ -42,7 +43,9 @@ export default function WelcomeScreen({ onEnter }) {
         boxShadow: '0 0 80px rgba(78,205,196,0.08), 0 24px 64px rgba(0,0,0,0.6)',
       }}>
         {/* Logo */}
-        <div style={{ fontSize: 48, marginBottom: 8 }}>🏙️</div>
+        <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+          <Icon name="city" size={48} color="#4ECDC4" />
+        </div>
         <div style={{ fontSize: 38, fontWeight: 800, color: '#4ECDC4', letterSpacing: -1.5, marginBottom: 4 }}>
           commune
         </div>
@@ -53,11 +56,11 @@ export default function WelcomeScreen({ onEnter }) {
         {/* Feature pills */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 36 }}>
           {[
-            { icon: '✏️', label: '3D Editor' },
-            { icon: '🏙️', label: 'City Zoning' },
-            { icon: '🏛️', label: 'Governance' },
-            { icon: '🚶', label: 'Street View' },
-            { icon: '🔴', label: 'Live Collab' },
+            { iconName: 'pencil', label: '3D Editor' },
+            { iconName: 'city', label: 'City Zoning' },
+            { iconName: 'zone', label: 'Governance' },
+            { iconName: 'street', label: 'Street View' },
+            { iconName: 'select', label: 'Collab' },
           ].map(f => (
             <div key={f.label} style={{
               display: 'flex', alignItems: 'center', gap: 5,
@@ -65,7 +68,8 @@ export default function WelcomeScreen({ onEnter }) {
               background: 'rgba(78,205,196,0.08)', border: '1px solid rgba(78,205,196,0.15)',
               fontSize: 12, color: '#8892a4',
             }}>
-              {f.icon} {f.label}
+              <Icon name={f.iconName} size={11} color="#4ECDC4" />
+              <span>{f.label}</span>
             </div>
           ))}
         </div>

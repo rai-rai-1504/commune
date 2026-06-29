@@ -12,12 +12,12 @@ export default function BuildingThumbnail({ asset }) {
     ctx.clearRect(0, 0, W, H);
 
     if (!asset.objects || asset.objects.length === 0) {
-      // Fallback to emoji if no 3D sub-objects are defined
-      ctx.fillStyle = '#64748b';
-      ctx.font = '22px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(asset.icon || '🏢', W / 2, H / 2);
+      // Fallback to a clean blueprint icon if no 3D sub-objects are defined
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(W / 4, H / 4, W / 2, H / 2);
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.15)';
+      ctx.fillRect(W / 4, H / 4, W / 2, H / 2);
       return;
     }
 

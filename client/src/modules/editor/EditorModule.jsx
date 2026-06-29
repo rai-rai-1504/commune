@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
 import { useStore } from '../../store/useStore';
 import AssetLibrary from '../../components/AssetLibrary';
+import Icon from '../../components/Icon';
 
 function SmoothColorPicker({ value, onChange, disabled, style }) {
   const [localVal, setLocalVal] = useState(value);
@@ -192,12 +193,12 @@ function getGeo(type) {
 }
 
 const GEOMETRY_LIST = [
-  { id: 'box', label: '⬜ Cube' },
-  { id: 'sphere', label: '⚪ Sphere' },
-  { id: 'cylinder', label: '🥫 Cylinder' },
-  { id: 'cone', label: '🔺 Cone' },
-  { id: 'torus', label: '⭕ Torus' },
-  { id: 'wedge', label: '📐 Wedge' },
+  { id: 'box', label: 'Cube' },
+  { id: 'sphere', label: 'Sphere' },
+  { id: 'cylinder', label: 'Cylinder' },
+  { id: 'cone', label: 'Cone' },
+  { id: 'torus', label: 'Torus' },
+  { id: 'wedge', label: 'Wedge' },
 ];
 
 const SHAPE_FACES = {
@@ -1105,8 +1106,8 @@ export default function EditorModule() {
               </button>
             ))}
           </div>
-          <button className="btn primary full" style={{ marginTop:8 }} onClick={() => setShowLibrary(true)}>
-            📚 Template Library
+          <button className="btn primary full" style={{ marginTop:8, display:'flex', alignItems:'center', justifyContent:'center', gap:5 }} onClick={() => setShowLibrary(true)}>
+            <Icon name="stats" size={13} /> Template Library
           </button>
         </div>
 
@@ -1457,7 +1458,9 @@ export default function EditorModule() {
           </>
         ) : (
           <div style={{ padding:'24px 16px', fontSize:12, color:'var(--text3)', textAlign:'center', lineHeight:1.9 }}>
-            <div style={{ fontSize:28, marginBottom:10 }}>✏️</div>
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}>
+              <Icon name="pencil" size={28} />
+            </div>
             <strong style={{ color:'var(--text2)' }}>Select an object</strong>
             <br />to edit properties
             <br /><br />

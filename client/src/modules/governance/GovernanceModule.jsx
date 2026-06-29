@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
+import Icon from '../../components/Icon';
 
 const CATEGORY_META = {
-  transit:        { icon: '🚇', color: 'blue',  label: 'Transit' },
-  zoning:         { icon: '🗺️', color: 'amber', label: 'Zoning' },
-  budget:         { icon: '💰', color: 'green', label: 'Budget' },
-  infrastructure: { icon: '🏗️', color: 'blue',  label: 'Infrastructure' },
-  general:        { icon: '📋', color: 'gray',  label: 'General' },
+  transit:        { iconName: 'street', color: 'blue',  label: 'Transit' },
+  zoning:         { iconName: 'map', color: 'amber', label: 'Zoning' },
+  budget:         { iconName: 'stats', color: 'green', label: 'Budget' },
+  infrastructure: { iconName: 'city', color: 'blue',  label: 'Infrastructure' },
+  general:        { iconName: 'stats', color: 'gray',  label: 'General' },
 };
 
 function fmtTime(ms) {
@@ -60,12 +61,13 @@ export default function GovernanceModule() {
         <div style={{ padding:'8px 12px', borderBottom:'1px solid var(--border)' }}>
           <div className="panel-label">View</div>
           {[
-            { id:'open',   icon:'🟢', label:'Open',   count: open.length },
-            { id:'closed', icon:'✅', label:'Closed', count: closed.length },
-            { id:'all',    icon:'📋', label:'All',    count: proposals.length },
+            { id:'open',   iconName:'stats', label:'Open',   count: open.length },
+            { id:'closed', iconName:'close', label:'Closed', count: closed.length },
+            { id:'all',    iconName:'layers', label:'All',    count: proposals.length },
           ].map(t => (
-            <button key={t.id} className={`tool-btn ${tab===t.id?'active':''}`} onClick={() => setTab(t.id)}>
-              <span>{t.icon}</span> {t.label}
+            <button key={t.id} className={`tool-btn ${tab===t.id?'active':''}`} onClick={() => setTab(t.id)} style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <Icon name={t.iconName} size={12} color="var(--text2)" /> 
+              <span>{t.label}</span>
               <span style={{ marginLeft:'auto', fontSize:11, opacity:0.6 }}>{t.count}</span>
             </button>
           ))}
@@ -161,15 +163,17 @@ function ProposalCard({ proposal: p, username, onVote, treasury }) {
     }}>
       {/* Header row */}
       <div style={{ display:'flex', alignItems:'flex-start', gap:12, marginBottom:10 }}>
-        <span style={{ fontSize:22, marginTop:2, flexShrink:0 }}>{meta.icon}</span>
+        <div style={{ marginTop:4, flexShrink:0 }}>
+          <Icon name={meta.iconName} size={20} color="var(--text2)" />
+        </div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap', marginBottom:3 }}>
             <span style={{ fontSize:14, fontWeight:600, color:'var(--text)', lineHeight:1.3 }}>{p.title}</span>
             <span className={`badge ${meta.color}`}>{meta.label}</span>
-            {passed && <span className="badge green">Passed ✓</span>}
-            {failed && <span className="badge red">Failed ✗</span>}
-            {isUrgent && isOpen && <span className="badge red">⏰ Urgent</span>}
-            {!canAfford && isOpen && <span className="badge red">⚠️ Unaffordable</span>}
+            {passed && <span className="badge green">Passed</span>}
+            {failed && <span className="badge red">Failed</span>}
+            {isUrgent && isOpen && <span className="badge red">Urgent</span>}
+            {!canAfford && isOpen && <span className="badge red">Unaffordable</span>}
           </div>
           <div style={{ fontSize:11, color:'var(--text3)' }}>
             By @{p.proposedBy} · {new Date(p.createdAt).toLocaleDateString()}
