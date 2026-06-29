@@ -602,6 +602,7 @@ export default function CityModule() {
   const [zoneView, setZoneView] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState(null);
   const [zoneShape, setZoneShape] = useState('pencil');
+  const [assetContextMenu, setAssetContextMenu] = useState(null); // { x, y, asset }
   const zoneAnchorRef = useRef(null);
   const [gameTime, setGameTime] = useState(360);
   const [transitionProgress, setTransitionProgress] = useState(0.0);
@@ -1807,6 +1808,13 @@ const draw = useCallback(() => {
         const asset = assetAtCell(floatCoords.col, floatCoords.row);
         if (asset && !asset.locked) {
           e.preventDefault();
+          // If clicking an already-selected asset: open context menu instead of dragging
+          if (asset.id === selectedAssetId) {
+            const rect = canvasRef.current.getBoundingClientRect();
+            setAssetContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, asset });
+            return;
+          }
+          setAssetContextMenu(null);
           selectAsset(asset.id);
           setSelectedRoadId(null);
           setSelectedCell(null); // Clear confusing grid selection box
@@ -1818,6 +1826,7 @@ const draw = useCallback(() => {
           dragStartPos.current = { col: asset.col, row: asset.row };
         } else {
           selectAsset(null);
+          setAssetContextMenu(null);
           const road = roadAtCoords(floatCoords.col, floatCoords.row);
           if (road && !road.locked) {
             setSelectedRoadId(road.id);
@@ -2248,6 +2257,157 @@ const draw = useCallback(() => {
           </div>
         </div>
       )}
+
+      {/* ── Glassmorphic Asset Context Menu ── */}
+      {assetContextMenu && !streetView && (() => {
+        const { x, y, asset } = assetContextMenu;
+        // Smart positioning: flip left if too close to right edge, flip up if too close to bottom
+        const menuW = 210, menuH = 340;
+        const containerW = canvasRef.current?.offsetWidth || window.innerWidth;
+        const containerH = canvasRef.current?.offsetHeight || window.innerHeight;
+        const menuX = x + menuW > containerW - 12 ? x - menuW : x + 10;
+        const menuY = y + menuH > containerH - 12 ? y - menuH : y + 10;
+
+        return (
+          <div
+            className="asset-ctx-menu"
+            style={{ left: menuX, top: menuY }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="asset-ctx-header">
+              <div className="asset-ctx-icon">🏢</div>
+              <div style={{ overflow: 'hidden' }}>
+                <div className="asset-ctx-name">{asset.name}</div>
+                <div className="asset-ctx-sub">
+                  ({asset.col.toFixed(1)}, {asset.row.toFixed(1)}) · @{asset.placedBy}
+                </div>
+              </div>
+            </div>
+
+            {/* Scale slider */}
+            <div className="asset-ctx-scale-row">
+              <label>Scale</label>
+              <input
+                type="range"
+                min={Math.min(0.1, getMaxScaleFactor(asset)).toFixed(2)}
+                max={getMaxScaleFactor(asset).toFixed(2)}
+                step="0.05"
+                value={asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : getDefaultScaleFactor(asset)}
+                onChange={(e) => {
+                  updateAsset(asset.id, { scaleMultiplier: parseFloat(e.target.value) });
+                  setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, scaleMultiplier: parseFloat(e.target.value) } } : null);
+                }}
+              />
+              <span className="asset-ctx-scale-val">
+                {(asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : getDefaultScaleFactor(asset)).toFixed(2)}×
+              </span>
+            </div>
+
+            <div className="asset-ctx-divider" />
+
+            {/* Actions */}
+            <div className="asset-ctx-items">
+              {/* Rotate CW */}
+              <button
+                className="asset-ctx-item accent"
+                onClick={() => {
+                  const nextRot = ((asset.rotation || 0) + Math.PI / 2) % (Math.PI * 2);
+                  updateAsset(asset.id, { rotation: nextRot });
+                  setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, rotation: nextRot } } : null);
+                }}
+              >
+                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(129,140,248,0.15)' }}>↻</span>
+                Rotate 90° Clockwise
+              </button>
+
+              {/* Rotate CCW */}
+              <button
+                className="asset-ctx-item accent"
+                onClick={() => {
+                  const nextRot = ((asset.rotation || 0) - Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
+                  updateAsset(asset.id, { rotation: nextRot });
+                  setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, rotation: nextRot } } : null);
+                }}
+              >
+                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(129,140,248,0.15)' }}>↺</span>
+                Rotate 90° Counter-CW
+              </button>
+
+              <div className="asset-ctx-divider" />
+
+              {/* Nudge up / down / left / right */}
+              <button
+                className="asset-ctx-item"
+                onClick={() => { updateAsset(asset.id, { row: asset.row - 0.5 }); setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, row: prev.asset.row - 0.5 } } : null); }}
+              >
+                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.06)' }}>▲</span>
+                Nudge North
+              </button>
+              <button
+                className="asset-ctx-item"
+                onClick={() => { updateAsset(asset.id, { row: asset.row + 0.5 }); setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, row: prev.asset.row + 0.5 } } : null); }}
+              >
+                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.06)' }}>▼</span>
+                Nudge South
+              </button>
+              <button
+                className="asset-ctx-item"
+                onClick={() => { updateAsset(asset.id, { col: asset.col - 0.5 }); setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, col: prev.asset.col - 0.5 } } : null); }}
+              >
+                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.06)' }}>◀</span>
+                Nudge West
+              </button>
+              <button
+                className="asset-ctx-item"
+                onClick={() => { updateAsset(asset.id, { col: asset.col + 0.5 }); setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, col: prev.asset.col + 0.5 } } : null); }}
+              >
+                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.06)' }}>▶</span>
+                Nudge East
+              </button>
+
+              <div className="asset-ctx-divider" />
+
+              {/* Lock / Unlock */}
+              <button
+                className="asset-ctx-item success"
+                onClick={() => {
+                  updateAsset(asset.id, { locked: !asset.locked });
+                  setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, locked: !prev.asset.locked } } : null);
+                }}
+              >
+                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(52,211,153,0.12)' }}>
+                  {asset.locked ? '🔓' : '🔒'}
+                </span>
+                {asset.locked ? 'Unlock Building' : 'Lock Building'}
+              </button>
+
+              {/* Delete */}
+              <button
+                className="asset-ctx-item danger"
+                onClick={() => {
+                  removeAsset(asset.id);
+                  selectAsset(null);
+                  setAssetContextMenu(null);
+                }}
+              >
+                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(239,68,68,0.12)' }}>🗑️</span>
+                Delete Building
+              </button>
+
+              {/* Close */}
+              <button
+                className="asset-ctx-item"
+                onClick={() => setAssetContextMenu(null)}
+                style={{ marginTop: 2, opacity: 0.5 }}
+              >
+                <span className="asset-ctx-icon-badge" style={{ background: 'rgba(255,255,255,0.04)' }}>✕</span>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Top-Left: City Info Pill ── */}
       <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
