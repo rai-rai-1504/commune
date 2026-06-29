@@ -3583,7 +3583,8 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           
           // 1. Pole (tall vertical cylinder)
           const poleGeo = new THREE.CylinderGeometry(0.04, 0.05, 3.2, 6);
-          const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.2 });
+          // MeshLambertMaterial: per-vertex Gouraud shading instead of PBR per-fragment — no visible difference on metal poles
+          const poleMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
           const pole = new THREE.Mesh(poleGeo, poleMat);
           pole.position.y = 1.6;
           pole.castShadow = true;
@@ -3954,7 +3955,7 @@ const mount = mountRef.current;
     renderer.setSize(W, H);
     renderer.setClearColor(0x87CEEB);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.BasicShadowMap; // Cheaper than PCFSoftShadowMap (1 sample vs 9)
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     mount.appendChild(renderer.domElement);
@@ -4025,7 +4026,7 @@ const mount = mountRef.current;
     const sun = new THREE.DirectionalLight(0xfffbf0, 1.4);
     sun.position.set(40, 50, 20);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(512, 512); // Lowered from 2048: shadow covers wide area, resolution drop is imperceptible
     sun.shadow.camera.near = 0.5;
     sun.shadow.camera.far = 120;
     sun.shadow.camera.left = -40;
@@ -4037,8 +4038,7 @@ const mount = mountRef.current;
 
     const moon = new THREE.DirectionalLight(0x90b0ff, 0.35);
     moon.position.set(-40, 50, -20);
-    moon.castShadow = true;
-    moon.shadow.mapSize.set(1024, 1024);
+    moon.castShadow = false; // Disabled: moon shadow cube-map was re-rendering 6 faces/frame at night
     scene.add(moon);
     moonLightRef.current = moon;
 
@@ -4327,6 +4327,13 @@ const mount = mountRef.current;
       const lightY = Math.sin(angle) * radius;
       const lightZ = 20;
 
+      // Fix 3: Toggle shadow map rendering off at night — no sun means no shadows needed.
+      // This eliminates the entire shadow-pass GPU overhead (depth prerender) every frame at night.
+      const isNighttime = hours >= 19.0 || hours < 6.0;
+      if (rendererRef.current && rendererRef.current.shadowMap.enabled === isNighttime) {
+        rendererRef.current.shadowMap.enabled = !isNighttime;
+      }
+
       // Update Sun Directional Light
       if (sunLightRef.current) {
         sunLightRef.current.position.set(lightX, Math.max(0.1, lightY), lightZ);
@@ -4401,34 +4408,55 @@ const mount = mountRef.current;
         }
       }
 
-      // Toggle 3D Streetlights PointLights and Bulbs (Optimized with Flat Array + Material Swapping + State Change Guards)
+      // Toggle 3D Streetlights PointLights and Bulbs (Optimized: Flat Array + Closest-N Capping + State Guards)
       const lightsOn = hours >= 19.0 || hours < 6.0;
       const camPos = camera.position;
-      const targetBulbMat = lightsOn ? bulbOnMatRef.current : bulbOffMatRef.current;
+      // Fix 4: Cap active PointLights to MAX_ACTIVE_LIGHTS closest lamps.
+      // Each active PointLight multiplies per-fragment shading cost across all lit meshes in its radius.
+      // Limiting concurrent active lights is the single most effective forward-renderer optimization.
+      const MAX_ACTIVE_LIGHTS = 4;
+      const slList = streetlightsRef.current || [];
       
-      (streetlightsRef.current || []).forEach(sl => {
-        // Check distance to camera in X-Z plane
-        const dx = sl.position.x - camPos.x;
-        const dz = sl.position.z - camPos.z;
-        const distSq = dx * dx + dz * dz;
+      if (lightsOn && slList.length > 0) {
+        // Build { distSq, sl } list only for lamps within cull radius (45 units)
+        const nearby = [];
+        for (let i = 0; i < slList.length; i++) {
+          const sl = slList[i];
+          const dx = sl.position.x - camPos.x;
+          const dz = sl.position.z - camPos.z;
+          const distSq = dx * dx + dz * dz;
+          if (distSq < 2025) nearby.push({ distSq, sl });
+        }
+        // Sort closest first and pick only the top MAX_ACTIVE_LIGHTS
+        nearby.sort((a, b) => a.distSq - b.distSq);
+        const activeSet = new Set(nearby.slice(0, MAX_ACTIVE_LIGHTS).map(n => n.sl));
         
-        // Cull distance: 45 units (distSq = 2025)
-        const isNearby = distSq < 2025;
-        const shouldLightBeOn = lightsOn && isNearby;
-        
-        // PointLight visibility / intensity update (State change guard)
-        if (sl.source.visible !== shouldLightBeOn) {
-          sl.source.visible = shouldLightBeOn;
-          if (shouldLightBeOn) {
-            sl.source.intensity = 1.8;
+        for (let i = 0; i < slList.length; i++) {
+          const sl = slList[i];
+          const shouldLightBeOn = activeSet.has(sl);
+          
+          // PointLight visibility update (state-change guard)
+          if (sl.source.visible !== shouldLightBeOn) {
+            sl.source.visible = shouldLightBeOn;
+            if (shouldLightBeOn) sl.source.intensity = 1.8;
           }
+          
+          // Bulb glow: any lamp in 45-unit range glows, not just active ones
+          const dx = sl.position.x - camPos.x;
+          const dz = sl.position.z - camPos.z;
+          const isNearby = (dx * dx + dz * dz) < 2025;
+          const wantedMat = isNearby ? bulbOnMatRef.current : bulbOffMatRef.current;
+          if (sl.bulb.material !== wantedMat) sl.bulb.material = wantedMat;
         }
-        
-        // Bulb material swap (State change guard)
-        if (sl.bulb.material !== targetBulbMat) {
-          sl.bulb.material = targetBulbMat;
+      } else {
+        // Daytime or no streetlights: turn everything off efficiently
+        for (let i = 0; i < slList.length; i++) {
+          const sl = slList[i];
+          if (sl.source.visible) sl.source.visible = false;
+          if (sl.bulb.material !== bulbOffMatRef.current) sl.bulb.material = bulbOffMatRef.current;
         }
-      });
+      }
+
 
       const isBirdsEye = birdsEyeRef.current;
       const yaw = yawRef.current;
