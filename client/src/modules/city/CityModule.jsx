@@ -3,6 +3,19 @@ import * as THREE from 'three';
 import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
 import { useStore } from '../../store/useStore';
 import { TEMPLATES } from '../../components/AssetLibrary';
+import BuildingThumbnail from './BuildingThumbnail';
+const formatGameTime = (minutes) => {
+  const h24 = Math.floor(minutes / 60) % 24;
+  const m = Math.floor(minutes % 60);
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const mmStr = m.toString().padStart(2, '0');
+  let emoji = '🌅';
+  if (h24 >= 8 && h24 < 17) emoji = '☀️';
+  else if (h24 >= 17 && h24 < 19) emoji = '🌇';
+  else emoji = '🌙';
+  return `${emoji} ${h12}:${mmStr} ${ampm}`;
+};
 
 function SmoothColorPicker({ value, onChange, disabled, style }) {
   const [localVal, setLocalVal] = useState(value);
@@ -590,6 +603,9 @@ export default function CityModule() {
   const [selectedZoneId, setSelectedZoneId] = useState(null);
   const [zoneShape, setZoneShape] = useState('pencil');
   const zoneAnchorRef = useRef(null);
+  const [gameTime, setGameTime] = useState(360);
+  const [transitionProgress, setTransitionProgress] = useState(0.0);
+  const gameTimeRef = useRef(360);
   
   const [activeZonePoints, setActiveZonePoints] = useState([]);
   const isDrawingZoneRef = useRef(false);
@@ -609,7 +625,44 @@ export default function CityModule() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    gameTimeRef.current = gameTime;
+  }, [gameTime]);
 
+  useEffect(() => {
+    let lastTime = performance.now();
+    let frameId;
+    const tick = () => {
+      const now = performance.now();
+      const deltaMs = now - lastTime;
+      lastTime = now;
+      setGameTime(prev => (prev + deltaMs * 0.0008) % 1440);
+      frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, []);
+
+  useEffect(() => {
+    let lastTime = performance.now();
+    let frameId;
+    const updateTransition = () => {
+      const now = performance.now();
+      const deltaMs = now - lastTime;
+      lastTime = now;
+      const speed = 0.0035; // transition takes ~300ms
+      setTransitionProgress(prev => {
+        if (zoneView) {
+          return Math.min(1.0, prev + deltaMs * speed);
+        } else {
+          return Math.max(0.0, prev - deltaMs * speed);
+        }
+      });
+      frameId = requestAnimationFrame(updateTransition);
+    };
+    frameId = requestAnimationFrame(updateTransition);
+    return () => cancelAnimationFrame(frameId);
+  }, [zoneView]);
   useEffect(() => {
     if (streetView) return;
     const handleKeyDown = (e) => {
@@ -882,12 +935,16 @@ const draw = useCallback(() => {
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    // Background - soft grass green, off-white in zone view
-    ctx.fillStyle = zoneView ? '#f0f4f8' : '#b7e4c7';
+    // Background - soft grass green, off-white in zone view (smooth transition)
+    const bgR = Math.round(183 * (1 - transitionProgress) + 240 * transitionProgress);
+    const bgG = Math.round(228 * (1 - transitionProgress) + 244 * transitionProgress);
+    const bgB = Math.round(199 * (1 - transitionProgress) + 248 * transitionProgress);
+    ctx.fillStyle = `rgb(${bgR}, ${bgG}, ${bgB})`;
     ctx.fillRect(0, 0, W, H);
 
     // Decorative infinite grid overlay
-    ctx.strokeStyle = zoneView ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.03)';
+    const gridAlpha = 0.03 * (1 - transitionProgress) + 0.05 * transitionProgress;
+    ctx.strokeStyle = `rgba(0,0,0,${gridAlpha})`;
     ctx.lineWidth = 0.5;
     const startX = ((offset.x % cellSize) + cellSize) % cellSize;
     const startY = ((offset.y % cellSize) + cellSize) % cellSize;
@@ -977,7 +1034,9 @@ const draw = useCallback(() => {
         return segmentsList.map(seg => getOffsetPoints(seg, dist));
       };
 
-      if (zoneView) {
+      if (transitionProgress > 0.0) {
+        ctx.save();
+        ctx.globalAlpha = transitionProgress * opacity;
         const roadW = (type === 'highway' ? 24 : type === 'multilane' ? 18 : type === 'dirt' ? 10 : 12) * zoom;
         // 1. Outer border
         ctx.save();
@@ -996,117 +1055,123 @@ const draw = useCallback(() => {
         ctx.lineJoin = 'round';
         drawCurvePoints(untrimmedScreenPoints);
         ctx.restore();
-        return;
-      }
-
-      if (isSelected) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-        ctx.lineWidth = (type === 'highway' ? 52 : type === 'multilane' ? 36 : type === 'dirt' ? 20 : 24) * zoom;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        drawCurvePoints(untrimmedScreenPoints);
         ctx.restore();
       }
 
-      if (type === 'multilane') {
-        // Main pavement
-        ctx.strokeStyle = `rgba(51, 65, 85, ${opacity})`;
-        ctx.lineWidth = 28 * zoom;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        drawCurvePoints(untrimmedScreenPoints);
+      if (transitionProgress < 1.0) {
+        ctx.save();
+        ctx.globalAlpha = (1 - transitionProgress) * opacity;
 
-        // Double yellow center lines
-        ctx.strokeStyle = `rgba(245, 158, 11, ${opacity})`;
-        ctx.lineWidth = 1.5 * zoom;
-        ctx.lineCap = 'butt';
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 2 * zoom));
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -2 * zoom));
+        if (isSelected) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+          ctx.lineWidth = (type === 'highway' ? 52 : type === 'multilane' ? 36 : type === 'dirt' ? 20 : 24) * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
+          ctx.restore();
+        }
 
-        // Dashed lane lines
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45})`;
-        ctx.lineWidth = 1.5 * zoom;
-        ctx.setLineDash([5 * zoom, 8 * zoom]);
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 8 * zoom));
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -8 * zoom));
-        ctx.setLineDash([]);
-      } else if (type === 'highway') {
-        // Main pavement
-        ctx.strokeStyle = `rgba(30, 41, 59, ${opacity})`;
-        ctx.lineWidth = 44 * zoom;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        drawCurvePoints(untrimmedScreenPoints);
+        if (type === 'multilane') {
+          // Main pavement
+          ctx.strokeStyle = `rgba(51, 65, 85, 1.0)`;
+          ctx.lineWidth = 28 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
 
-        // Concrete median (center)
-        ctx.strokeStyle = `rgba(203, 213, 225, ${opacity})`;
-        ctx.lineWidth = 4 * zoom;
-        ctx.lineCap = 'round';
-        drawCurvePoints(untrimmedScreenPoints);
+          // Double yellow center lines
+          ctx.strokeStyle = `rgba(245, 158, 11, 1.0)`;
+          ctx.lineWidth = 1.5 * zoom;
+          ctx.lineCap = 'butt';
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 2 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -2 * zoom));
 
-        // Solid yellow inner shoulders
-        ctx.strokeStyle = `rgba(245, 158, 11, ${opacity})`;
-        ctx.lineWidth = 1.5 * zoom;
-        ctx.lineCap = 'butt';
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 4.5 * zoom));
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -4.5 * zoom));
+          // Dashed lane lines
+          ctx.strokeStyle = `rgba(255, 255, 255, 0.45)`;
+          ctx.lineWidth = 1.5 * zoom;
+          ctx.setLineDash([5 * zoom, 8 * zoom]);
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 8 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -8 * zoom));
+          ctx.setLineDash([]);
+        } else if (type === 'highway') {
+          // Main pavement
+          ctx.strokeStyle = `rgba(30, 41, 59, 1.0)`;
+          ctx.lineWidth = 44 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
 
-        // Dashed lane lines
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45})`;
-        ctx.lineWidth = 1.5 * zoom;
-        ctx.setLineDash([6 * zoom, 10 * zoom]);
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 12 * zoom));
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -12 * zoom));
-        ctx.setLineDash([]);
+          // Concrete median (center)
+          ctx.strokeStyle = `rgba(203, 213, 225, 1.0)`;
+          ctx.lineWidth = 4 * zoom;
+          ctx.lineCap = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
 
-        // Solid white outer shoulders
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.6})`;
-        ctx.lineWidth = 1.5 * zoom;
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, 19 * zoom));
-        drawCurvePoints(getOffsetSegments(segmentScreenPoints, -19 * zoom));
-      } else if (type === 'dirt') {
-        // Dirt Road pavement
-        ctx.strokeStyle = `rgba(139, 90, 43, ${opacity})`;
-        ctx.lineWidth = 12 * zoom;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        drawCurvePoints(untrimmedScreenPoints);
+          // Solid yellow inner shoulders
+          ctx.strokeStyle = `rgba(245, 158, 11, 1.0)`;
+          ctx.lineWidth = 1.5 * zoom;
+          ctx.lineCap = 'butt';
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 4.5 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -4.5 * zoom));
 
-        // Ground grit texture overlay
-        ctx.strokeStyle = `rgba(110, 68, 30, ${opacity * 0.45})`;
-        ctx.lineWidth = 10 * zoom;
-        ctx.setLineDash([2 * zoom, 4 * zoom]);
-        drawCurvePoints(untrimmedScreenPoints);
-        ctx.setLineDash([]);
-      } else if (type === 'brick') {
-        // Brick road pavement
-        ctx.strokeStyle = `rgba(166, 58, 58, ${opacity})`;
-        ctx.lineWidth = 16 * zoom;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        drawCurvePoints(untrimmedScreenPoints);
+          // Dashed lane lines
+          ctx.strokeStyle = `rgba(255, 255, 255, 0.45)`;
+          ctx.lineWidth = 1.5 * zoom;
+          ctx.setLineDash([6 * zoom, 10 * zoom]);
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 12 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -12 * zoom));
+          ctx.setLineDash([]);
 
-        // Brick joints pattern
-        ctx.strokeStyle = `rgba(186, 186, 186, ${opacity * 0.4})`;
-        ctx.lineWidth = 16 * zoom;
-        ctx.setLineDash([1.5 * zoom, 4.5 * zoom]);
-        drawCurvePoints(untrimmedScreenPoints);
-        ctx.setLineDash([]);
-      } else {
-        // Standard
-        ctx.strokeStyle = `rgba(71, 85, 105, ${opacity})`;
-        ctx.lineWidth = 16 * zoom;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        drawCurvePoints(untrimmedScreenPoints);
+          // Solid white outer shoulders
+          ctx.strokeStyle = `rgba(255, 255, 255, 0.6)`;
+          ctx.lineWidth = 1.5 * zoom;
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 19 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -19 * zoom));
+        } else if (type === 'dirt') {
+          // Dirt Road pavement
+          ctx.strokeStyle = `rgba(139, 90, 43, 1.0)`;
+          ctx.lineWidth = 12 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
 
-        // Center dashes
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45})`;
-        ctx.lineWidth = 2 * zoom;
-        ctx.setLineDash([6 * zoom, 8 * zoom]);
-        drawCurvePoints(segmentScreenPoints);
-        ctx.setLineDash([]);
+          // Ground grit texture overlay
+          ctx.strokeStyle = `rgba(110, 68, 30, 0.45)`;
+          ctx.lineWidth = 10 * zoom;
+          ctx.setLineDash([2 * zoom, 4 * zoom]);
+          drawCurvePoints(untrimmedScreenPoints);
+          ctx.setLineDash([]);
+        } else if (type === 'brick') {
+          // Brick road pavement
+          ctx.strokeStyle = `rgba(166, 58, 58, 1.0)`;
+          ctx.lineWidth = 16 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
+
+          // Brick joints pattern
+          ctx.strokeStyle = `rgba(186, 186, 186, 0.4)`;
+          ctx.lineWidth = 16 * zoom;
+          ctx.setLineDash([1.5 * zoom, 4.5 * zoom]);
+          drawCurvePoints(untrimmedScreenPoints);
+          ctx.setLineDash([]);
+        } else {
+          // Standard
+          ctx.strokeStyle = `rgba(71, 85, 105, 1.0)`;
+          ctx.lineWidth = 16 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
+
+          // Center dashes
+          ctx.strokeStyle = `rgba(255, 255, 255, 0.45)`;
+          ctx.lineWidth = 2 * zoom;
+          ctx.setLineDash([6 * zoom, 8 * zoom]);
+          drawCurvePoints(segmentScreenPoints);
+          ctx.setLineDash([]);
+        }
+        ctx.restore();
       }
     };
 
@@ -1156,8 +1221,11 @@ const draw = useCallback(() => {
         
         const isSel = zone.id === selectedZoneId;
         
-        if (zoneView) {
+        // 1. Draw claymorphic zone if transition is active
+        if (transitionProgress > 0.0) {
           ctx.save();
+          ctx.globalAlpha = transitionProgress;
+          
           // Draw base path
           const path = new Path2D();
           zone.points.forEach((pt, idx) => {
@@ -1209,13 +1277,16 @@ const draw = useCallback(() => {
           }
           
           ctx.restore();
-        } else {
-          // Normal rendering
+        }
+
+        // 2. Draw normal map style zone if transition is active
+        if (transitionProgress < 1.0) {
           ctx.save();
+          ctx.globalAlpha = 1 - transitionProgress;
           
           // 1. Draw filled polygon
           ctx.fillStyle = zone.color;
-          ctx.globalAlpha = 0.32;
+          ctx.globalAlpha = 0.32 * (1 - transitionProgress);
           ctx.beginPath();
           zone.points.forEach((pt, idx) => {
             const sx = offset.x + pt.x * cellSize;
@@ -1227,7 +1298,7 @@ const draw = useCallback(() => {
           ctx.fill();
           
           // 2. Draw border
-          ctx.globalAlpha = 0.85;
+          ctx.globalAlpha = 0.85 * (1 - transitionProgress);
           ctx.strokeStyle = zone.color;
           ctx.lineWidth = 1.8 * zoom;
           ctx.stroke();
@@ -1345,7 +1416,7 @@ const draw = useCallback(() => {
     // Placed assets are rendered below
 
     // Placed assets
-    if (!zoneView) {
+    if (transitionProgress < 1.0) {
       (city.placedAssets || []).forEach(asset => {
         const scaleFactor = asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0;
         const aw = (asset.width || 2) * (cellSize / 3.4) * scaleFactor;
@@ -1370,6 +1441,7 @@ const draw = useCallback(() => {
         }
 
         ctx.save();
+        ctx.globalAlpha = 1 - transitionProgress;
         ctx.translate(cx, cy);
         ctx.rotate(-(asset.rotation || 0));
 
@@ -1399,11 +1471,11 @@ const draw = useCallback(() => {
         } else {
           // Fallback generic bounding box if no sub-objects or zoomed out
           ctx.fillStyle = asset.color || '#4ECDC4';
-          ctx.globalAlpha = 0.82;
+          ctx.globalAlpha = 0.82 * (1 - transitionProgress);
           ctx.beginPath();
           ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
           ctx.fill();
-          ctx.globalAlpha = 1;
+          ctx.globalAlpha = 1 - transitionProgress;
           ctx.strokeStyle = asset.color || '#4ECDC4';
           ctx.lineWidth = 1.5;
           ctx.beginPath();
@@ -1479,7 +1551,67 @@ const draw = useCallback(() => {
       ctx.strokeRect(sx + 1, sy + 1, cellSize - 2, cellSize - 2);
       ctx.setLineDash([]);
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints, zoneShape, zoneView, selectedZoneId]);
+
+    // ── Day/Night Cycle Rendering (2D Overlay & Streetlights) ──
+    const hours = gameTime / 60;
+    
+    // Draw 2D Streetlights
+    if (transitionProgress < 1.0 && (hours >= 19.0 || hours < 6.0)) {
+      ctx.save();
+      ctx.globalAlpha = 1 - transitionProgress;
+      ctx.globalCompositeOperation = 'screen';
+      
+      (city.roads || []).forEach(road => {
+        if (road.points.length < 2) return;
+        road.points.forEach((pt, pIdx) => {
+          if (pIdx % 2 !== 0) return; 
+          
+          const sx = offset.x + pt.x * cellSize;
+          const sy = offset.y + pt.z * cellSize;
+          
+          const grad = ctx.createRadialGradient(sx, sy, 1 * zoom, sx, sy, 12 * zoom);
+          grad.addColorStop(0, 'rgba(253, 224, 71, 0.7)');
+          grad.addColorStop(0.3, 'rgba(253, 224, 71, 0.3)');
+          grad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+          
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 12 * zoom, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+      ctx.restore();
+    }
+
+    // Draw Night overlay
+    if (transitionProgress < 1.0) {
+      let overlayColor = null;
+      if (hours >= 19.5 || hours < 5.5) {
+        overlayColor = `rgba(15, 23, 42, ${0.45 * (1 - transitionProgress)})`;
+      } else if (hours >= 18.0 && hours < 19.5) {
+        const t = (hours - 18.0) / 1.5;
+        const r = Math.round(245 * (1 - t) + 15 * t);
+        const g = Math.round(158 * (1 - t) + 23 * t);
+        const b = Math.round(11 * (1 - t) + 42 * t);
+        const alpha = (0.15 * (1 - t) + 0.45 * t) * (1 - transitionProgress);
+        overlayColor = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      } else if (hours >= 5.5 && hours < 7.0) {
+        const t = (hours - 5.5) / 1.5;
+        const r = Math.round(15 * (1 - t) + 253 * t);
+        const g = Math.round(23 * (1 - t) + 224 * t);
+        const b = Math.round(42 * (1 - t) + 71 * t);
+        const alpha = (0.45 * (1 - t) + 0.05 * (1 - t)) * (1 - transitionProgress);
+        overlayColor = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+
+      if (overlayColor) {
+        ctx.save();
+        ctx.fillStyle = overlayColor;
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+      }
+    }
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints, zoneShape, zoneView, selectedZoneId, gameTime, transitionProgress]);
 
   // Resize + redraw
   useEffect(() => {
@@ -2010,6 +2142,22 @@ const draw = useCallback(() => {
   const selectedRoad = selectedRoadId ? (city?.roads || []).find(r => r.id === selectedRoadId) : null;
   const selectedZone = selectedZoneId ? (city?.zones || []).find(z => z.id === selectedZoneId) : null;
 
+  let centroidScreen = null;
+  if (selectedZone && !streetView) {
+    let sumX = 0, sumZ = 0;
+    const pts = selectedZone.points.slice(0, -1); // exclude closing point duplicate for correct centroid
+    pts.forEach(pt => {
+      sumX += pt.x;
+      sumZ += pt.z;
+    });
+    const cx = sumX / pts.length;
+    const cz = sumZ / pts.length;
+    centroidScreen = {
+      x: offset.x + cx * cellSize,
+      y: offset.y + cz * cellSize
+    };
+  }
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
 
@@ -2021,6 +2169,7 @@ const draw = useCallback(() => {
           selectedRoadId={selectedRoadId}
           setSelectedRoadId={setSelectedRoadId}
           intersections={intersections}
+          gameTime={gameTime}
         />
       ) : (
         <canvas
@@ -2036,8 +2185,72 @@ const draw = useCallback(() => {
         />
       )}
 
+      {/* Centroid floating editor card for selected zone */}
+      {selectedZone && centroidScreen && (
+        <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+          position: 'absolute',
+          left: centroidScreen.x - 70,
+          top: centroidScreen.y - 45,
+          zIndex: 105,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+          padding: 6,
+          borderRadius: 12,
+          animation: 'fadeIn 0.15s ease',
+          pointerEvents: 'auto',
+          minWidth: 140,
+          border: zoneView ? '1px solid rgba(255,255,255,0.7)' : undefined,
+          boxShadow: zoneView ? undefined : '0 8px 32px rgba(0,0,0,0.3)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+            <input
+              type="text"
+              value={selectedZone.name}
+              onChange={(e) => updateZone(selectedZone.id, { name: e.target.value })}
+              className={zoneView ? "clay-input" : ""}
+              style={{
+                width: 90,
+                fontSize: 9,
+                padding: '2px 4px',
+                background: zoneView ? '#ffffff' : 'rgba(0,0,0,0.3)',
+                border: zoneView ? '1px solid #cbd5e1' : '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 4,
+                color: zoneView ? '#1e293b' : '#ffffff',
+                fontWeight: 600,
+                outline: 'none'
+              }}
+            />
+            <SmoothColorPicker
+              value={selectedZone.color || '#4ECDC4'}
+              onChange={(e) => updateZone(selectedZone.id, { color: e.target.value })}
+              style={{ width: 16, height: 12, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              className={zoneView ? "clay-button danger" : "glass-button danger"}
+              onClick={() => {
+                removeZone(selectedZone.id);
+                setSelectedZoneId(null);
+              }}
+              style={{ flex: 1, padding: '2px 6px', fontSize: 8, height: 18, border: 'none', borderRadius: 6 }}
+            >
+              Delete
+            </button>
+            <button
+              className={zoneView ? "clay-button" : "glass-button"}
+              onClick={() => setSelectedZoneId(null)}
+              style={{ flex: 1, padding: '2px 6px', fontSize: 8, height: 18, border: 'none', borderRadius: 6 }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Top-Left: City Info Pill ── */}
-      <div className="glass-panel" style={{
+      <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
         position: 'absolute',
         top: 80,
         left: 16,
@@ -2047,12 +2260,16 @@ const draw = useCallback(() => {
         gap: 8,
         padding: '6px 14px',
         borderRadius: 20,
-        pointerEvents: 'none'
+        pointerEvents: 'none',
+        border: zoneView ? '1px solid rgba(255, 255, 255, 0.6)' : undefined
       }}>
         <span style={{ fontSize: 16 }}>🏙️</span>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>{city?.name || 'Loading…'}</div>
-          <div style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap' }}>{presence.length} player{presence.length!==1?'s':''} online</div>
+          <div style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', color: zoneView ? '#1e293b' : '#ffffff' }}>{city?.name || 'Loading…'}</div>
+          <div style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap', color: zoneView ? '#64748b' : 'rgba(255,255,255,0.8)' }}>{presence.length} player{presence.length!==1?'s':''} online</div>
+          <div style={{ fontSize: 10, color: zoneView ? '#2563eb' : '#60a5fa', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap' }}>
+            {formatGameTime(gameTime)}
+          </div>
         </div>
       </div>
 
@@ -2769,7 +2986,7 @@ const draw = useCallback(() => {
 
       {/* ── Sub-menu Overlay for Build Categories (above build deck) ── */}
       {activeCategory && !zoneView && (
-        <div className="glass-panel" style={{
+        <div className="glass-panel building-scrollbar" style={{
           position: 'absolute',
           bottom: 76,
           left: '50%',
@@ -2799,9 +3016,9 @@ const draw = useCallback(() => {
                   setActiveRoadType(r.id);
                   useStore.setState({ cityTool: 'road', pendingPlacementAsset: null });
                 }}
-                style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 90, height: 56, gap: 2 }}
+                style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 90, height: 74, gap: 4, justifyContent: 'center' }}
               >
-                <span style={{ fontSize: 14 }}>{r.icon}</span>
+                <span style={{ fontSize: 16 }}>{r.icon}</span>
                 <span style={{ fontSize: 10, fontWeight: 600 }}>{r.name}</span>
                 <span style={{ fontSize: 7, opacity: 0.7 }}>{r.desc}</span>
               </button>
@@ -2835,9 +3052,9 @@ const draw = useCallback(() => {
                       cityTool: 'select',
                     });
                   }}
-                  style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 56, gap: 2 }}
+                  style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 74, gap: 4 }}
                 >
-                  <span style={{ fontSize: 14 }}>{t.icon}</span>
+                  <BuildingThumbnail asset={t} />
                   <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '85px', textAlign: 'center' }}>{t.name}</span>
                   <span style={{ fontSize: 7, opacity: 0.7 }}>{t.width || 2}x{t.height || 2} units</span>
                 </button>
@@ -2870,9 +3087,9 @@ const draw = useCallback(() => {
                           cityTool: 'select',
                         });
                       }}
-                      style={{ flexDirection: 'column', padding: '6px 20px 6px 10px', minWidth: 90, height: 56, gap: 2 }}
+                      style={{ flexDirection: 'column', padding: '6px 20px 6px 10px', minWidth: 100, height: 74, gap: 4 }}
                     >
-                      <span style={{ fontSize: 14 }}>📐</span>
+                      <BuildingThumbnail asset={b} />
                       <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '65px', textAlign: 'center' }}>{b.name}</span>
                       <span style={{ fontSize: 7, opacity: 0.7 }}>Custom</span>
                     </button>
@@ -2989,7 +3206,7 @@ const draw = useCallback(() => {
 }
 
 // ── Street View: simple Three.js first-person walk ────────────────────────
-function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [] }) {
+function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime }) {
   const mountRef = useRef(null);
   const animRef = useRef(null);
   const keys = useRef({});
@@ -2999,6 +3216,16 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
   const humansRef = useRef([]);
   const yawRef = useRef(0);
   const pitchRef = useRef(0);
+  
+  const sunLightRef = useRef(null);
+  const moonLightRef = useRef(null);
+  const ambientLightRef = useRef(null);
+  const rendererRef = useRef(null);
+  const gameTimeRef = useRef(360);
+  
+  useEffect(() => {
+    gameTimeRef.current = gameTime;
+  }, [gameTime]);
   const isDraggingMouse = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
 
@@ -3313,6 +3540,83 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
       if (markingsGroup.children.length > 0) {
         scene.add(markingsGroup);
         meshesRef.current.push(markingsGroup);
+      }
+
+      // ── Spawn 3D streetlights along standard, multilane, and highway roads ──
+      if (type !== 'dirt') {
+        const length = curve.getLength();
+        const lightStep = 10.0; // Spaced every 10 units
+        const numLights = Math.floor(length / lightStep);
+        
+        for (let i = 1; i < numLights; i++) {
+          const t = i / numLights;
+          const pos = curve.getPointAt(t);
+          const tangent = curve.getTangentAt(t);
+          const angle = Math.atan2(tangent.x, tangent.z);
+          
+          const len = Math.sqrt(tangent.x * tangent.x + tangent.z * tangent.z);
+          if (len === 0) continue;
+          const nx = -tangent.z / len;
+          const nz = tangent.x / len;
+          
+          // Alternate sides of the road
+          const offsetDist = radius + 0.15;
+          const side = i % 2 === 0 ? 1 : -1;
+          const lightPos = new THREE.Vector3(
+            pos.x + nx * offsetDist * side,
+            yOffset,
+            pos.z + nz * offsetDist * side
+          );
+          
+          if (isPointInIntersection(lightPos, road.id)) {
+            continue;
+          }
+          
+          const streetlightGroup = new THREE.Group();
+          streetlightGroup.position.copy(lightPos);
+          streetlightGroup.rotation.y = angle + (side > 0 ? 0 : Math.PI);
+          streetlightGroup.userData = { roadId: road.id, isStreetlight: true };
+          
+          // 1. Pole (tall vertical cylinder)
+          const poleGeo = new THREE.CylinderGeometry(0.04, 0.05, 3.2, 6);
+          const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.2 });
+          const pole = new THREE.Mesh(poleGeo, poleMat);
+          pole.position.y = 1.6;
+          pole.castShadow = true;
+          streetlightGroup.add(pole);
+          
+          // 2. Arm (horizontal arm extending over the road)
+          const armGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6);
+          const arm = new THREE.Mesh(armGeo, poleMat);
+          arm.rotation.x = Math.PI / 2;
+          arm.position.set(0, 3.2, 0.4);
+          streetlightGroup.add(arm);
+          
+          // 3. Light head (fixture)
+          const headGeo = new THREE.BoxGeometry(0.12, 0.08, 0.25);
+          const head = new THREE.Mesh(headGeo, poleMat);
+          head.position.set(0, 3.2, 0.8);
+          streetlightGroup.add(head);
+          
+          // 4. PointLight (actual light source, turned on dynamically based on gameTime)
+          const pointLight = new THREE.PointLight(0xfde047, 0, 15, 1.2);
+          pointLight.position.set(0, 3.1, 0.8);
+          pointLight.castShadow = true;
+          pointLight.shadow.bias = -0.002;
+          pointLight.userData = { isStreetlightSource: true };
+          streetlightGroup.add(pointLight);
+          
+          // 5. Light bulb mesh
+          const bulbGeo = new THREE.SphereGeometry(0.06, 6, 6);
+          const bulbMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+          const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+          bulb.position.set(0, 3.1, 0.8);
+          bulb.userData = { isStreetlightBulb: true };
+          streetlightGroup.add(bulb);
+          
+          scene.add(streetlightGroup);
+          meshesRef.current.push(streetlightGroup);
+        }
       }
     });
 
@@ -3704,9 +4008,11 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
     cloudsRef.current = clouds;
 
     // Lights - warm sunlighting and soft shadows
-    scene.add(new THREE.AmbientLight(0xffffff, 0.26));
+    const ambient = new THREE.AmbientLight(0xffffff, 0.26);
+    scene.add(ambient);
+    ambientLightRef.current = ambient;
+
     const sun = new THREE.DirectionalLight(0xfffbf0, 1.4);
-    sun.sunProperty = true;
     sun.position.set(40, 50, 20);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -3717,7 +4023,17 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
     sun.shadow.camera.top = 40;
     sun.shadow.camera.bottom = -40;
     scene.add(sun);
+    sunLightRef.current = sun;
+
+    const moon = new THREE.DirectionalLight(0x90b0ff, 0.35);
+    moon.position.set(-40, 50, -20);
+    moon.castShadow = true;
+    moon.shadow.mapSize.set(1024, 1024);
+    scene.add(moon);
+    moonLightRef.current = moon;
+
     scene.add(new THREE.HemisphereLight(0x8bc7f7, 0x5c8240, 0.45));
+    rendererRef.current = renderer;
 
     // Ground plane
     const ground = new THREE.Mesh(
@@ -3982,6 +4298,110 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
     const dir = new THREE.Vector3();
     const animate = () => {
       animRef.current = requestAnimationFrame(animate);
+
+      // ── 3D Day/Night Cycle Updates ──
+      const timeVal = gameTimeRef.current;
+      const hours = timeVal / 60;
+      const angle = (timeVal / 1440) * Math.PI * 2 - Math.PI / 2; // Noon is top
+      const radius = 80;
+      const lightX = Math.cos(angle) * radius;
+      const lightY = Math.sin(angle) * radius;
+      const lightZ = 20;
+
+      // Update Sun Directional Light
+      if (sunLightRef.current) {
+        sunLightRef.current.position.set(lightX, Math.max(0.1, lightY), lightZ);
+        if (hours >= 6.0 && hours < 18.0) {
+          sunLightRef.current.intensity = 1.4;
+          sunLightRef.current.color.setHex(0xfffbf0);
+          sunLightRef.current.visible = true;
+        } else if (hours >= 18.0 && hours < 19.5) {
+          const t = (hours - 18.0) / 1.5;
+          sunLightRef.current.intensity = 1.4 * (1 - t);
+          sunLightRef.current.color.lerpColors(new THREE.Color(0xfffbf0), new THREE.Color(0xf97316), t); // Lerp to sunset orange
+          sunLightRef.current.visible = true;
+        } else if (hours >= 4.5 && hours < 6.0) {
+          const t = (hours - 4.5) / 1.5;
+          sunLightRef.current.intensity = 1.4 * t;
+          sunLightRef.current.color.lerpColors(new THREE.Color(0xf97316), new THREE.Color(0xfffbf0), t);
+          sunLightRef.current.visible = true;
+        } else {
+          sunLightRef.current.visible = false;
+        }
+      }
+
+      // Update Moon Directional Light
+      if (moonLightRef.current) {
+        const isNight = hours >= 19.0 || hours < 5.0;
+        moonLightRef.current.visible = isNight;
+        if (isNight) {
+          // Moon moves opposite to sun
+          moonLightRef.current.position.set(-lightX, Math.max(0.1, -lightY), -lightZ);
+          moonLightRef.current.intensity = 0.35;
+        }
+      }
+
+      // Ambient Light Intensity
+      if (ambientLightRef.current) {
+        let ambientIntensity = 0.26;
+        if (hours >= 19.5 || hours < 4.5) {
+          ambientIntensity = 0.08;
+        } else if (hours >= 18.0 && hours < 19.5) {
+          const t = (hours - 18.0) / 1.5;
+          ambientIntensity = 0.26 * (1 - t) + 0.08 * t;
+        } else if (hours >= 4.5 && hours < 6.0) {
+          const t = (hours - 4.5) / 1.5;
+          ambientIntensity = 0.08 * (1 - t) + 0.26 * t;
+        }
+        ambientLightRef.current.intensity = ambientIntensity;
+      }
+
+      // Sky Background & Fog Color
+      if (rendererRef.current && sceneRef.current) {
+        const skyColor = new THREE.Color(0xcbe6ff);
+        if (hours >= 19.5 || hours < 4.5) {
+          skyColor.setHex(0x0a0f1d);
+        } else if (hours >= 18.0 && hours < 19.5) {
+          const t = (hours - 18.0) / 1.5;
+          const sunsetColor = new THREE.Color(0xf97316);
+          const nightColor = new THREE.Color(0x0a0f1d);
+          if (t < 0.5) {
+            skyColor.lerpColors(new THREE.Color(0xcbe6ff), sunsetColor, t * 2);
+          } else {
+            skyColor.lerpColors(sunsetColor, nightColor, (t - 0.5) * 2);
+          }
+        } else if (hours >= 4.5 && hours < 6.0) {
+          const t = (hours - 4.5) / 1.5;
+          const sunsetColor = new THREE.Color(0xf97316);
+          const nightColor = new THREE.Color(0x0a0f1d);
+          if (t < 0.5) {
+            skyColor.lerpColors(nightColor, sunsetColor, t * 2);
+          } else {
+            skyColor.lerpColors(sunsetColor, new THREE.Color(0xcbe6ff), (t - 0.5) * 2);
+          }
+        }
+        rendererRef.current.setClearColor(skyColor);
+        sceneRef.current.background = skyColor;
+        if (sceneRef.current.fog) {
+          sceneRef.current.fog.color = skyColor;
+        }
+      }
+
+      // Toggle 3D Streetlights PointLights and Bulbs
+      const lightsOn = hours >= 19.0 || hours < 6.0;
+      meshesRef.current.forEach(m => {
+        if (m.userData && m.userData.isStreetlight) {
+          m.children.forEach(child => {
+            if (child.userData && child.userData.isStreetlightSource) {
+              child.intensity = lightsOn ? 1.8 : 0;
+            }
+            if (child.userData && child.userData.isStreetlightBulb) {
+              child.material.color.setHex(lightsOn ? 0xfef08a : 0x1e293b);
+            }
+          });
+        }
+      });
+
       const isBirdsEye = birdsEyeRef.current;
       const yaw = yawRef.current;
       const pitch = isBirdsEye ? -Math.PI / 3 : pitchRef.current;

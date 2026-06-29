@@ -274,3 +274,36 @@ select.form-input { cursor: pointer; }
     inset -3px -3px 6px rgba(255, 255, 255, 0.9),
     0 0 0 3px rgba(59, 130, 246, 0.15) !important;
 }
+
+/* Scrollbar Styling for Building Chooser */
+.building-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  background: transparent;
+}
+.building-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+.building-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+}
+.building-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.clay-building-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  background: transparent;
+}
+.clay-building-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 3px;
+}
+.clay-building-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+}
+.clay-building-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.22);
+}
