@@ -1769,7 +1769,7 @@ const draw = useCallback(() => {
         const baseColor = (metroView && asset.isMetroStation) ? '#00f2ff' : (asset.color || '#4ECDC4');
 
         if (drawDetailed && asset.objects && asset.objects.length > 0) {
-          const objScale = (cellSize / 3.4) * scaleFactor;
+          const objScale = (cellSize / 3.4) * scaleFactor * (asset.isMetroStation ? 3.4 : 1.0);
           asset.objects.forEach(obj => {
             ctx.save();
             const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
@@ -4687,6 +4687,9 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           mesh.receiveShadow = true;
           detailedGroup.add(mesh);
         });
+        if (asset.isMetroStation) {
+          detailedGroup.scale.set(3.4, 1.0, 3.4);
+        }
         lod.addLevel(detailedGroup, 0);
 
         // Level 1: Low-detail model (Single simplified box mesh)
