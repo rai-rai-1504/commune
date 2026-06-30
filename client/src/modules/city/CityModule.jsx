@@ -888,34 +888,100 @@ export default function CityModule() {
     return true;
   }, [city, pendingPlacementAsset, metroView]);
 
-  const getElevatedStationSnap = useCallback((col, row) => {
-    if (activeRoadType !== 'railway') return null;
-    let bestPort = null;
-    let bestDist = 2.4;
-    for (const asset of (city?.placedAssets || [])) {
+  const getMetroPorts = useCallback(() => {
+    if (!city || !city.placedAssets) return [];
+    
+    const railways = (city.roads || []).filter(r => r.roadType === 'railway');
+    const occupiedPoints = [];
+    railways.forEach(r => {
+      if (r.points.length >= 2) {
+        occupiedPoints.push(r.points[0]);
+        occupiedPoints.push(r.points[r.points.length - 1]);
+      }
+    });
+
+    const ports = [];
+    (city.placedAssets || []).forEach(asset => {
       if (asset.isMetroStation || asset.name === 'Elevated Metro Station') {
         const rot = asset.rotation || 0;
-        const dx = Math.cos(rot) * 10.0;
-        const dz = Math.sin(rot) * 10.0;
+        
+        const offsets = [
+          { label: 'A1', dx: -10.0, dz: -1.8 },
+          { label: 'A2', dx: -10.0, dz: 1.8 },
+          { label: 'B1', dx: 10.0, dz: -1.8 },
+          { label: 'B2', dx: 10.0, dz: 1.8 }
+        ];
 
-        const portA = { x: asset.col + dx, z: asset.row + dz };
-        const portB = { x: asset.col - dx, z: asset.row - dz };
+        offsets.forEach(off => {
+          const cos = Math.cos(rot);
+          const sin = Math.sin(rot);
+          
+          const rx = off.dx * cos - off.dz * sin;
+          const rz = off.dx * sin + off.dz * cos;
 
-        const distA = Math.sqrt((col - portA.x)**2 + (row - portA.z)**2);
-        const distB = Math.sqrt((col - portB.x)**2 + (row - portB.z)**2);
+          const px = asset.col + rx;
+          const pz = asset.row + rz;
 
-        if (distA < bestDist) {
-          bestDist = distA;
-          bestPort = portA;
-        }
-        if (distB < bestDist) {
-          bestDist = distB;
-          bestPort = portB;
+          const isOccupied = occupiedPoints.some(pt => Math.sqrt((pt.x - px)**2 + (pt.z - pz)**2) < 0.2);
+
+          ports.push({
+            id: `${asset.id}_${off.label}`,
+            stationId: asset.id,
+            stationName: asset.name,
+            label: off.label,
+            x: px,
+            z: pz,
+            isOccupied
+          });
+        });
+      }
+    });
+    return ports;
+  }, [city]);
+
+  const getElevatedStationSnap = useCallback((col, row) => {
+    if (activeRoadType !== 'railway') return null;
+    const ports = getMetroPorts();
+    let bestPort = null;
+    let bestDist = 2.4;
+    
+    ports.forEach(port => {
+      if (!port.isOccupied) {
+        const dist = Math.sqrt((col - port.x)**2 + (row - port.z)**2);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestPort = port;
         }
       }
-    }
+    });
     return bestPort;
-  }, [city, activeRoadType]);
+  }, [activeRoadType, getMetroPorts]);
+
+  const validateRailwaySegment = useCallback((points) => {
+    if (activeRoadType !== 'railway') return true;
+    if (points.length < 2) return false;
+    
+    const start = points[0];
+    const end = points[points.length - 1];
+    const ports = getMetroPorts();
+    
+    const startPort = ports.find(p => Math.sqrt((p.x - start.x)**2 + (p.z - start.z)**2) < 0.25);
+    const endPort = ports.find(p => Math.sqrt((p.x - end.x)**2 + (p.z - end.z)**2) < 0.25);
+    
+    if (!startPort) {
+      useStore.getState().pushNotif("Metro track must start at a free station platform!");
+      return false;
+    }
+    if (!endPort) {
+      useStore.getState().pushNotif("Metro track must end at a free station platform!");
+      return false;
+    }
+    if (startPort.stationId === endPort.stationId) {
+      useStore.getState().pushNotif("Metro track cannot start and end at the same station!");
+      return false;
+    }
+    return true;
+  }, [activeRoadType, getMetroPorts]);
 
   const getRoadAlignment = useCallback((col, row) => {
     if (!city || !city.roads || city.roads.length === 0) return null;
@@ -1399,6 +1465,41 @@ const draw = useCallback(() => {
       }
     });
 
+    // Render Metro Snapping Ports (Blinking/Pulsing) when railway pencil is active
+    if (cityTool === 'road' && activeRoadType === 'railway') {
+      const ports = getMetroPorts();
+      ports.forEach(port => {
+        const px = offset.x + port.x * cellSize;
+        const pz = offset.y + port.z * cellSize;
+
+        ctx.save();
+        if (port.isOccupied) {
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.45)';
+          ctx.beginPath();
+          ctx.arc(px, pz, 3.5 * zoom, 0, 2 * Math.PI);
+          ctx.fill();
+        } else {
+          const pulse = 1.0 + 0.25 * Math.sin(Date.now() / 160);
+          
+          ctx.shadowColor = '#00f2ff';
+          ctx.shadowBlur = 8 * zoom;
+
+          ctx.strokeStyle = '#00f2ff';
+          ctx.lineWidth = 1.5 * zoom;
+          ctx.beginPath();
+          ctx.arc(px, pz, 7 * zoom * pulse, 0, 2 * Math.PI);
+          ctx.stroke();
+
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = '#00f2ff';
+          ctx.beginPath();
+          ctx.arc(px, pz, 3.5 * zoom, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
     // Render active road under construction
     if (cityTool === 'road' && activeRoadPoints.length > 0) {
       let pts = [...activeRoadPoints];
@@ -1665,28 +1766,29 @@ const draw = useCallback(() => {
         // 2. Draw actual constituent 3D primitives in 2D top view
         const drawDetailed = aw >= 16 && ah >= 16 && zoom >= 0.65;
 
+        const baseColor = (metroView && asset.isMetroStation) ? '#00f2ff' : (asset.color || '#4ECDC4');
+
         if (drawDetailed && asset.objects && asset.objects.length > 0) {
           const objScale = (cellSize / 3.4) * scaleFactor;
           asset.objects.forEach(obj => {
             ctx.save();
-            // Position relative to asset center
             const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
             const oz = (obj.position?.z !== undefined ? obj.position.z : 0) * objScale;
             ctx.translate(ox, oz);
             ctx.rotate(-(obj.rotation?.y || 0));
 
-            drawObject2D(ctx, obj, objScale, asset.color);
+            const finalObj = { ...obj, color: (metroView && asset.isMetroStation) ? '#00f2ff' : obj.color };
+            drawObject2D(ctx, finalObj, objScale, baseColor);
             ctx.restore();
           });
         } else {
-          // Fallback generic bounding box if no sub-objects or zoomed out
-          ctx.fillStyle = asset.color || '#4ECDC4';
+          ctx.fillStyle = baseColor;
           ctx.globalAlpha = 0.82 * assetAlpha;
           ctx.beginPath();
           ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
           ctx.fill();
           ctx.globalAlpha = assetAlpha;
-          ctx.strokeStyle = asset.color || '#4ECDC4';
+          ctx.strokeStyle = baseColor;
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.roundRect?.(ax, ay, aw, ah, 3) || ctx.rect(ax, ay, aw, ah);
@@ -1821,7 +1923,7 @@ const draw = useCallback(() => {
         ctx.restore();
       }
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints, zoneShape, zoneView, metroView, selectedZoneId, gameTime, transitionProgress]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints, zoneShape, zoneView, metroView, selectedZoneId, gameTime, transitionProgress, getMetroPorts]);
 
   // Resize + redraw
   useEffect(() => {
@@ -1935,7 +2037,9 @@ const draw = useCallback(() => {
             }
           });
           if (uniquePoints.length >= 2) {
-            addRoadSegment(uniquePoints, activeRoadType);
+            if (validateRailwaySegment(uniquePoints)) {
+              addRoadSegment(uniquePoints, activeRoadType);
+            }
           }
           setActiveRoadPoints([]);
         }
@@ -1961,7 +2065,7 @@ const draw = useCallback(() => {
     };
     window.addEventListener('keydown', handleGlobalKey);
     return () => window.removeEventListener('keydown', handleGlobalKey);
-  }, [cityTool, activeRoadPoints, addRoadSegment, streetView, pendingPlacementAsset, activeRoadType, selectedAssetId, selectedRoadId, removeAsset, selectAsset, removeRoadSegment, selectedAssetIds, removeAssets]);
+  }, [cityTool, activeRoadPoints, addRoadSegment, streetView, pendingPlacementAsset, activeRoadType, selectedAssetId, selectedRoadId, removeAsset, selectAsset, removeRoadSegment, selectedAssetIds, removeAssets, validateRailwaySegment]);
 
   function onMouseDown(e) {
     if (e.button === 1 || (e.button === 0 && e.altKey)) {
@@ -1996,7 +2100,9 @@ const draw = useCallback(() => {
           }
         });
         if (uniquePoints.length >= 2) {
-          addRoadSegment(uniquePoints, activeRoadType);
+          if (validateRailwaySegment(uniquePoints)) {
+            addRoadSegment(uniquePoints, activeRoadType);
+          }
         }
       }
       setActiveRoadPoints([]);
@@ -2111,7 +2217,9 @@ const draw = useCallback(() => {
         }
       });
       if (uniquePoints.length >= 2) {
-        addRoadSegment(uniquePoints, activeRoadType);
+        if (validateRailwaySegment(uniquePoints)) {
+          addRoadSegment(uniquePoints, activeRoadType);
+        }
       }
       setActiveRoadPoints([]);
     }
@@ -3499,6 +3607,51 @@ const draw = useCallback(() => {
             })
           }
 
+          {activeCategory === 'metro' && (
+            <>
+              <button
+                className={`glass-button ${cityTool === 'road' && activeRoadType === 'railway' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveRoadType('railway');
+                  useStore.setState({ cityTool: 'road', pendingPlacementAsset: null });
+                }}
+                style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 90, height: 74, gap: 4, justifyContent: 'center' }}
+              >
+                <Icon name="road" size={16} />
+                <span style={{ fontSize: 10, fontWeight: 600 }}>Metro Tracks</span>
+                <span style={{ fontSize: 7, opacity: 0.7 }}>Elevated viaducts</span>
+              </button>
+
+              {TEMPLATES.filter(t => t.id === 'metro_station').map(t => {
+                const isAct = pendingPlacementAsset?.name === t.name;
+                return (
+                  <button
+                    key={t.id}
+                    className={`glass-button ${isAct ? 'active' : ''}`}
+                    onClick={() => {
+                      useStore.setState({
+                        pendingPlacementAsset: {
+                          name: t.name,
+                          objects: t.objects,
+                          color: '#334155',
+                          width: t.width || 20.0,
+                          height: t.height || 10.0,
+                          isMetroStation: true
+                        },
+                        cityTool: 'select',
+                      });
+                    }}
+                    style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 74, gap: 4 }}
+                  >
+                    <BuildingThumbnail asset={t} />
+                    <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '85px', textAlign: 'center' }}>{t.name}</span>
+                    <span style={{ fontSize: 7, opacity: 0.7 }}>{t.width || 20}x{t.height || 10} units</span>
+                  </button>
+                );
+              })}
+            </>
+          )}
+
           {activeCategory === 'roads' && [
             { id: 'standard', name: 'Standard Road', icon: '🛣️', desc: '2 lanes' },
             { id: 'multilane', name: 'Multi-lane Road', icon: '🛣️', desc: '4 lanes' },
@@ -3688,6 +3841,7 @@ const draw = useCallback(() => {
             // Standard categories
             [
               { id: 'roads', label: 'Roads', iconName: 'road' },
+              { id: 'metro', label: 'Metro', iconName: 'train' },
               { id: 'residential', label: 'Residency', iconName: 'building' },
               { id: 'commercial', label: 'Commercial', iconName: 'city' },
               { id: 'industrial', label: 'Industrial', iconName: 'stats' },
@@ -4485,6 +4639,16 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             } else {
               materials = getCachedMaterial(obj.color, isSel);
             }
+          }
+
+          if (metroView && asset.isMetroStation) {
+            materials = new THREE.MeshStandardMaterial({
+              color: 0x00f2ff,
+              roughness: 0.3,
+              metalness: 0.5,
+              emissive: new THREE.Color(0x00f2ff),
+              emissiveIntensity: 1.2
+            });
           }
 
           if (isSel) {
