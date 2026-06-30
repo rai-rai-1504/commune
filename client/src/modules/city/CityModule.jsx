@@ -906,10 +906,10 @@ export default function CityModule() {
         const rot = asset.rotation || 0;
         
         const offsets = [
-          { label: 'A1', dx: -10.0, dz: -1.8 },
-          { label: 'A2', dx: -10.0, dz: 1.8 },
-          { label: 'B1', dx: 10.0, dz: -1.8 },
-          { label: 'B2', dx: 10.0, dz: 1.8 }
+          { label: 'A1', dx: -10.0 / 3.4, dz: -1.8 / 3.4 },
+          { label: 'A2', dx: -10.0 / 3.4, dz: 1.8 / 3.4 },
+          { label: 'B1', dx: 10.0 / 3.4, dz: -1.8 / 3.4 },
+          { label: 'B2', dx: 10.0 / 3.4, dz: 1.8 / 3.4 }
         ];
 
         offsets.forEach(off => {
@@ -1726,9 +1726,8 @@ const draw = useCallback(() => {
     if (transitionProgress < 1.0) {
       (city.placedAssets || []).forEach(asset => {
         const scaleFactor = asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0;
-        const isStation = asset.isMetroStation || asset.name === 'Elevated Metro Station';
-        const aw = (asset.width || 2) * (isStation ? cellSize : cellSize / 3.4) * scaleFactor;
-        const ah = (asset.height || 2) * (isStation ? cellSize : cellSize / 3.4) * scaleFactor;
+        const aw = (asset.width || 2) * (cellSize / 3.4) * scaleFactor;
+        const ah = (asset.height || 2) * (cellSize / 3.4) * scaleFactor;
         const isSelected = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
 
         // 1. Viewport frustum culling check
@@ -1770,7 +1769,7 @@ const draw = useCallback(() => {
         const baseColor = (metroView && asset.isMetroStation) ? '#00f2ff' : (asset.color || '#4ECDC4');
 
         if (drawDetailed && asset.objects && asset.objects.length > 0) {
-          const objScale = (cellSize / 3.4) * scaleFactor * (isStation ? 3.4 : 1.0);
+          const objScale = (cellSize / 3.4) * scaleFactor;
           asset.objects.forEach(obj => {
             ctx.save();
             const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
@@ -1814,9 +1813,8 @@ const draw = useCallback(() => {
       const isValid = isPlacementValid(hoveredFloat.col, hoveredFloat.row);
       const hx = offset.x + hoveredFloat.col * cellSize;
       const hy = offset.y + hoveredFloat.row * cellSize;
-      const isStation = pendingPlacementAsset.isMetroStation || pendingPlacementAsset.name === 'Elevated Metro Station';
-      const aw = pendingPlacementAsset.width * (isStation ? cellSize : cellSize / 3.4);
-      const ah = pendingPlacementAsset.height * (isStation ? cellSize : cellSize / 3.4);
+      const aw = pendingPlacementAsset.width * (cellSize / 3.4);
+      const ah = pendingPlacementAsset.height * (cellSize / 3.4);
 
       const alignment = getRoadAlignment(hoveredFloat.col, hoveredFloat.row);
       const rotation = alignment ? alignment.rotation : manualRotation;
@@ -1833,7 +1831,7 @@ const draw = useCallback(() => {
       if (pendingPlacementAsset.objects && pendingPlacementAsset.objects.length > 0) {
         ctx.save();
         ctx.globalAlpha = 0.55; // semi-transparent for preview
-        const objScale = (cellSize / 3.4) * (isStation ? 3.4 : 1.0);
+        const objScale = cellSize / 3.4;
         pendingPlacementAsset.objects.forEach(obj => {
           ctx.save();
           const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
@@ -4689,9 +4687,6 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           mesh.receiveShadow = true;
           detailedGroup.add(mesh);
         });
-        if (asset.isMetroStation) {
-          detailedGroup.scale.set(3.4, 1.0, 3.4);
-        }
         lod.addLevel(detailedGroup, 0);
 
         // Level 1: Low-detail model (Single simplified box mesh)
