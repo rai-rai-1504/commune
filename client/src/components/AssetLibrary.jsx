@@ -926,17 +926,32 @@ function generateCyberHabitationDome() {
 export const TEMPLATES = [
   {
     id: 'metro_station',
-    name: 'Metro Station',
+    name: 'Elevated Metro Station',
     category: 'metro',
     isMetroStation: true,
-    width: 6.0,
-    height: 3.0,
+    width: 8.0,
+    height: 4.0,
     objects: [
-      { geometry: 'box', position: {x:0, y:0.1, z:0}, scale: {x:6, y:0.2, z:3}, color: '#334155', name: 'Platform' },
-      { geometry: 'box', position: {x:0, y:0.8, z:-1.35}, scale: {x:5.8, y:1.4, z:0.2}, color: '#475569', name: 'BackWall' },
-      { geometry: 'box', position: {x:0, y:1.6, z:0}, scale: {x:6, y:0.1, z:3}, color: '#0f172a', name: 'Roof' },
-      { geometry: 'cylinder', position: {x:-2.8, y:0.8, z:1.3}, scale: {x:0.15, y:1.4, z:0.15}, color: '#94a3b8', name: 'PillarLeft' },
-      { geometry: 'cylinder', position: {x:2.8, y:0.8, z:1.3}, scale: {x:0.15, y:1.4, z:0.15}, color: '#94a3b8', name: 'PillarRight' },
+      // 1. Raised Platform Deck
+      { geometry: 'box', position: {x:0, y:4.0, z:0}, scale: {x:8, y:0.4, z:3.6}, color: '#1e293b', name: 'PlatformDeck' },
+      
+      // 2. Concrete Support Piers
+      { geometry: 'cylinder', position: {x:-3.2, y:2.0, z:0}, scale: {x:0.6, y:4.0, z:0.6}, color: '#64748b', name: 'PillarLeft' },
+      { geometry: 'cylinder', position: {x:3.2, y:2.0, z:0}, scale: {x:0.6, y:4.0, z:0.6}, color: '#64748b', name: 'PillarRight' },
+      
+      // 3. Ground Ticket Entrance
+      { geometry: 'box', position: {x:0, y:1.0, z:0}, scale: {x:3.6, y:2.0, z:3.0}, color: '#334155', name: 'TicketHall' },
+      
+      // 4. Escalator / Stair Wells
+      { geometry: 'box', position: {x:-1.5, y:2.0, z:1.3}, scale: {x:0.6, y:4.0, z:0.8}, color: '#475569', name: 'StairsLeft' },
+      { geometry: 'box', position: {x:1.5, y:2.0, z:1.3}, scale: {x:0.6, y:4.0, z:0.8}, color: '#475569', name: 'StairsRight' },
+      
+      // 5. Grand Canopy Roof
+      { geometry: 'box', position: {x:0, y:6.2, z:0}, scale: {x:8.2, y:0.15, z:3.8}, color: '#0f172a', name: 'PlatformRoof' },
+      { geometry: 'cylinder', position: {x:-3.8, y:5.1, z:1.6}, scale: {x:0.12, y:2.2, z:0.12}, color: '#94a3b8', name: 'RoofPillar1' },
+      { geometry: 'cylinder', position: {x:3.8, y:5.1, z:1.6}, scale: {x:0.12, y:2.2, z:0.12}, color: '#94a3b8', name: 'RoofPillar2' },
+      { geometry: 'cylinder', position: {x:-3.8, y:5.1, z:-1.6}, scale: {x:0.12, y:2.2, z:0.12}, color: '#94a3b8', name: 'RoofPillar3' },
+      { geometry: 'cylinder', position: {x:3.8, y:5.1, z:-1.6}, scale: {x:0.12, y:2.2, z:0.12}, color: '#94a3b8', name: 'RoofPillar4' },
     ],
   },
   {
