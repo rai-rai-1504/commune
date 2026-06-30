@@ -804,7 +804,7 @@ export const useStore = create((set, get) => ({
   addRoadSegment(points, roadType = 'standard', skipUndo = false) {
     // Collision check for railways/roads vs assets
     const city = get().city;
-    if (city && city.placedAssets) {
+    if (roadType !== 'railway' && city && city.placedAssets) {
       const distanceToSegment = (p, a, z) => {
         const l2 = (a.x - z.x)**2 + (a.z - z.z)**2;
         if (l2 === 0) return Math.sqrt((p.x - a.x)**2 + (p.z - a.z)**2);

@@ -929,29 +929,38 @@ export const TEMPLATES = [
     name: 'Elevated Metro Station',
     category: 'metro',
     isMetroStation: true,
-    width: 8.0,
-    height: 4.0,
+    width: 20.0,
+    height: 10.0,
     objects: [
-      // 1. Raised Platform Deck
-      { geometry: 'box', position: {x:0, y:4.0, z:0}, scale: {x:8, y:0.4, z:3.6}, color: '#1e293b', name: 'PlatformDeck' },
+      // 1. Raised Concrete Platform Deck
+      { geometry: 'box', position: {x:0, y:4.0, z:0}, scale: {x:20, y:0.4, z:9.6}, color: '#334155', name: 'PlatformDeck' },
       
-      // 2. Concrete Support Piers
-      { geometry: 'cylinder', position: {x:-3.2, y:2.0, z:0}, scale: {x:0.6, y:4.0, z:0.6}, color: '#64748b', name: 'PillarLeft' },
-      { geometry: 'cylinder', position: {x:3.2, y:2.0, z:0}, scale: {x:0.6, y:4.0, z:0.6}, color: '#64748b', name: 'PillarRight' },
+      // 2. High-Tech Glass Canopy Arch Vault
+      { geometry: 'cylinder', position: {x:0, y:7.6, z:0}, scale: {x:4.2, y:20.2, z:4.2}, rotation: {x:0, y:0, z:Math.PI/2}, color: '#0284c7', name: 'GlassArch' },
       
-      // 3. Ground Ticket Entrance
-      { geometry: 'box', position: {x:0, y:1.0, z:0}, scale: {x:3.6, y:2.0, z:3.0}, color: '#334155', name: 'TicketHall' },
+      // 3. Structural Steel Arch Trusses
+      { geometry: 'cylinder', position: {x:-8.0, y:7.7, z:0}, scale: {x:4.3, y:0.3, z:4.3}, rotation: {x:0, y:0, z:Math.PI/2}, color: '#cbd5e1', name: 'ArchTrussLeft' },
+      { geometry: 'cylinder', position: {x:0, y:7.7, z:0}, scale: {x:4.3, y:0.3, z:4.3}, rotation: {x:0, y:0, z:Math.PI/2}, color: '#cbd5e1', name: 'ArchTrussCenter' },
+      { geometry: 'cylinder', position: {x:8.0, y:7.7, z:0}, scale: {x:4.3, y:0.3, z:4.3}, rotation: {x:0, y:0, z:Math.PI/2}, color: '#cbd5e1', name: 'ArchTrussRight' },
       
-      // 4. Escalator / Stair Wells
-      { geometry: 'box', position: {x:-1.5, y:2.0, z:1.3}, scale: {x:0.6, y:4.0, z:0.8}, color: '#475569', name: 'StairsLeft' },
-      { geometry: 'box', position: {x:1.5, y:2.0, z:1.3}, scale: {x:0.6, y:4.0, z:0.8}, color: '#475569', name: 'StairsRight' },
+      // 4. Structural Concrete Support Piers (Four corners)
+      { geometry: 'box', position: {x:-8, y:2.0, z:-3.8}, scale: {x:1.8, y:4.0, z:1.4}, color: '#475569', name: 'PillarFL' },
+      { geometry: 'box', position: {x:-8, y:2.0, z:3.8}, scale: {x:1.8, y:4.0, z:1.4}, color: '#475569', name: 'PillarFR' },
+      { geometry: 'box', position: {x:8, y:2.0, z:-3.8}, scale: {x:1.8, y:4.0, z:1.4}, color: '#475569', name: 'PillarBL' },
+      { geometry: 'box', position: {x:8, y:2.0, z:3.8}, scale: {x:1.8, y:4.0, z:1.4}, color: '#475569', name: 'PillarBR' },
       
-      // 5. Grand Canopy Roof
-      { geometry: 'box', position: {x:0, y:6.2, z:0}, scale: {x:8.2, y:0.15, z:3.8}, color: '#0f172a', name: 'PlatformRoof' },
-      { geometry: 'cylinder', position: {x:-3.8, y:5.1, z:1.6}, scale: {x:0.12, y:2.2, z:0.12}, color: '#94a3b8', name: 'RoofPillar1' },
-      { geometry: 'cylinder', position: {x:3.8, y:5.1, z:1.6}, scale: {x:0.12, y:2.2, z:0.12}, color: '#94a3b8', name: 'RoofPillar2' },
-      { geometry: 'cylinder', position: {x:-3.8, y:5.1, z:-1.6}, scale: {x:0.12, y:2.2, z:0.12}, color: '#94a3b8', name: 'RoofPillar3' },
-      { geometry: 'cylinder', position: {x:3.8, y:5.1, z:-1.6}, scale: {x:0.12, y:2.2, z:0.12}, color: '#94a3b8', name: 'RoofPillar4' },
+      // 5. Ground Terminal Ticket Hall
+      { geometry: 'box', position: {x:0, y:2.0, z:0}, scale: {x:9.0, y:4.0, z:6.4}, color: '#1e293b', name: 'TicketHall' },
+      { geometry: 'box', position: {x:0, y:2.0, z:3.25}, scale: {x:8.0, y:3.2, z:0.1}, color: '#38bdf8', name: 'GlassFacadeFront' },
+      { geometry: 'box', position: {x:0, y:2.0, z:-3.25}, scale: {x:8.0, y:3.2, z:0.1}, color: '#38bdf8', name: 'GlassFacadeBack' },
+      
+      // 6. Escalator/Stair Columns (connecting ground ticket hall to platforms)
+      { geometry: 'box', position: {x:-4.8, y:2.0, z:1.6}, scale: {x:0.8, y:4.0, z:1.8}, color: '#64748b', name: 'EscalatorLeft' },
+      { geometry: 'box', position: {x:4.8, y:2.0, z:1.6}, scale: {x:0.8, y:4.0, z:1.8}, color: '#64748b', name: 'EscalatorRight' },
+      
+      // 7. Safety Warning Platform Stripes (bright neon glowing orange)
+      { geometry: 'box', position: {x:0, y:4.22, z:-2.6}, scale: {x:19.8, y:0.05, z:0.3}, color: '#f97316', name: 'WarningStripeLeft' },
+      { geometry: 'box', position: {x:0, y:4.22, z:2.6}, scale: {x:19.8, y:0.05, z:0.3}, color: '#f97316', name: 'WarningStripeRight' },
     ],
   },
   {

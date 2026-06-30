@@ -852,7 +852,9 @@ export default function CityModule() {
 
     // Enforce view placement constraint
     const isStation = pendingPlacementAsset.isMetroStation;
-    if (isStation && !metroView) return false;
+    if (isStation) {
+      return true; // Metro stations can be built anywhere, in any view!
+    }
     if (!isStation && metroView) return false;
 
     const w = pendingPlacementAsset.width || 2.0;
@@ -889,12 +891,12 @@ export default function CityModule() {
   const getElevatedStationSnap = useCallback((col, row) => {
     if (activeRoadType !== 'railway') return null;
     let bestPort = null;
-    let bestDist = 1.4;
+    let bestDist = 2.4;
     for (const asset of (city?.placedAssets || [])) {
       if (asset.isMetroStation || asset.name === 'Elevated Metro Station') {
         const rot = asset.rotation || 0;
-        const dx = Math.cos(rot) * 4.0;
-        const dz = Math.sin(rot) * 4.0;
+        const dx = Math.cos(rot) * 10.0;
+        const dz = Math.sin(rot) * 10.0;
 
         const portA = { x: asset.col + dx, z: asset.row + dz };
         const portB = { x: asset.col - dx, z: asset.row - dz };
@@ -1229,62 +1231,82 @@ const draw = useCallback(() => {
           drawCurvePoints(untrimmedScreenPoints);
           ctx.setLineDash([]);
         } else if (type === 'railway') {
-          // 1. Viaduct shadow
+          // 1. Viaduct shadow or intense neon cyan glow underlay
           ctx.save();
-          ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
-          ctx.lineWidth = 14 * zoom;
+          if (metroView) {
+            ctx.shadowColor = '#00f2ff';
+            ctx.shadowBlur = 20 * zoom;
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.4)';
+          } else {
+            ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
+          }
+          ctx.lineWidth = 22 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           const offsetScreenPoints = untrimmedScreenPoints.map(points => 
-            points.map(pt => ({ x: pt.x + 3 * zoom, z: pt.z + 4 * zoom }))
+            points.map(pt => ({ x: pt.x + (metroView ? 0 : 3 * zoom), z: pt.z + (metroView ? 0 : 4 * zoom) }))
           );
           drawCurvePoints(offsetScreenPoints);
           ctx.restore();
 
-          // 2. Concrete Bridge Deck
-          ctx.strokeStyle = '#64748b';
+          // 2. Concrete Bridge Deck (Broader)
+          ctx.strokeStyle = metroView ? '#1e293b' : '#64748b';
+          ctx.lineWidth = 22 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
+
+          // 3. Side Parapets (concrete border lines)
+          ctx.strokeStyle = metroView ? '#00f2ff' : '#cbd5e1';
+          ctx.lineWidth = 2.0 * zoom;
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 10.5 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -10.5 * zoom));
+
+          // 4. Inner Dark Track Bed
+          ctx.strokeStyle = metroView ? '#0f172a' : '#1e293b';
+          ctx.lineWidth = 15 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
+
+          // 5. Wooden Sleepers (dashes)
+          ctx.strokeStyle = metroView ? '#334155' : '#78350f';
           ctx.lineWidth = 14 * zoom;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          drawCurvePoints(untrimmedScreenPoints);
-
-          // 3. Inner Dark Track Bed
-          ctx.strokeStyle = '#1e293b';
-          ctx.lineWidth = 9 * zoom;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          drawCurvePoints(untrimmedScreenPoints);
-
-          // 4. Wooden Sleepers (dashes)
-          ctx.strokeStyle = '#78350f';
-          ctx.lineWidth = 8 * zoom;
-          ctx.setLineDash([2 * zoom, 4 * zoom]);
+          ctx.setLineDash([2 * zoom, 5 * zoom]);
           drawCurvePoints(untrimmedScreenPoints);
           ctx.setLineDash([]);
 
-          // 5. Parallel Steel Rails
-          ctx.strokeStyle = '#cbd5e1';
-          ctx.lineWidth = 1 * zoom;
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 2.0 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -2.0 * zoom));
+          // 6. Parallel Steel Rails (Broader offset)
+          ctx.strokeStyle = metroView ? '#00f2ff' : '#94a3b8';
+          ctx.lineWidth = 1.8 * zoom;
+          if (metroView) {
+            ctx.save();
+            ctx.shadowColor = '#00f2ff';
+            ctx.shadowBlur = 10 * zoom;
+          }
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 3.2 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -3.2 * zoom));
+          if (metroView) {
+            ctx.restore();
+          }
 
-          // 6. Draw circular support columns (piers) at regular intervals
+          // 7. Draw circular support columns (piers)
           try {
             const points3d = roadPoints.map(pt => new THREE.Vector3(pt.x, 0, pt.z));
             const curve = new THREE.CatmullRomCurve3(points3d);
             const totalLength = curve.getLength();
-            const numPillars = Math.max(2, Math.floor(totalLength / 3.0));
+            const numPillars = Math.max(2, Math.floor(totalLength / 3.2));
             for (let pIdx = 0; pIdx <= numPillars; pIdx++) {
               const pt = curve.getPointAt(pIdx / numPillars);
               const sx = offset.x + pt.x * cellSize;
               const sz = offset.y + pt.z * cellSize;
 
               ctx.beginPath();
-              ctx.arc(sx, sz, 3 * zoom, 0, Math.PI * 2);
-              ctx.fillStyle = '#94a3b8';
+              ctx.arc(sx, sz, 4.5 * zoom, 0, Math.PI * 2);
+              ctx.fillStyle = metroView ? '#1e293b' : '#94a3b8';
               ctx.fill();
-              ctx.strokeStyle = '#334155';
-              ctx.lineWidth = 1 * zoom;
+              ctx.strokeStyle = metroView ? '#00f2ff' : '#334155';
+              ctx.lineWidth = 1.5 * zoom;
               ctx.stroke();
             }
           } catch (err) {}
@@ -2393,6 +2415,7 @@ const draw = useCallback(() => {
           setSelectedRoadId={setSelectedRoadId}
           intersections={intersections}
           gameTime={gameTime}
+          metroView={metroView}
         />
       ) : (
         <canvas
@@ -3459,8 +3482,8 @@ const draw = useCallback(() => {
                         name: t.name,
                         objects: t.objects,
                         color: '#334155',
-                        width: t.width || 8.0,
-                        height: t.height || 4.0,
+                        width: t.width || 20.0,
+                        height: t.height || 10.0,
                         isMetroStation: true
                       },
                       cityTool: 'select',
@@ -3470,7 +3493,7 @@ const draw = useCallback(() => {
                 >
                   <BuildingThumbnail asset={t} />
                   <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '85px', textAlign: 'center' }}>{t.name}</span>
-                  <span style={{ fontSize: 7, opacity: 0.7 }}>{t.width || 8}x{t.height || 4} units</span>
+                  <span style={{ fontSize: 7, opacity: 0.7 }}>{t.width || 20}x{t.height || 10} units</span>
                 </button>
               );
             })
@@ -3636,8 +3659,8 @@ const draw = useCallback(() => {
                           name: stationTemplate.name,
                           objects: stationTemplate.objects,
                           color: '#334155',
-                          width: stationTemplate.width || 8.0,
-                          height: stationTemplate.height || 4.0,
+                          width: stationTemplate.width || 20.0,
+                          height: stationTemplate.height || 10.0,
                           isMetroStation: true,
                         }
                       });
@@ -3739,7 +3762,7 @@ const draw = useCallback(() => {
 }
 
 // ── Street View: simple Three.js first-person walk ────────────────────────
-function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime }) {
+function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime, metroView }) {
   const mountRef = useRef(null);
   const animRef = useRef(null);
   const keys = useRef({});
@@ -3964,12 +3987,18 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         try {
           const len = curve.getLength();
           const numPillars = Math.max(2, Math.floor(len / 12.0));
-          const pillarGeo = new THREE.CylinderGeometry(0.3, 0.3, 4.0, 8);
-          const pillarMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.8 });
+          
+          // 1. Columns & Cross-beams (Support Piers)
+          const pillarGeo = new THREE.CylinderGeometry(0.42, 0.42, 4.0, 10);
+          const beamGeo = new THREE.BoxGeometry(3.6, 0.35, 1.2);
+          const concreteColor = metroView ? 0x1e293b : 0x64748b;
+          const pillarMat = new THREE.MeshStandardMaterial({ color: concreteColor, roughness: 0.8 });
 
           for (let i = 0; i <= numPillars; i++) {
             const t = i / numPillars;
             const pos = curve.getPointAt(t);
+            
+            // Column
             const pillarMesh = new THREE.Mesh(pillarGeo, pillarMat);
             pillarMesh.position.set(pos.x, 2.0, pos.z);
             pillarMesh.castShadow = true;
@@ -3977,11 +4006,27 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             pillarMesh.userData = { roadId: road.id };
             scene.add(pillarMesh);
             meshesRef.current.push(pillarMesh);
+
+            // Cross-beam
+            const tangent = curve.getTangentAt(t);
+            const angle = Math.atan2(tangent.x, tangent.z);
+            const beamMesh = new THREE.Mesh(beamGeo, pillarMat);
+            beamMesh.position.set(pos.x, 3.85, pos.z);
+            beamMesh.rotation.y = angle;
+            beamMesh.castShadow = true;
+            beamMesh.receiveShadow = true;
+            beamMesh.userData = { roadId: road.id };
+            scene.add(beamMesh);
+            meshesRef.current.push(beamMesh);
           }
 
-          const sleeperGeo = new THREE.BoxGeometry(1.6, 0.08, 0.2);
-          const sleeperMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
-          const numSleepers = Math.max(8, Math.floor(len / 1.2));
+          // 2. Broad Sleepers / Ties (Width 2.4)
+          const sleeperGeo = new THREE.BoxGeometry(2.4, 0.08, 0.22);
+          const sleeperMat = new THREE.MeshStandardMaterial({
+            color: metroView ? 0x334155 : 0x78350f,
+            roughness: 0.9
+          });
+          const numSleepers = Math.max(8, Math.floor(len / 1.1));
           const sleeperTransforms = [];
 
           for (let i = 0; i <= numSleepers; i++) {
@@ -4015,8 +4060,11 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             meshesRef.current.push(inst);
           }
 
+          // 3. Side Parapet Guide Barriers + Steel Rails
           const leftPoints = [];
           const rightPoints = [];
+          const parapetLPoints = [];
+          const parapetRPoints = [];
           const numPoints = Math.max(30, road.points.length * 10);
           for (let i = 0; i <= numPoints; i++) {
             const t = i / numPoints;
@@ -4026,16 +4074,25 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             const nx = -tangent.z / (lenT || 1);
             const nz = tangent.x / (lenT || 1);
 
-            leftPoints.push(new THREE.Vector3(pos.x + nx * 0.4, 4.22, pos.z + nz * 0.4));
-            rightPoints.push(new THREE.Vector3(pos.x - nx * 0.4, 4.22, pos.z - nz * 0.4));
+            leftPoints.push(new THREE.Vector3(pos.x + nx * 0.65, 4.22, pos.z + nz * 0.65));
+            rightPoints.push(new THREE.Vector3(pos.x - nx * 0.65, 4.22, pos.z - nz * 0.65));
+
+            parapetLPoints.push(new THREE.Vector3(pos.x + nx * 1.5, 4.30, pos.z + nz * 1.5));
+            parapetRPoints.push(new THREE.Vector3(pos.x - nx * 1.5, 4.30, pos.z - nz * 1.5));
           }
 
           const leftCurve = new THREE.CatmullRomCurve3(leftPoints);
           const rightCurve = new THREE.CatmullRomCurve3(rightPoints);
-          const railGeoLeft = new THREE.TubeGeometry(leftCurve, numPoints, 0.05, 6, false);
-          const railGeoRight = new THREE.TubeGeometry(rightCurve, numPoints, 0.05, 6, false);
+          const railGeoLeft = new THREE.TubeGeometry(leftCurve, numPoints, 0.06, 6, false);
+          const railGeoRight = new THREE.TubeGeometry(rightCurve, numPoints, 0.06, 6, false);
 
-          const railMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.5, metalness: 0.8 });
+          const railMat = new THREE.MeshStandardMaterial({
+            color: metroView ? 0x00f2ff : 0xcbd5e1,
+            roughness: 0.3,
+            metalness: 0.8,
+            emissive: metroView ? new THREE.Color(0x00f2ff) : new THREE.Color(0x000000),
+            emissiveIntensity: metroView ? 3.0 : 0.0
+          });
           const leftRailMesh = new THREE.Mesh(railGeoLeft, railMat);
           const rightRailMesh = new THREE.Mesh(railGeoRight, railMat);
           leftRailMesh.userData = { roadId: road.id };
@@ -4044,6 +4101,27 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           scene.add(rightRailMesh);
           meshesRef.current.push(leftRailMesh);
           meshesRef.current.push(rightRailMesh);
+
+          // Render Guide Parapet tubes
+          const pLCurve = new THREE.CatmullRomCurve3(parapetLPoints);
+          const pRCurve = new THREE.CatmullRomCurve3(parapetRPoints);
+          const pGeoL = new THREE.TubeGeometry(pLCurve, numPoints, 0.12, 6, false);
+          const pGeoR = new THREE.TubeGeometry(pRCurve, numPoints, 0.12, 6, false);
+
+          const parapetMat = new THREE.MeshStandardMaterial({
+            color: metroView ? 0x00f2ff : 0x94a3b8,
+            roughness: 0.7,
+            emissive: metroView ? new THREE.Color(0x00f2ff) : new THREE.Color(0x000000),
+            emissiveIntensity: metroView ? 1.5 : 0.0
+          });
+          const pMeshL = new THREE.Mesh(pGeoL, parapetMat);
+          const pMeshR = new THREE.Mesh(pGeoR, parapetMat);
+          pMeshL.userData = { roadId: road.id };
+          pMeshR.userData = { roadId: road.id };
+          scene.add(pMeshL);
+          scene.add(pMeshR);
+          meshesRef.current.push(pMeshL);
+          meshesRef.current.push(pMeshR);
 
           // 4. Spawn 3D Train carriage groups
           const trainGroup = new THREE.Group();
@@ -4623,7 +4701,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         meshesRef.current.push(labelSprite);
       });
     }
-  }, [city, selectedAssetId, selectedRoadId, intersections]);
+  }, [city, selectedAssetId, selectedRoadId, intersections, metroView]);
 
   useEffect(() => {
 const mount = mountRef.current;
