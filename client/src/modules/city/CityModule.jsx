@@ -1805,6 +1805,31 @@ const draw = useCallback(() => {
         }
 
         ctx.restore();
+
+        const isStation = asset.isMetroStation || asset.name === 'Elevated Metro Station' || asset.name === 'Metro Station';
+        if (isStation) {
+          ctx.save();
+          const labelName = asset.customName || asset.name;
+          ctx.font = `bold ${Math.max(9, 10 * zoom)}px "Outfit", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          const labelTextWidth = ctx.measureText(labelName).width;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.beginPath();
+          ctx.roundRect?.(cx - labelTextWidth / 2 - 8, cy - ah / 2 - 18, labelTextWidth + 16, 16, 4) || ctx.rect(cx - labelTextWidth / 2 - 8, cy - ah / 2 - 18, labelTextWidth + 16, 16);
+          ctx.fill();
+          
+          ctx.strokeStyle = '#00f2ff';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect?.(cx - labelTextWidth / 2 - 8, cy - ah / 2 - 18, labelTextWidth + 16, 16, 4) || ctx.rect(cx - labelTextWidth / 2 - 8, cy - ah / 2 - 18, labelTextWidth + 16, 16);
+          ctx.stroke();
+
+          ctx.fillStyle = '#00f2ff';
+          ctx.fillText(labelName, cx, cy - ah / 2 - 10);
+          ctx.restore();
+        }
       });
     }
 
@@ -2645,6 +2670,36 @@ const draw = useCallback(() => {
             {/* ── ASSET-ONLY sections ── */}
             {isAsset && (
               <>
+                {/* Station Name Input */}
+                {(asset.isMetroStation || asset.name === 'Elevated Metro Station' || asset.name === 'Metro Station') && (
+                  <div style={{ padding: '4px 10px 8px' }}>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon name="pencil" size={11} /> Station Name
+                    </div>
+                    <input
+                      type="text"
+                      className="glass-input"
+                      value={asset.customName || ''}
+                      placeholder="e.g. Central Station"
+                      onChange={(e) => {
+                        const newName = e.target.value;
+                        updateAsset(asset.id, { customName: newName });
+                        setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, customName: newName } } : null);
+                      }}
+                      style={{
+                        width: '100%',
+                        fontSize: 10,
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: 6,
+                        color: '#fff',
+                        padding: '4px 8px',
+                        outline: 'none'
+                      }}
+                    />
+                    <div className="asset-ctx-divider" style={{ marginTop: 8 }} />
+                  </div>
+                )}
                 {/* Scale */}
                 <div className="asset-ctx-scale-row">
                   <label>Scale</label>
@@ -4360,27 +4415,50 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             meshesRef.current.push(archGroup);
           }
 
-          // 4. Spawn 3D Train carriage groups
+          // 4. Spawn 3D Train carriage groups (Locomotive + 3 Carts)
           const trainGroup = new THREE.Group();
-          const trainMaterialLoco = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.5 });
-          const trainMaterialCart = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.5 });
-          const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2, metalness: 0.9 });
+          const trainMaterialLoco = new THREE.MeshStandardMaterial({ 
+            color: 0xef4444, 
+            roughness: 0.3,
+            metalness: 0.8
+          });
+          const trainMaterialCart = new THREE.MeshStandardMaterial({ 
+            color: 0x1e3a8a, 
+            roughness: 0.3,
+            metalness: 0.8
+          });
+          const glassMat = new THREE.MeshStandardMaterial({ 
+            color: 0x38bdf8, 
+            roughness: 0.1, 
+            metalness: 0.9,
+            transparent: true,
+            opacity: 0.75
+          });
           
-          const locoGeo = new THREE.BoxGeometry(0.6, 0.45, 1.2);
-          const cartGeo = new THREE.BoxGeometry(0.55, 0.4, 1.0);
-          const glassGeo = new THREE.BoxGeometry(0.48, 0.2, 0.3);
+          const locoGeo = new THREE.BoxGeometry(0.72, 0.64, 3.8);
+          const cartGeo = new THREE.BoxGeometry(0.72, 0.60, 3.4);
+          const glassGeo = new THREE.BoxGeometry(0.64, 0.22, 0.8);
           
           const loco = new THREE.Mesh(locoGeo, trainMaterialLoco);
           loco.castShadow = true;
           const windshield = new THREE.Mesh(glassGeo, glassMat);
-          windshield.position.set(0, 0.1, 0.45);
+          windshield.position.set(0, 0.12, 1.55);
           loco.add(windshield);
           trainGroup.add(loco);
           
           const carts = [];
-          for (let c = 0; c < 2; c++) {
+          for (let c = 0; c < 3; c++) {
             const cart = new THREE.Mesh(cartGeo, trainMaterialCart);
             cart.castShadow = true;
+            
+            // Side window bands
+            const windowL = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.16, 2.8), glassMat);
+            windowL.position.set(0.37, 0.1, 0);
+            const windowR = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.16, 2.8), glassMat);
+            windowR.position.set(-0.37, 0.1, 0);
+            
+            cart.add(windowL);
+            cart.add(windowR);
             trainGroup.add(cart);
             carts.push(cart);
           }
@@ -4770,6 +4848,43 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           mesh.receiveShadow = true;
           detailedGroup.add(mesh);
         });
+
+        const isStation = asset.isMetroStation || asset.name === 'Elevated Metro Station' || asset.name === 'Metro Station';
+        if (isStation) {
+          const connectorGeo = new THREE.BoxGeometry(0.8, 0.4, 0.9);
+          const neonBandGeo = new THREE.BoxGeometry(0.08, 0.42, 0.92);
+          const connectorMat = new THREE.MeshStandardMaterial({
+            color: metroView ? 0x0f172a : 0xe2e8f0,
+            roughness: 0.5,
+            metalness: 0.2
+          });
+          const neonBandMat = new THREE.MeshStandardMaterial({
+            color: 0x00f2ff,
+            emissive: new THREE.Color(0x00f2ff),
+            emissiveIntensity: 2.0
+          });
+
+          const portOffsets = [
+            { x: -10.0, z: -1.8 },
+            { x: -10.0, z: 1.8 },
+            { x: 10.0, z: -1.8 },
+            { x: 10.0, z: 1.8 }
+          ];
+
+          portOffsets.forEach(offset => {
+            const connector = new THREE.Mesh(connectorGeo, connectorMat);
+            connector.position.set(offset.x, 4.0, offset.z);
+            connector.castShadow = true;
+            connector.receiveShadow = true;
+            detailedGroup.add(connector);
+
+            const neonBand = new THREE.Mesh(neonBandGeo, neonBandMat);
+            const shiftX = offset.x > 0 ? 0.38 : -0.38;
+            neonBand.position.set(offset.x + shiftX, 4.0, offset.z);
+            detailedGroup.add(neonBand);
+          });
+        }
+
         lod.addLevel(detailedGroup, 0);
 
         // Level 1: Low-detail model (Single simplified box mesh)
@@ -5515,7 +5630,7 @@ const mount = mountRef.current;
       if (trainsRef.current) {
         trainsRef.current.forEach(t => {
           try {
-            const speedFactor = 0.02; // units per frame
+            const speedFactor = 0.22;
             const now = performance.now();
             const cycleMs = (t.totalLen / speedFactor) * 16.7;
             const trainT = (now / cycleMs) % 1.0;
@@ -5527,11 +5642,11 @@ const mount = mountRef.current;
             t.loco.rotation.y = Math.atan2(tangent.x, tangent.z);
 
             // 2. Update Carriages
-            const spacing = 1.3 / t.totalLen;
+            const spacing = 3.8 / t.totalLen;
             t.carts.forEach((cart, idx) => {
               const cartT = (trainT - (idx + 1) * spacing + 1.0) % 1.0;
               const cartPos = t.curve.getPointAt(cartT);
-              cart.position.set(cartPos.x, 4.28, cartPos.z);
+              cart.position.set(cartPos.x, 4.3, cartPos.z);
               const cartTangent = t.curve.getTangentAt(cartT);
               cart.rotation.y = Math.atan2(cartTangent.x, cartTangent.z);
             });
