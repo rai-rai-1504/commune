@@ -4123,7 +4123,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
       const roadIndex = (city.roads || []).findIndex(r => r.id === road.id);
       let yOffset = 0.01;
       if (type === 'railway') {
-        yOffset = 4.0;
+        yOffset = 9.0;
       } else {
         if (type === 'dirt') yOffset = 0.010;
         else if (type === 'brick') yOffset = 0.011;
@@ -4199,7 +4199,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           const numPillars = Math.max(2, Math.floor(len / 12.0));
           
           // 1. Futuristic Y-Shaped Column Piers (Concrete + Metal Accents)
-          const pillarGeo = new THREE.CylinderGeometry(0.28, 0.44, 3.6, 6);
+          const pillarGeo = new THREE.CylinderGeometry(0.28, 0.44, 8.6, 6);
           const yokeBaseGeo = new THREE.BoxGeometry(0.7, 0.5, 0.7);
           const yokeArmLGeo = new THREE.BoxGeometry(1.6, 0.3, 0.5);
           const yokeArmRGeo = new THREE.BoxGeometry(1.6, 0.3, 0.5);
@@ -4232,25 +4232,25 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
             // Main tapered hexagonal column
             const pillarMesh = new THREE.Mesh(pillarGeo, pillarMat);
-            pillarMesh.position.y = 1.8;
+            pillarMesh.position.y = 4.3;
             pillarMesh.castShadow = true;
             pillarMesh.receiveShadow = true;
             supportGroup.add(pillarMesh);
 
             // Metal structural connector collar
             const yokeBase = new THREE.Mesh(yokeBaseGeo, metalMat);
-            yokeBase.position.y = 3.5;
+            yokeBase.position.y = 8.5;
             supportGroup.add(yokeBase);
 
             // Angle wings supporting the dual tracks
             const armL = new THREE.Mesh(yokeArmLGeo, pillarMat);
-            armL.position.set(-0.8, 3.65, 0);
+            armL.position.set(-0.8, 8.65, 0);
             armL.rotation.z = 0.18;
             armL.castShadow = true;
             supportGroup.add(armL);
 
             const armR = new THREE.Mesh(yokeArmRGeo, pillarMat);
-            armR.position.set(0.8, 3.65, 0);
+            armR.position.set(0.8, 8.65, 0);
             armR.rotation.z = -0.18;
             armR.castShadow = true;
             supportGroup.add(armR);
@@ -4276,7 +4276,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             const angle = Math.atan2(tangent.x, tangent.z);
 
             sleeperTransforms.push({
-              position: new THREE.Vector3(pos.x, 4.12, pos.z),
+              position: new THREE.Vector3(pos.x, 9.12, pos.z),
               rotationY: angle,
               scale: new THREE.Vector3(1, 1, 1)
             });
@@ -4314,11 +4314,11 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             const nx = -tangent.z / (lenT || 1);
             const nz = tangent.x / (lenT || 1);
 
-            leftPoints.push(new THREE.Vector3(pos.x + nx * 0.65, 4.22, pos.z + nz * 0.65));
-            rightPoints.push(new THREE.Vector3(pos.x - nx * 0.65, 4.22, pos.z - nz * 0.65));
+            leftPoints.push(new THREE.Vector3(pos.x + nx * 0.65, 9.22, pos.z + nz * 0.65));
+            rightPoints.push(new THREE.Vector3(pos.x - nx * 0.65, 9.22, pos.z - nz * 0.65));
 
-            parapetLPoints.push(new THREE.Vector3(pos.x + nx * 1.5, 4.30, pos.z + nz * 1.5));
-            parapetRPoints.push(new THREE.Vector3(pos.x - nx * 1.5, 4.30, pos.z - nz * 1.5));
+            parapetLPoints.push(new THREE.Vector3(pos.x + nx * 1.5, 9.30, pos.z + nz * 1.5));
+            parapetRPoints.push(new THREE.Vector3(pos.x - nx * 1.5, 9.30, pos.z - nz * 1.5));
           }
 
           const leftCurve = new THREE.CatmullRomCurve3(leftPoints);
@@ -4382,7 +4382,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             const angle = Math.atan2(tangent.x, tangent.z);
 
             const archGroup = new THREE.Group();
-            archGroup.position.set(pos.x, 4.0, pos.z);
+            archGroup.position.set(pos.x, 9.0, pos.z);
             archGroup.rotation.y = angle;
 
             // Left side arch post
@@ -4742,7 +4742,16 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
       let buildingMainObject;
 
-      if (asset.objects && asset.objects.length > 0) {
+      let objectsToRender = asset.objects;
+      const isStation = asset.isMetroStation || asset.name === 'Elevated Metro Station' || asset.name === 'Metro Station';
+      if (isStation) {
+        const template = TEMPLATES.find(t => t.id === 'metro_station');
+        if (template && template.objects) {
+          objectsToRender = template.objects;
+        }
+      }
+
+      if (objectsToRender && objectsToRender.length > 0) {
         const lod = new THREE.LOD();
         lod.position.set(centerX, 0, centerZ);
         lod.rotation.y = asset.rotation || 0;
@@ -4750,7 +4759,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
         // Level 0: Detailed model (Group of meshes)
         const detailedGroup = new THREE.Group();
-        asset.objects.forEach(obj => {
+        objectsToRender.forEach(obj => {
           let meshGeom;
           let materials;
 
@@ -4851,8 +4860,13 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
         const isStation = asset.isMetroStation || asset.name === 'Elevated Metro Station' || asset.name === 'Metro Station';
         if (isStation) {
-          const connectorGeo = new THREE.BoxGeometry(0.8, 0.4, 0.9);
-          const neonBandGeo = new THREE.BoxGeometry(0.08, 0.42, 0.92);
+          const connectorBaseGeo = new THREE.BoxGeometry(1.0, 0.32, 1.1);
+          const connectorWallGeo = new THREE.BoxGeometry(1.0, 0.9, 0.15);
+          const connectorRoofGeo = new THREE.BoxGeometry(1.0, 0.12, 1.25);
+          
+          const neonVGeo = new THREE.BoxGeometry(0.06, 0.9, 0.06);
+          const neonHGeo = new THREE.BoxGeometry(0.06, 0.06, 1.25);
+
           const connectorMat = new THREE.MeshStandardMaterial({
             color: metroView ? 0x0f172a : 0xe2e8f0,
             roughness: 0.5,
@@ -4861,7 +4875,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           const neonBandMat = new THREE.MeshStandardMaterial({
             color: 0x00f2ff,
             emissive: new THREE.Color(0x00f2ff),
-            emissiveIntensity: 2.0
+            emissiveIntensity: 2.5
           });
 
           const portOffsets = [
@@ -4872,16 +4886,46 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           ];
 
           portOffsets.forEach(offset => {
-            const connector = new THREE.Mesh(connectorGeo, connectorMat);
-            connector.position.set(offset.x, 4.0, offset.z);
-            connector.castShadow = true;
-            connector.receiveShadow = true;
-            detailedGroup.add(connector);
+            const shiftX = offset.x > 0 ? 0.45 : -0.45;
+            const px = offset.x + (offset.x > 0 ? -0.1 : 0.1);
 
-            const neonBand = new THREE.Mesh(neonBandGeo, neonBandMat);
-            const shiftX = offset.x > 0 ? 0.38 : -0.38;
-            neonBand.position.set(offset.x + shiftX, 4.0, offset.z);
-            detailedGroup.add(neonBand);
+            // 1. Concrete Base support bed
+            const base = new THREE.Mesh(connectorBaseGeo, connectorMat);
+            base.position.set(px, 8.84, offset.z);
+            base.castShadow = true;
+            base.receiveShadow = true;
+            detailedGroup.add(base);
+
+            // 2. Concrete Left Wall
+            const wallL = new THREE.Mesh(connectorWallGeo, connectorMat);
+            wallL.position.set(px, 9.45, offset.z - 0.55);
+            wallL.castShadow = true;
+            detailedGroup.add(wallL);
+
+            // 3. Concrete Right Wall
+            const wallR = new THREE.Mesh(connectorWallGeo, connectorMat);
+            wallR.position.set(px, 9.45, offset.z + 0.55);
+            wallR.castShadow = true;
+            detailedGroup.add(wallR);
+
+            // 4. Concrete Roof Slab
+            const roof = new THREE.Mesh(connectorRoofGeo, connectorMat);
+            roof.position.set(px, 9.9, offset.z);
+            roof.castShadow = true;
+            detailedGroup.add(roof);
+
+            // 5. Glowing Neon portal arch frames
+            const neonV1 = new THREE.Mesh(neonVGeo, neonBandMat);
+            neonV1.position.set(offset.x + shiftX, 9.45, offset.z - 0.55);
+            detailedGroup.add(neonV1);
+
+            const neonV2 = new THREE.Mesh(neonVGeo, neonBandMat);
+            neonV2.position.set(offset.x + shiftX, 9.45, offset.z + 0.55);
+            detailedGroup.add(neonV2);
+
+            const neonH = new THREE.Mesh(neonHGeo, neonBandMat);
+            neonH.position.set(offset.x + shiftX, 9.9, offset.z);
+            detailedGroup.add(neonH);
           });
         }
 
@@ -4889,7 +4933,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
         // Level 1: Low-detail model (Single simplified box mesh)
         let maxHeight = 2.0;
-        asset.objects.forEach(obj => {
+        objectsToRender.forEach(obj => {
           const h = (obj.position?.y || 0) + (obj.scale?.y || 1) / 2;
           if (h > maxHeight) maxHeight = h;
         });
@@ -5637,7 +5681,7 @@ const mount = mountRef.current;
 
             // 1. Update Locomotive
             const locoPos = t.curve.getPointAt(trainT);
-            t.loco.position.set(locoPos.x, 4.3, locoPos.z);
+            t.loco.position.set(locoPos.x, 9.3, locoPos.z);
             const tangent = t.curve.getTangentAt(trainT);
             t.loco.rotation.y = Math.atan2(tangent.x, tangent.z);
 
@@ -5646,7 +5690,7 @@ const mount = mountRef.current;
             t.carts.forEach((cart, idx) => {
               const cartT = (trainT - (idx + 1) * spacing + 1.0) % 1.0;
               const cartPos = t.curve.getPointAt(cartT);
-              cart.position.set(cartPos.x, 4.3, cartPos.z);
+              cart.position.set(cartPos.x, 9.3, cartPos.z);
               const cartTangent = t.curve.getTangentAt(cartT);
               cart.rotation.y = Math.atan2(cartTangent.x, cartTangent.z);
             });

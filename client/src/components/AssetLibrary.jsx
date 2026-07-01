@@ -933,50 +933,50 @@ export const TEMPLATES = [
     height: 10.0,
     objects: [
       // 1. Raised Concrete Platform Deck
-      { geometry: 'box', position: {x:0, y:4.0, z:0}, scale: {x:20, y:0.4, z:9.6}, color: '#334155', name: 'PlatformDeck' },
+      { geometry: 'box', position: {x:0, y:9.0, z:0}, scale: {x:20, y:0.4, z:9.6}, color: '#334155', name: 'PlatformDeck' },
       
       // 2. Futuristic Gullwing Shed Roof Canopy (Composite Panels + Slanted Wings)
-      { geometry: 'box', position: {x:0, y:8.8, z:0}, scale: {x:20, y:0.12, z:3.8}, color: '#0f172a', name: 'RoofSpine' },
-      { geometry: 'box', position: {x:0, y:8.45, z:-2.8}, scale: {x:20, y:0.08, z:3.6}, rotation: {x:-0.2, y:0, z:0}, color: '#1e293b', name: 'RoofWingLeft' },
-      { geometry: 'box', position: {x:0, y:8.45, z:2.8}, scale: {x:20, y:0.08, z:3.6}, rotation: {x:0.2, y:0, z:0}, color: '#1e293b', name: 'RoofWingRight' },
+      { geometry: 'box', position: {x:0, y:13.8, z:0}, scale: {x:20, y:0.12, z:3.8}, color: '#0f172a', name: 'RoofSpine' },
+      { geometry: 'box', position: {x:0, y:13.45, z:-2.8}, scale: {x:20, y:0.08, z:3.6}, rotation: {x:-0.2, y:0, z:0}, color: '#1e293b', name: 'RoofWingLeft' },
+      { geometry: 'box', position: {x:0, y:13.45, z:2.8}, scale: {x:20, y:0.08, z:3.6}, rotation: {x:0.2, y:0, z:0}, color: '#1e293b', name: 'RoofWingRight' },
       
       // 3. Glowing Neon Cyan Glass Skylight Ribbons
-      { geometry: 'box', position: {x:0, y:8.7, z:-1.1}, scale: {x:20, y:0.05, z:0.8}, color: '#00f2ff', name: 'SkylightLeft' },
-      { geometry: 'box', position: {x:0, y:8.7, z:1.1}, scale: {x:20, y:0.05, z:0.8}, color: '#00f2ff', name: 'SkylightRight' },
+      { geometry: 'box', position: {x:0, y:13.7, z:-1.1}, scale: {x:20, y:0.05, z:0.8}, color: '#00f2ff', name: 'SkylightLeft' },
+      { geometry: 'box', position: {x:0, y:13.7, z:1.1}, scale: {x:20, y:0.05, z:0.8}, color: '#00f2ff', name: 'SkylightRight' },
       
       // 4. Structural Steel Ring Portal Frames (Front, Center, Back)
-      { geometry: 'box', position: {x:-8.0, y:6.2, z:-4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameFL' },
-      { geometry: 'box', position: {x:-8.0, y:6.2, z:4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameFR' },
-      { geometry: 'box', position: {x:-8.0, y:8.4, z:0}, scale: {x:0.35, y:0.35, z:9.25}, color: '#64748b', name: 'SteelFrameTopF' },
+      { geometry: 'box', position: {x:-8.0, y:11.2, z:-4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameFL' },
+      { geometry: 'box', position: {x:-8.0, y:11.2, z:4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameFR' },
+      { geometry: 'box', position: {x:-8.0, y:13.4, z:0}, scale: {x:0.35, y:0.35, z:9.25}, color: '#64748b', name: 'SteelFrameTopF' },
       
-      { geometry: 'box', position: {x:0, y:6.2, z:-4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameCL' },
-      { geometry: 'box', position: {x:0, y:6.2, z:4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameCR' },
-      { geometry: 'box', position: {x:0, y:8.4, z:0}, scale: {x:0.35, y:0.35, z:9.25}, color: '#64748b', name: 'SteelFrameTopC' },
+      { geometry: 'box', position: {x:0, y:11.2, z:-4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameCL' },
+      { geometry: 'box', position: {x:0, y:11.2, z:4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameCR' },
+      { geometry: 'box', position: {x:0, y:13.4, z:0}, scale: {x:0.35, y:0.35, z:9.25}, color: '#64748b', name: 'SteelFrameTopC' },
       
-      { geometry: 'box', position: {x:8.0, y:6.2, z:-4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameBL' },
-      { geometry: 'box', position: {x:8.0, y:6.2, z:4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameBR' },
-      { geometry: 'box', position: {x:8.0, y:8.4, z:0}, scale: {x:0.35, y:0.35, z:9.25}, color: '#64748b', name: 'SteelFrameTopB' },
+      { geometry: 'box', position: {x:8.0, y:11.2, z:-4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameBL' },
+      { geometry: 'box', position: {x:8.0, y:11.2, z:4.6}, scale: {x:0.35, y:4.4, z:0.35}, color: '#64748b', name: 'SteelFrameBR' },
+      { geometry: 'box', position: {x:8.0, y:13.4, z:0}, scale: {x:0.35, y:0.35, z:9.25}, color: '#64748b', name: 'SteelFrameTopB' },
       
-      // 5. Heavy concrete support pillars
-      { geometry: 'cylinder', position: {x:-8.0, y:2.0, z:-3.8}, scale: {x:0.9, y:4.0, z:0.9}, color: '#475569', name: 'PillarFL' },
-      { geometry: 'cylinder', position: {x:-8.0, y:2.0, z:3.8}, scale: {x:0.9, y:4.0, z:0.9}, color: '#475569', name: 'PillarFR' },
-      { geometry: 'cylinder', position: {x:8.0, y:2.0, z:-3.8}, scale: {x:0.9, y:4.0, z:0.9}, color: '#475569', name: 'PillarBL' },
-      { geometry: 'cylinder', position: {x:8.0, y:2.0, z:3.8}, scale: {x:0.9, y:4.0, z:0.9}, color: '#475569', name: 'PillarBR' },
+      // 5. Heavy concrete support pillars (ground to deck)
+      { geometry: 'cylinder', position: {x:-8.0, y:4.5, z:-3.8}, scale: {x:0.9, y:9.0, z:0.9}, color: '#475569', name: 'PillarFL' },
+      { geometry: 'cylinder', position: {x:-8.0, y:4.5, z:3.8}, scale: {x:0.9, y:9.0, z:0.9}, color: '#475569', name: 'PillarFR' },
+      { geometry: 'cylinder', position: {x:8.0, y:4.5, z:-3.8}, scale: {x:0.9, y:9.0, z:0.9}, color: '#475569', name: 'PillarBL' },
+      { geometry: 'cylinder', position: {x:8.0, y:4.5, z:3.8}, scale: {x:0.9, y:9.0, z:0.9}, color: '#475569', name: 'PillarBR' },
       
-      // 6. Ground ticket hall
+      // 6. Ground ticket hall (stays at base)
       { geometry: 'box', position: {x:0, y:2.0, z:0}, scale: {x:9.0, y:4.0, z:6.4}, color: '#1e293b', name: 'TicketHall' },
       { geometry: 'box', position: {x:0, y:2.0, z:3.22}, scale: {x:8.0, y:3.2, z:0.06}, color: '#38bdf8', name: 'GlassFacadeFront' },
       { geometry: 'box', position: {x:0, y:2.0, z:-3.22}, scale: {x:8.0, y:3.2, z:0.06}, color: '#38bdf8', name: 'GlassFacadeBack' },
       
-      // 7. Escalator structural connectors
-      { geometry: 'box', position: {x:-4.8, y:2.0, z:1.6}, scale: {x:0.8, y:4.0, z:1.8}, color: '#64748b', name: 'EscalatorLeft' },
-      { geometry: 'box', position: {x:4.8, y:2.0, z:1.6}, scale: {x:0.8, y:4.0, z:1.8}, color: '#64748b', name: 'EscalatorRight' },
+      // 7. Escalator structural connectors (ticket hall roof y=4.0 to platform y=9.0)
+      { geometry: 'box', position: {x:-4.8, y:6.5, z:1.6}, scale: {x:0.8, y:5.0, z:1.8}, color: '#64748b', name: 'EscalatorLeft' },
+      { geometry: 'box', position: {x:4.8, y:6.5, z:1.6}, scale: {x:0.8, y:5.0, z:1.8}, color: '#64748b', name: 'EscalatorRight' },
       
       // 8. Glowing neon orange warnings and cyan display signs
-      { geometry: 'box', position: {x:0, y:4.22, z:-2.6}, scale: {x:19.8, y:0.05, z:0.3}, color: '#f97316', name: 'WarningStripeLeft' },
-      { geometry: 'box', position: {x:0, y:4.22, z:2.6}, scale: {x:19.8, y:0.05, z:0.3}, color: '#f97316', name: 'WarningStripeRight' },
-      { geometry: 'box', position: {x:-4.0, y:7.2, z:0}, scale: {x:1.8, y:0.65, z:0.12}, color: '#00f2ff', name: 'InfoScreenLeft' },
-      { geometry: 'box', position: {x:4.0, y:7.2, z:0}, scale: {x:1.8, y:0.65, z:0.12}, color: '#00f2ff', name: 'InfoScreenRight' },
+      { geometry: 'box', position: {x:0, y:9.22, z:-2.6}, scale: {x:19.8, y:0.05, z:0.3}, color: '#f97316', name: 'WarningStripeLeft' },
+      { geometry: 'box', position: {x:0, y:9.22, z:2.6}, scale: {x:19.8, y:0.05, z:0.3}, color: '#f97316', name: 'WarningStripeRight' },
+      { geometry: 'box', position: {x:-4.0, y:12.2, z:0}, scale: {x:1.8, y:0.65, z:0.12}, color: '#00f2ff', name: 'InfoScreenLeft' },
+      { geometry: 'box', position: {x:4.0, y:12.2, z:0}, scale: {x:1.8, y:0.65, z:0.12}, color: '#00f2ff', name: 'InfoScreenRight' },
     ],
   },
   {

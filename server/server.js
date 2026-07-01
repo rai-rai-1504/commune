@@ -410,6 +410,7 @@ function handleMessage(ws, client, msg) {
         if (msg.row !== undefined) asset.row = msg.row;
         if (msg.rotation !== undefined) asset.rotation = msg.rotation;
         if (msg.locked !== undefined) asset.locked = msg.locked;
+        if (msg.customName !== undefined) asset.customName = msg.customName;
         broadcast({ type: 'CITY_ASSET_UPDATED', asset });
         saveCity();
       }
