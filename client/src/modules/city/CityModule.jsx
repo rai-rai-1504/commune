@@ -4113,8 +4113,9 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
         if (type === 'railway') {
           currentRoadMat = new THREE.MeshStandardMaterial({
-            color: 0x475569,
-            roughness: 0.8
+            color: metroView ? 0x1e293b : 0xe2e8f0,
+            roughness: 0.5,
+            metalness: 0.15
           });
         } else {
           currentRoadMat = new THREE.MeshStandardMaterial({
@@ -4142,36 +4143,66 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           const len = curve.getLength();
           const numPillars = Math.max(2, Math.floor(len / 12.0));
           
-          // 1. Columns & Cross-beams (Support Piers)
-          const pillarGeo = new THREE.CylinderGeometry(0.42, 0.42, 4.0, 10);
-          const beamGeo = new THREE.BoxGeometry(3.6, 0.35, 1.2);
-          const concreteColor = metroView ? 0x1e293b : 0x64748b;
-          const pillarMat = new THREE.MeshStandardMaterial({ color: concreteColor, roughness: 0.8 });
+          // 1. Futuristic Y-Shaped Column Piers (Concrete + Metal Accents)
+          const pillarGeo = new THREE.CylinderGeometry(0.28, 0.44, 3.6, 6);
+          const yokeBaseGeo = new THREE.BoxGeometry(0.7, 0.5, 0.7);
+          const yokeArmLGeo = new THREE.BoxGeometry(1.6, 0.3, 0.5);
+          const yokeArmRGeo = new THREE.BoxGeometry(1.6, 0.3, 0.5);
+          
+          const concreteColor = metroView ? 0x0f172a : 0xe2e8f0;
+          const metallicAccent = metroView ? 0x00f2ff : 0x475569;
+          
+          const pillarMat = new THREE.MeshStandardMaterial({ 
+            color: concreteColor, 
+            roughness: 0.45, 
+            metalness: 0.15 
+          });
+          const metalMat = new THREE.MeshStandardMaterial({
+            color: metallicAccent,
+            roughness: 0.3,
+            metalness: 0.8,
+            emissive: metroView ? new THREE.Color(0x00f2ff) : new THREE.Color(0x000000),
+            emissiveIntensity: metroView ? 1.0 : 0.0
+          });
 
           for (let i = 0; i <= numPillars; i++) {
             const t = i / numPillars;
             const pos = curve.getPointAt(t);
-            
-            // Column
-            const pillarMesh = new THREE.Mesh(pillarGeo, pillarMat);
-            pillarMesh.position.set(pos.x, 2.0, pos.z);
-            pillarMesh.castShadow = true;
-            pillarMesh.receiveShadow = true;
-            pillarMesh.userData = { roadId: road.id };
-            scene.add(pillarMesh);
-            meshesRef.current.push(pillarMesh);
-
-            // Cross-beam
             const tangent = curve.getTangentAt(t);
             const angle = Math.atan2(tangent.x, tangent.z);
-            const beamMesh = new THREE.Mesh(beamGeo, pillarMat);
-            beamMesh.position.set(pos.x, 3.85, pos.z);
-            beamMesh.rotation.y = angle;
-            beamMesh.castShadow = true;
-            beamMesh.receiveShadow = true;
-            beamMesh.userData = { roadId: road.id };
-            scene.add(beamMesh);
-            meshesRef.current.push(beamMesh);
+
+            const supportGroup = new THREE.Group();
+            supportGroup.position.set(pos.x, 0, pos.z);
+            supportGroup.rotation.y = angle;
+
+            // Main tapered hexagonal column
+            const pillarMesh = new THREE.Mesh(pillarGeo, pillarMat);
+            pillarMesh.position.y = 1.8;
+            pillarMesh.castShadow = true;
+            pillarMesh.receiveShadow = true;
+            supportGroup.add(pillarMesh);
+
+            // Metal structural connector collar
+            const yokeBase = new THREE.Mesh(yokeBaseGeo, metalMat);
+            yokeBase.position.y = 3.5;
+            supportGroup.add(yokeBase);
+
+            // Angle wings supporting the dual tracks
+            const armL = new THREE.Mesh(yokeArmLGeo, pillarMat);
+            armL.position.set(-0.8, 3.65, 0);
+            armL.rotation.z = 0.18;
+            armL.castShadow = true;
+            supportGroup.add(armL);
+
+            const armR = new THREE.Mesh(yokeArmRGeo, pillarMat);
+            armR.position.set(0.8, 3.65, 0);
+            armR.rotation.z = -0.18;
+            armR.castShadow = true;
+            supportGroup.add(armR);
+
+            supportGroup.userData = { roadId: road.id };
+            scene.add(supportGroup);
+            meshesRef.current.push(supportGroup);
           }
 
           // 2. Broad Sleepers / Ties (Width 2.4)
@@ -4276,6 +4307,58 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
           scene.add(pMeshR);
           meshesRef.current.push(pMeshL);
           meshesRef.current.push(pMeshR);
+
+          // 3b. High-Tech Rib Arches Portals (Structure + Center Neon Light)
+          const numArches = Math.max(3, Math.floor(len / 6.0));
+          const archPostGeo = new THREE.CylinderGeometry(0.06, 0.08, 2.2, 5);
+          const archCrossbarGeo = new THREE.BoxGeometry(3.6, 0.08, 0.16);
+          const neonFixtureGeo = new THREE.BoxGeometry(0.35, 0.05, 0.12);
+          
+          const neonMat = new THREE.MeshStandardMaterial({
+            color: 0x00f2ff,
+            emissive: new THREE.Color(0x00f2ff),
+            emissiveIntensity: 3.5
+          });
+
+          for (let i = 0; i <= numArches; i++) {
+            const t = i / numArches;
+            const pos = curve.getPointAt(t);
+            const tangent = curve.getTangentAt(t);
+            const angle = Math.atan2(tangent.x, tangent.z);
+
+            const archGroup = new THREE.Group();
+            archGroup.position.set(pos.x, 4.0, pos.z);
+            archGroup.rotation.y = angle;
+
+            // Left side arch post
+            const postL = new THREE.Mesh(archPostGeo, pillarMat);
+            postL.position.set(-1.8, 1.1, 0);
+            postL.rotation.z = 0.08;
+            postL.castShadow = true;
+            archGroup.add(postL);
+
+            // Right side arch post
+            const postR = new THREE.Mesh(archPostGeo, pillarMat);
+            postR.position.set(1.8, 1.1, 0);
+            postR.rotation.z = -0.08;
+            postR.castShadow = true;
+            archGroup.add(postR);
+
+            // Overhead crossbar
+            const crossbar = new THREE.Mesh(archCrossbarGeo, pillarMat);
+            crossbar.position.set(0, 2.2, 0);
+            crossbar.castShadow = true;
+            archGroup.add(crossbar);
+
+            // Hanging central neon power rail/light strip
+            const neon = new THREE.Mesh(neonFixtureGeo, neonMat);
+            neon.position.set(0, 2.1, 0);
+            archGroup.add(neon);
+
+            archGroup.userData = { roadId: road.id };
+            scene.add(archGroup);
+            meshesRef.current.push(archGroup);
+          }
 
           // 4. Spawn 3D Train carriage groups
           const trainGroup = new THREE.Group();
