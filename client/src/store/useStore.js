@@ -92,7 +92,7 @@ export const PRESET_PALETTES = [
   }
 ];
 
-function randomizeObjectsColor(objects, activeColorIds, paletteId) {
+export function randomizeObjectsColor(objects, activeColorIds, paletteId) {
   if (!objects) return [];
   const colorMap = {};
   const activePalette = PRESET_PALETTES.find(p => p.id === (paletteId || 'modern')) || PRESET_PALETTES[0];

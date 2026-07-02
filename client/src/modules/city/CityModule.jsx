@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
-import { useStore, PRESET_PALETTES } from '../../store/useStore';
+import { useStore, PRESET_PALETTES, randomizeObjectsColor } from '../../store/useStore';
 import { TEMPLATES } from '../../components/AssetLibrary';
 import BuildingThumbnail from './BuildingThumbnail';
 import Icon from '../../components/Icon';
@@ -598,6 +598,8 @@ export default function CityModule() {
   } = useStore();
 
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [showColorRandomizer, setShowColorRandomizer] = useState(false);
   const [offset, setOffset] = useState({ x: 16, y: 16 });
   const [zoom, setZoom] = useState(1.0);
   const intersections = useMemo(() => findIntersections(city?.roads || []), [city?.roads]);
@@ -2157,6 +2159,12 @@ const draw = useCallback(() => {
             row: floatCoords.row - asset.row
           };
           dragStartPos.current = { col: asset.col, row: asset.row };
+        } else if (asset && asset.locked) {
+          e.preventDefault();
+          setAssetContextMenu(null);
+          selectAsset(asset.id);
+          setSelectedRoadId(null);
+          setSelectedCell(null);
         } else {
           selectAsset(null);
           setAssetContextMenu(null);
@@ -2512,7 +2520,7 @@ const draw = useCallback(() => {
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
 
       {/* ── Map / Street view canvas ── */}
       {streetView ? (
@@ -2524,6 +2532,8 @@ const draw = useCallback(() => {
           intersections={intersections}
           gameTime={gameTime}
           metroView={metroView}
+          setAssetContextMenu={setAssetContextMenu}
+          containerRef={containerRef}
         />
       ) : (
         <canvas
@@ -2604,17 +2614,17 @@ const draw = useCallback(() => {
       )}
 
       {/* ── Glassmorphic Context Menu (Asset & Road) ── */}
-      {assetContextMenu && !streetView && (() => {
+      {assetContextMenu && (() => {
         const { x, y, type } = assetContextMenu;
         const isAsset = type === 'asset';
         const asset = isAsset ? assetContextMenu.asset : null;
         const road  = !isAsset ? assetContextMenu.road : null;
 
-        const menuW = 222, menuH = isAsset ? 420 : 200;
-        const containerW = canvasRef.current?.offsetWidth || window.innerWidth;
-        const containerH = canvasRef.current?.offsetHeight || window.innerHeight;
-        const menuX = x + menuW > containerW - 12 ? x - menuW : x + 10;
-        const menuY = y + menuH > containerH - 12 ? y - menuH : y + 10;
+        const menuW = 222, menuH = isAsset ? (showColorRandomizer ? 560 : 420) : 200;
+        const containerW = containerRef.current?.offsetWidth || window.innerWidth;
+        const containerH = containerRef.current?.offsetHeight || window.innerHeight;
+        const menuX = Math.max(12, Math.min(x + menuW > containerW - 12 ? x - menuW : x + 10, containerW - menuW - 12));
+        const menuY = Math.max(12, Math.min(y + menuH > containerH - 12 ? y - menuH : y + 10, containerH - menuH - 12));
 
         const rotDeg = isAsset ? Math.round(((asset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360 : 0;
 
@@ -2778,6 +2788,108 @@ const draw = useCallback(() => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Randomise Colours */}
+                <button
+                  className="asset-ctx-item"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowColorRandomizer(!showColorRandomizer);
+                  }}
+                  style={{ justifyContent: 'space-between', marginTop: 2, background: 'rgba(255,255,255,0.02)' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>🎨</span> Randomise Colours
+                  </span>
+                  <span style={{ fontSize: 9, opacity: 0.7 }}>{showColorRandomizer ? '▼' : '▶'}</span>
+                </button>
+
+                {showColorRandomizer && (
+                  <div style={{ padding: '6px 10px 8px', display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,0,0,0.15)', borderRadius: 8, margin: '2px 4px 6px' }}>
+                    {/* Preset Palettes */}
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)' }}>Palette Presets</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                      {PRESET_PALETTES.map(p => (
+                        <button
+                          key={p.id}
+                          className={`btn sm ${activePaletteId === p.id ? 'primary' : ''}`}
+                          style={{
+                            fontSize: 9,
+                            padding: '3px 4px',
+                            background: activePaletteId === p.id ? 'rgba(129, 140, 248, 0.2)' : 'rgba(0,0,0,0.2)',
+                            color: activePaletteId === p.id ? '#818cf8' : '#ccc',
+                            border: activePaletteId === p.id ? '1px solid rgba(129,140,248,0.5)' : '1px solid rgba(255,255,255,0.06)',
+                            borderRadius: 6,
+                            cursor: 'pointer'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectActivePalette(p.id);
+                          }}
+                        >
+                          {p.name.replace(' Architecture', '').replace(' City', '').replace(' Breeze', '')}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Circular Color Swatches */}
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Toggle Swatch Colors</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {(PRESET_PALETTES.find(p => p.id === activePaletteId)?.colors || []).map(colorFamily => {
+                        const isSelected = randomColorPalette.includes(colorFamily.id);
+                        return (
+                          <button
+                            key={colorFamily.id}
+                            title={colorFamily.label}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleColorFamilyInPalette(colorFamily.id);
+                            }}
+                            style={{
+                              width: 18,
+                              height: 18,
+                              borderRadius: '50%',
+                              backgroundColor: colorFamily.color,
+                              border: isSelected ? '2px solid #fff' : '2px solid transparent',
+                              boxShadow: isSelected ? '0 0 4px rgba(255,255,255,0.6)' : 'none',
+                              opacity: isSelected ? 1 : 0.3,
+                              cursor: 'pointer',
+                              padding: 0,
+                              transition: 'all 0.15s ease'
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Re-roll Button */}
+                    <button
+                      className="asset-ctx-item accent"
+                      style={{
+                        marginTop: 4,
+                        padding: '5px 10px',
+                        justifyContent: 'center',
+                        borderRadius: 6,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, #818cf8, #a855f7)',
+                        color: '#fff',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const original = asset.originalObjects || TEMPLATES.find(t => t.name === asset.name)?.objects || asset.objects;
+                        const randomized = randomizeObjectsColor(original, randomColorPalette, activePaletteId);
+                        
+                        updateAsset(asset.id, { objects: randomized, originalObjects: original });
+                        setAssetContextMenu(prev => prev ? { ...prev, asset: { ...prev.asset, objects: randomized, originalObjects: original } } : null);
+                      }}
+                    >
+                      🎲 Re-roll Colors
+                    </button>
                   </div>
                 )}
 
@@ -4049,7 +4161,7 @@ const draw = useCallback(() => {
 }
 
 // ── Street View: simple Three.js first-person walk ────────────────────────
-function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime, metroView }) {
+function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime, metroView, setAssetContextMenu, containerRef }) {
   const mountRef = useRef(null);
   const animRef = useRef(null);
   const keys = useRef({});
@@ -5478,30 +5590,25 @@ const mount = mountRef.current;
           }
           if (clickedAssetId || clickedRoadId) break;
         }
-        if (clickedAssetId) {
-          const latestCity = useStore.getState().city;
-          const asset = (latestCity?.placedAssets || []).find(a => a.id === clickedAssetId);
-          if (asset && asset.locked) {
-            clickedAssetId = null;
-          }
-        }
-        if (clickedRoadId) {
-          const latestCity = useStore.getState().city;
-          const road = (latestCity?.roads || []).find(r => r.id === clickedRoadId);
-          if (road && road.locked) {
-            clickedRoadId = null;
-          }
-        }
+        const latestCity = useStore.getState().city;
+        const asset = clickedAssetId ? (latestCity?.placedAssets || []).find(a => a.id === clickedAssetId) : null;
+        const road = clickedRoadId ? (latestCity?.roads || []).find(r => r.id === clickedRoadId) : null;
         
-        if (clickedAssetId) {
-          const currentSelectedAssetId = useStore.getState().selectedAssetId;
-          if (clickedAssetId === currentSelectedAssetId) {
-            selectAsset(null);
-          } else {
+        if (clickedAssetId && asset) {
+          if (e.button === 2) {
             selectAsset(clickedAssetId);
+            setSelectedRoadId(null);
+            
+            const containerRect = containerRef.current?.getBoundingClientRect();
+            const mx = containerRect ? e.clientX - containerRect.left : e.clientX;
+            const my = containerRect ? e.clientY - containerRect.top : e.clientY;
+            setAssetContextMenu({ x: mx, y: my, asset, type: 'asset' });
+          } else if (e.button === 0) {
+            selectAsset(clickedAssetId);
+            setSelectedRoadId(null);
+            setAssetContextMenu(null);
           }
-          setSelectedRoadId(null);
-        } else if (clickedRoadId) {
+        } else if (clickedRoadId && road) {
           if (clickedRoadId === selectedRoadIdRef.current) {
             setSelectedRoadId(null);
           } else {
@@ -5511,6 +5618,7 @@ const mount = mountRef.current;
         } else {
           selectAsset(null);
           setSelectedRoadId(null);
+          setAssetContextMenu(null);
         }
       }
     };
