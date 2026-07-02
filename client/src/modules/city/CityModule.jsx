@@ -610,6 +610,62 @@ export default function CityModule() {
   const [selectedZoneId, setSelectedZoneId] = useState(null);
   const [zoneShape, setZoneShape] = useState('pencil');
   const [assetContextMenu, setAssetContextMenu] = useState(null); // { x, y, asset }
+
+  const getInitialClampedCoords = (mx, my, type, isRandomizerOpen) => {
+    const isAsset = type === 'asset';
+    const menuW = 222;
+    const menuH = isAsset ? (isRandomizerOpen ? 560 : 420) : 200;
+    const containerW = containerRef.current?.offsetWidth || window.innerWidth;
+    const containerH = containerRef.current?.offsetHeight || window.innerHeight;
+
+    const targetX = mx + menuW > containerW - 12 ? mx - menuW : mx + 10;
+    const targetY = my + menuH > containerH - 12 ? my - menuH : my + 10;
+
+    const x = Math.max(12, Math.min(targetX, containerW - menuW - 12));
+    const y = Math.max(12, Math.min(targetY, containerH - menuH - 12));
+
+    return { x, y };
+  };
+
+  const handleMenuMouseDown = (e) => {
+    if (e.button !== 0) return; // Only left mouse button initiates dragging
+    if (e.target.closest('button, input, select, textarea')) return; // Ignore clicks on interactive components
+
+    e.preventDefault();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialX = assetContextMenu.x;
+    const initialY = assetContextMenu.y;
+
+    const handleMouseMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      const newX = initialX + dx;
+      const newY = initialY + dy;
+
+      const isAsset = assetContextMenu.type === 'asset';
+      const menuW = 222;
+      const menuH = isAsset ? (showColorRandomizer ? 560 : 420) : 200;
+      const containerW = containerRef.current?.offsetWidth || window.innerWidth;
+      const containerH = containerRef.current?.offsetHeight || window.innerHeight;
+
+      const clampedX = Math.max(12, Math.min(newX, containerW - menuW - 12));
+      const clampedY = Math.max(12, Math.min(newY, containerH - menuH - 12));
+
+      setAssetContextMenu(prev => prev ? { ...prev, x: clampedX, y: clampedY } : null);
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
   const zoneAnchorRef = useRef(null);
   const [gameTime, setGameTime] = useState(780);
   const [transitionProgress, setTransitionProgress] = useState(0.0);
@@ -2121,14 +2177,16 @@ const draw = useCallback(() => {
       if (asset) {
         selectAsset(asset.id);
         setSelectedRoadId(null);
-        setAssetContextMenu({ x: mx, y: my, asset, type: 'asset' });
+        const coords = getInitialClampedCoords(mx, my, 'asset', showColorRandomizer);
+        setAssetContextMenu({ ...coords, asset, type: 'asset' });
         return;
       }
       const road = roadAtCoords(floatCoords.col, floatCoords.row);
       if (road) {
         setSelectedRoadId(road.id);
         selectAsset(null);
-        setAssetContextMenu({ x: mx, y: my, road, type: 'road' });
+        const coords = getInitialClampedCoords(mx, my, 'road', showColorRandomizer);
+        setAssetContextMenu({ ...coords, road, type: 'road' });
         return;
       }
       setAssetContextMenu(null);
@@ -2534,6 +2592,8 @@ const draw = useCallback(() => {
           metroView={metroView}
           setAssetContextMenu={setAssetContextMenu}
           containerRef={containerRef}
+          getInitialClampedCoords={getInitialClampedCoords}
+          showColorRandomizer={showColorRandomizer}
         />
       ) : (
         <canvas
@@ -2620,19 +2680,16 @@ const draw = useCallback(() => {
         const asset = isAsset ? assetContextMenu.asset : null;
         const road  = !isAsset ? assetContextMenu.road : null;
 
-        const menuW = 222, menuH = isAsset ? (showColorRandomizer ? 560 : 420) : 200;
-        const containerW = containerRef.current?.offsetWidth || window.innerWidth;
-        const containerH = containerRef.current?.offsetHeight || window.innerHeight;
-        const menuX = Math.max(12, Math.min(x + menuW > containerW - 12 ? x - menuW : x + 10, containerW - menuW - 12));
-        const menuY = Math.max(12, Math.min(y + menuH > containerH - 12 ? y - menuH : y + 10, containerH - menuH - 12));
+        const menuW = 222;
+
 
         const rotDeg = isAsset ? Math.round(((asset.rotation || 0) * 180 / Math.PI) % 360 + 360) % 360 : 0;
 
         return (
           <div
             className="asset-ctx-menu"
-            style={{ left: menuX, top: menuY, width: menuW }}
-            onMouseDown={(e) => e.stopPropagation()}
+            style={{ left: x, top: y, width: menuW }}
+            onMouseDown={handleMenuMouseDown}
             onContextMenu={(e) => e.preventDefault()}
           >
             {/* ── Header ── */}
@@ -2796,7 +2853,21 @@ const draw = useCallback(() => {
                   className="asset-ctx-item"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowColorRandomizer(!showColorRandomizer);
+                    setShowColorRandomizer(prevVal => {
+                      const newVal = !prevVal;
+                      setAssetContextMenu(prev => {
+                        if (!prev) return null;
+                        const isAsset = prev.type === 'asset';
+                        const menuW = 222;
+                        const menuH = isAsset ? (newVal ? 560 : 420) : 200;
+                        const containerW = containerRef.current?.offsetWidth || window.innerWidth;
+                        const containerH = containerRef.current?.offsetHeight || window.innerHeight;
+                        const clampedX = Math.max(12, Math.min(prev.x, containerW - menuW - 12));
+                        const clampedY = Math.max(12, Math.min(prev.y, containerH - menuH - 12));
+                        return { ...prev, x: clampedX, y: clampedY };
+                      });
+                      return newVal;
+                    });
                   }}
                   style={{ justifyContent: 'space-between', marginTop: 2, background: 'rgba(255,255,255,0.02)' }}
                 >
@@ -4161,7 +4232,7 @@ const draw = useCallback(() => {
 }
 
 // ── Street View: simple Three.js first-person walk ────────────────────────
-function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime, metroView, setAssetContextMenu, containerRef }) {
+function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime, metroView, setAssetContextMenu, containerRef, getInitialClampedCoords, showColorRandomizer }) {
   const mountRef = useRef(null);
   const animRef = useRef(null);
   const keys = useRef({});
@@ -5602,7 +5673,8 @@ const mount = mountRef.current;
             const containerRect = containerRef.current?.getBoundingClientRect();
             const mx = containerRect ? e.clientX - containerRect.left : e.clientX;
             const my = containerRect ? e.clientY - containerRect.top : e.clientY;
-            setAssetContextMenu({ x: mx, y: my, asset, type: 'asset' });
+            const coords = getInitialClampedCoords(mx, my, 'asset', showColorRandomizer);
+            setAssetContextMenu({ ...coords, asset, type: 'asset' });
           } else if (e.button === 0) {
             selectAsset(clickedAssetId);
             setSelectedRoadId(null);
