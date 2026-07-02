@@ -1,0 +1,79 @@
+App.css:311 -> /* ── Asset Context Menu (Glassmorphism) ──────────────────────── */
+ActivityFeed.jsx:25 -> <span style={{ fontSize: 13, flexShrink: 0, marginTop: 1 }}>{ev.icon || '●'}</span>
+AssetLibrary.jsx:5 -> // ── 10 Sophisticated Template Generators (50-60 shapes each) ─────────────────
+AssetLibrary.jsx:925 -> // Prebuilt building templates — collections of primitives
+AssetLibrary.jsx:1208 -> icon: '⛲',
+AssetLibrary.jsx:1223 -> icon: '☀️',
+AssetLibrary.jsx:1258 -> icon: '⛪',
+AssetLibrary.jsx:1294 -> icon: '⚛️',
+AssetLibrary.jsx:1312 -> icon: '⚓',
+AssetLibrary.jsx:1545 -> icon: '👨‍🚀',
+AssetLibrary.jsx:1559 -> icon: '⛩️',
+Navbar.jsx:6 -> { id: 'editor', label: '3D Editor', icon: '✏️' },
+WelcomeScreen.jsx:56 -> { icon: '✏️', label: '3D Editor' },
+CityModule.jsx:319 -> empty:       { color: '#cbd5e1', label: 'Empty',       icon: '◻️' },
+CityModule.jsx:333 -> { id: 'pencil',             label: 'Zone Pencil', icon: '✏️', group: 'tools' },
+CityModule.jsx:1558 -> // ── Day/Night Cycle Rendering (2D Overlay & Streetlights) ──
+CityModule.jsx:2192 -> {/* ── Map / Street view canvas ── */}
+CityModule.jsx:2280 -> {/* ── Glassmorphic Context Menu (Asset & Road) ── */}
+CityModule.jsx:2302 -> {/* ── Header ── */}
+CityModule.jsx:2319 -> {/* ── ASSET-ONLY sections ── */}
+CityModule.jsx:2432 -> {/* ── Shared action buttons ── */}
+CityModule.jsx:2490 -> {/* ── Top-Left: City Info Pill ── */}
+CityModule.jsx:2514 -> {/* ── Top-Center: Tooltip / Placement Banner ── */}
+CityModule.jsx:2560 -> {/* ── Left-Side: Floating Tools Toolbar ── */}
+CityModule.jsx:2693 -> {/* ── Top-Right: View Toggles & Placed Objects Menu ── */}
+CityModule.jsx:3227 -> {/* ── Sub-menu Overlay for Build Categories (above build deck) ── */}
+CityModule.jsx:3366 -> {/* ── Bottom-Center: Main Build Categories Dock ── */}
+CityModule.jsx:3411 -> {/* ── Right-Side: Floating Zoom Controls ── */}
+CityModule.jsx:3416 -> <button className="glass-button" onClick={() => { targetZoomRef.current = 1.0; targetOffsetRef.current = {x:16,y:16}; }} style={{ width: 32, height: 32, borderRadius: '50%', fontSize: 12 }}>⟳</button>
+CityModule.jsx:3420 -> {/* ── Bottom-Left: Floating Legend ── */}
+CityModule.jsx:3448 -> // ── Street View: simple Three.js first-person walk ────────────────────────
+CityModule.jsx:3789 -> // ── Spawn 3D streetlights along standard, multilane, and highway roads ──
+CityModule.jsx:3826 -> // MeshLambertMaterial: per-vertex Gouraud shading instead of PBR per-fragment — no visible difference on metal poles
+CityModule.jsx:4561 -> // ── 3D Day/Night Cycle Updates ──
+CityModule.jsx:4570 -> // Fix 3: Toggle shadow map rendering off at night — no sun means no shadows needed.
+EditorModule.jsx:141 -> // ── Geometry cache ─────────────────────────────────────────────────────────
+EditorModule.jsx:195 -> { id: 'box', label: '⬜ Cube' },
+EditorModule.jsx:196 -> { id: 'sphere', label: '⚪ Sphere' },
+EditorModule.jsx:199 -> { id: 'torus', label: '⭕ Torus' },
+EditorModule.jsx:288 -> // ── Init Three.js ─────────────────────────────────────────────────────
+EditorModule.jsx:502 -> // ── Sync objects → Three.js ───────────────────────────────────────────
+EditorModule.jsx:1097 -> {/* ── Left panel ── */}
+EditorModule.jsx:1117 -> { id:'select', icon:'↖', label:'Select', hint:'Click objects' },
+EditorModule.jsx:1118 -> { id:'move',   icon:'✥', label:'Move',   hint:'Drag selected' },
+EditorModule.jsx:1197 -> <button className="btn sm" style={{ justifyContent:'center' }} onClick={() => duplicateObjects(selectedObjectIds)}>⧉ Duplicate</button>
+EditorModule.jsx:1201 -> <button className="btn sm" style={{ justifyContent:'center' }} onClick={undo}>↩ Undo (⌘Z)</button>
+EditorModule.jsx:1267 -> <span>❓ Navigation Guide</span>
+EditorModule.jsx:1286 -> {/* ── Right properties panel ── */}
+EditorModule.jsx:1460 -> <div style={{ fontSize:28, marginBottom:10 }}>✏️</div>
+EditorModule.jsx:1472 -> ⌘A → select all<br />
+EditorModule.jsx:1473 -> ⌘D → duplicate<br />
+EditorModule.jsx:1474 -> ⌘Z → undo
+GovernanceModule.jsx:39 -> {/* ── Left sidebar ── */}
+GovernanceModule.jsx:56 -> {city && <StatRow label="Treasury" value={`₡${Math.round(city.stats.treasury/1000)}k`} color={(city.stats.treasury>300000)?'var(--green)':'var(--amber)'} />}
+GovernanceModule.jsx:64 -> { id:'closed', icon:'✅', label:'Closed', count: closed.length },
+GovernanceModule.jsx:97 -> {/* ── Main content ── */}
+GovernanceModule.jsx:170 -> {failed && <span className="badge red">Failed ✗</span>}
+GovernanceModule.jsx:172 -> {!canAfford && isOpen && <span className="badge red">⚠️ Unaffordable</span>}
+GovernanceModule.jsx:181 -> <div style={{ fontSize:14, fontWeight:700, color: canAfford?'var(--amber)':'var(--red)' }}>₡{p.cost>=1000000?(p.cost/1000000).toFixed(1)+'M':Math.round(p.cost/1000)+'k'}</div>
+GovernanceModule.jsx:212 -> : <span style={{ color:'var(--amber)' }}>⬌ Tied</span>
+GovernanceModule.jsx:241 -> <button className="btn danger"  onClick={() => onVote(p.id,'against')}>✗ Vote Against</button>
+GovernanceModule.jsx:266 -> against: { bg:'rgba(226,75,74,0.15)',   color:'#F09595', prefix:'✗' },
+GovernanceModule.jsx:267 -> abstain: { bg:'var(--bg4)',             color:'var(--text3)', prefix:'–' },
+GovernanceModule.jsx:329 -> Estimated Cost (₡)
+GovernanceModule.jsx:331 -> Treasury: ₡{Math.round(treasury/1000)}k {form.cost > treasury && '— over budget!'}
+useStore.js:6 -> // ── Vector clock helpers ─────────────────────────────────────────────────
+useStore.js:15 -> // ── Connection ─────────────────────────────────────────────────────────
+useStore.js:23 -> // ── Navigation ─────────────────────────────────────────────────────────
+useStore.js:26 -> // ── Editor ─────────────────────────────────────────────────────────────
+useStore.js:38 -> // ── City ───────────────────────────────────────────────────────────────
+useStore.js:48 -> // ── Governance ─────────────────────────────────────────────────────────
+useStore.js:51 -> // ── Notifications ──────────────────────────────────────────────────────
+useStore.js:54 -> // ── Connect ────────────────────────────────────────────────────────────
+useStore.js:93 -> // ── Server message handler ─────────────────────────────────────────────
+useStore.js:236 -> // ── Editor actions ─────────────────────────────────────────────────────
+useStore.js:415 -> get().pushNotif("Need at least one Solid shape to carve! ⬜");
+useStore.js:788 -> // ── City actions ───────────────────────────────────────────────────────
+useStore.js:1035 -> // ── Governance ─────────────────────────────────────────────────────────
+useStore.js:1055 -> // ── Notifications ──────────────────────────────────────────────────────

@@ -922,6 +922,422 @@ function generateCyberHabitationDome() {
   return objects;
 }
 
+function generateZenithTower() {
+  const objects = [];
+  // Base Plate
+  objects.push({ geometry: 'box', position: {x:0, y:0.1, z:0}, scale: {x:12, y:0.2, z:12}, color: '#1e293b', name: 'Zenith_Base' });
+  // Central Core Tower
+  objects.push({ geometry: 'box', position: {x:0, y:8.0, z:0}, scale: {x:2.6, y:16.0, z:2.6}, color: '#334155', name: 'Zenith_Core' });
+
+  // 4 Outer Wing Towers
+  const wings = [
+    {x: -3.2, z: -3.2},
+    {x: 3.2, z: -3.2},
+    {x: -3.2, z: 3.2},
+    {x: 3.2, z: 3.2}
+  ];
+  wings.forEach((w, idx) => {
+    objects.push({ geometry: 'box', position: {x: w.x, y: 6.0, z: w.z}, scale: {x: 1.8, y: 12.0, z: 1.8}, color: '#475569', name: `Zenith_Wing_${idx}` });
+    // Spires on wings
+    objects.push({ geometry: 'cylinder', position: {x: w.x, y: 12.3, z: w.z}, scale: {x: 0.2, y: 0.6, z: 0.2}, color: '#cbd5e1', name: `Zenith_Spire_${idx}` });
+  });
+
+  // Windows and Balconies Grid (creates ~240 objects)
+  for (let wingIdx = 0; wingIdx < 4; wingIdx++) {
+    const w = wings[wingIdx];
+    for (let floor = 0; floor < 10; floor++) {
+      const y = 1.0 + floor * 1.1;
+      
+      // Window front (X side)
+      objects.push({
+        geometry: 'box',
+        position: {x: w.x + 0.91, y: y, z: w.z},
+        scale: {x: 0.04, y: 0.5, z: 0.8},
+        color: '#38bdf8',
+        name: `ZWin_X_${wingIdx}_${floor}`
+      });
+      // Balcony railing front
+      objects.push({
+        geometry: 'box',
+        position: {x: w.x + 1.1, y: y - 0.2, z: w.z},
+        scale: {x: 0.05, y: 0.35, z: 1.0},
+        color: '#94a3b8',
+        name: `ZBal_X_${wingIdx}_${floor}`
+      });
+
+      // Window back (Z side)
+      objects.push({
+        geometry: 'box',
+        position: {x: w.x, y: y, z: w.z + 0.91},
+        scale: {x: 0.8, y: 0.5, z: 0.04},
+        color: '#38bdf8',
+        name: `ZWin_Z_${wingIdx}_${floor}`
+      });
+      // Balcony railing back
+      objects.push({
+        geometry: 'box',
+        position: {x: w.x, y: y - 0.2, z: w.z + 1.1},
+        scale: {x: 1.0, y: 0.35, z: 0.05},
+        color: '#94a3b8',
+        name: `ZBal_Z_${wingIdx}_${floor}`
+      });
+
+      // Window interior (other Z side)
+      objects.push({
+        geometry: 'box',
+        position: {x: w.x, y: y, z: w.z - 0.91},
+        scale: {x: 0.8, y: 0.5, z: 0.04},
+        color: '#38bdf8',
+        name: `ZWin_mZ_${wingIdx}_${floor}`
+      });
+    }
+  }
+
+  // Base Amenities (Tennis court lines + trees = ~50 objects)
+  objects.push({ geometry: 'box', position: {x: 0, y: 0.11, z: 4.0}, scale: {x: 4.0, y: 0.02, z: 2.2}, color: '#16a34a', name: 'CourtBase' });
+  for (let c = 0; c < 8; c++) {
+    objects.push({
+      geometry: 'box',
+      position: {x: -1.8 + c * 0.5, y: 0.12, z: 4.0},
+      scale: {x: 0.04, y: 0.01, z: 2.2},
+      color: '#ffffff',
+      name: `CourtLine_${c}`
+    });
+  }
+
+  // Circular sky bridges connecting wings to core (8 segments = ~40 objects)
+  for (let lvl = 0; lvl < 3; lvl++) {
+    const bridgeY = 3.5 + lvl * 3.5;
+    wings.forEach((w, idx) => {
+      objects.push({
+        geometry: 'box',
+        position: {x: w.x * 0.5, y: bridgeY, z: w.z * 0.5},
+        scale: {x: 1.5, y: 0.4, z: 0.6},
+        rotation: {x: 0, y: Math.atan2(w.z, w.x), z: 0},
+        color: '#0284c7',
+        name: `ZBridge_${lvl}_${idx}`
+      });
+    });
+  }
+
+  return objects;
+}
+
+function generateMarinaBayHabitats() {
+  const objects = [];
+  // Base Plate
+  objects.push({ geometry: 'box', position: {x:0, y:0.1, z:0}, scale: {x:12, y:0.2, z:12}, color: '#090d16', name: 'Marina_Base' });
+  // Central Pool
+  objects.push({ geometry: 'box', position: {x:0, y:0.12, z:0}, scale: {x:5.0, y:0.04, z:5.0}, color: '#0891b2', name: 'Marina_Pool' });
+
+  // Generate Stacked Modular Apartments (creates ~350 objects)
+  let count = 0;
+  for (let xIdx = -3; xIdx <= 3; xIdx++) {
+    for (let zIdx = -3; zIdx <= 3; zIdx++) {
+      if (Math.abs(xIdx) <= 1 && Math.abs(zIdx) <= 1) continue; // Keep pool area clear
+      
+      const px = xIdx * 1.6;
+      const pz = zIdx * 1.6;
+      
+      // Determine height of stack dynamically
+      const maxH = Math.max(1, 4 - Math.abs(xIdx) - Math.abs(zIdx));
+      for (let yIdx = 0; yIdx < maxH; yIdx++) {
+        const py = 0.5 + yIdx * 1.3;
+        
+        // Apartment block
+        objects.push({
+          geometry: 'box',
+          position: {x: px, y: py, z: pz},
+          scale: {x: 1.3, y: 1.1, z: 1.3},
+          color: '#cbd5e1',
+          name: `Marina_Unit_${count}`
+        });
+
+        // Window pane
+        objects.push({
+          geometry: 'box',
+          position: {x: px, y: py + 0.1, z: pz + 0.66},
+          scale: {x: 0.8, y: 0.6, z: 0.04},
+          color: '#0284c7',
+          name: `Marina_Win_${count}`
+        });
+
+        // Balcony box
+        objects.push({
+          geometry: 'box',
+          position: {x: px, y: py - 0.2, z: pz + 0.8},
+          scale: {x: 1.0, y: 0.4, z: 0.3},
+          color: '#f8fafc',
+          name: `Marina_Bal_${count}`
+        });
+
+        // Support columns for floating units
+        if (yIdx === 0) {
+          objects.push({
+            geometry: 'cylinder',
+            position: {x: px, y: 0.2, z: pz},
+            scale: {x: 0.15, y: 0.4, z: 0.15},
+            color: '#475569',
+            name: `Marina_Col_${count}`
+          });
+        }
+        
+        count++;
+      }
+    }
+  }
+
+  // Walkways and railings (adds ~80 objects)
+  for (let walk = 0; walk < 10; walk++) {
+    objects.push({
+      geometry: 'box',
+      position: {x: -3.0 + walk * 0.6, y: 1.8, z: -2.0},
+      scale: {x: 0.5, y: 0.1, z: 0.8},
+      color: '#64748b',
+      name: `Marina_Walkway_${walk}`
+    });
+    objects.push({
+      geometry: 'box',
+      position: {x: 3.0 - walk * 0.6, y: 3.1, z: 2.0},
+      scale: {x: 0.5, y: 0.1, z: 0.8},
+      color: '#64748b',
+      name: `Marina_Walkway2_${walk}`
+    });
+  }
+
+  return objects;
+}
+
+function generateElysiumSociety() {
+  const objects = [];
+  // Base Plate
+  objects.push({ geometry: 'box', position: {x:0, y:0.1, z:0}, scale: {x:12, y:0.2, z:12}, color: '#111827', name: 'Elysium_Base' });
+
+  // 3 Primary Skyscrapers (shapes count ~360)
+  const towers = [
+    {x: -3.0, z: -1.5, height: 14},
+    {x: 3.0, z: -1.5, height: 16},
+    {x: 0, z: 3.0, height: 18}
+  ];
+
+  towers.forEach((t, idx) => {
+    // Core Tower Structure
+    objects.push({
+      geometry: 'box',
+      position: {x: t.x, y: t.height / 2, z: t.z},
+      scale: {x: 2.4, y: t.height, z: 2.4},
+      color: '#374151',
+      name: `Elysium_Tower_${idx}`
+    });
+
+    // Spire Cap
+    objects.push({
+      geometry: 'cylinder',
+      position: {x: t.x, y: t.height + 0.4, z: t.z},
+      scale: {x: 0.8, y: 0.8, z: 0.8},
+      color: '#f59e0b',
+      name: `Elysium_Cap_${idx}`
+    });
+    objects.push({
+      geometry: 'cone',
+      position: {x: t.x, y: t.height + 1.2, z: t.z},
+      scale: {x: 0.15, y: 1.6, z: 0.15},
+      color: '#ffffff',
+      name: `Elysium_Spire_${idx}`
+    });
+
+    // Window Facade Grid
+    const floors = Math.floor(t.height - 1.5);
+    for (let f = 0; f < floors; f++) {
+      const y = 1.0 + f * 1.1;
+
+      // Front Window Panes
+      objects.push({
+        geometry: 'box',
+        position: {x: t.x + 1.21, y: y, z: t.z - 0.4},
+        scale: {x: 0.04, y: 0.6, z: 0.5},
+        color: '#60a5fa',
+        name: `EWin_F1_${idx}_${f}`
+      });
+      objects.push({
+        geometry: 'box',
+        position: {x: t.x + 1.21, y: y, z: t.z + 0.4},
+        scale: {x: 0.04, y: 0.6, z: 0.5},
+        color: '#60a5fa',
+        name: `EWin_F2_${idx}_${f}`
+      });
+
+      // Side Window Panes
+      objects.push({
+        geometry: 'box',
+        position: {x: t.x - 0.4, y: y, z: t.z + 1.21},
+        scale: {x: 0.5, y: 0.6, z: 0.04},
+        color: '#60a5fa',
+        name: `EWin_S1_${idx}_${f}`
+      });
+      objects.push({
+        geometry: 'box',
+        position: {x: t.x + 0.4, y: y, z: t.z + 1.21},
+        scale: {x: 0.5, y: 0.6, z: 0.04},
+        color: '#60a5fa',
+        name: `EWin_S2_${idx}_${f}`
+      });
+    }
+  });
+
+  // Playground & badminton court (adds ~30 objects)
+  objects.push({ geometry: 'box', position: {x: -2.5, y: 0.11, z: 3.0}, scale: {x: 2.2, y: 0.02, z: 1.6}, color: '#059669', name: 'Court' });
+  for (let line = 0; line < 5; line++) {
+    objects.push({
+      geometry: 'box',
+      position: {x: -2.5, y: 0.12, z: 2.3 + line * 0.35},
+      scale: {x: 2.2, y: 0.01, z: 0.04},
+      color: '#ffffff',
+      name: `CourtLine_${line}`
+    });
+  }
+
+  return objects;
+}
+
+function generateSolariaArcology() {
+  const objects = [];
+  // Base Plate
+  objects.push({ geometry: 'box', position: {x:0, y:0.1, z:0}, scale: {x:12, y:0.2, z:12}, color: '#022c22', name: 'Solaria_Base' });
+
+  // Stepped Circular Floors (creates ~350 objects)
+  for (let floor = 0; floor < 8; floor++) {
+    const y = 0.5 + floor * 1.5;
+    const radius = 4.8 - floor * 0.5;
+    const numPanels = 18 - floor * 2;
+
+    // Platform Slab
+    objects.push({
+      geometry: 'cylinder',
+      position: {x: 0, y: y, z: 0},
+      scale: {x: radius * 2, y: 0.2, z: radius * 2},
+      color: '#115e59',
+      name: `Solaria_Slab_${floor}`
+    });
+
+    // Circular Wall Panels & Windows
+    for (let p = 0; p < numPanels; p++) {
+      const angle = (p / numPanels) * Math.PI * 2;
+      const px = Math.cos(angle) * (radius - 0.2);
+      const pz = Math.sin(angle) * (radius - 0.2);
+
+      // Support Panel
+      objects.push({
+        geometry: 'box',
+        position: {x: px, y: y + 0.7, z: pz},
+        scale: {x: 0.4, y: 1.2, z: 0.4},
+        rotation: {x: 0, y: -angle, z: 0},
+        color: '#0d9488',
+        name: `Solaria_Wall_${floor}_${p}`
+      });
+
+      // Window Pane
+      objects.push({
+        geometry: 'box',
+        position: {x: px * 0.95, y: y + 0.7, z: pz * 0.95},
+        scale: {x: 0.35, y: 0.9, z: 0.05},
+        rotation: {x: 0, y: -angle, z: 0},
+        color: '#22d3ee',
+        name: `Solaria_Win_${floor}_${p}`
+      });
+    }
+
+    // Solar panels on terraces
+    if (floor > 0) {
+      const sx = Math.cos(floor) * (radius + 0.25);
+      const sz = Math.sin(floor) * (radius + 0.25);
+      objects.push({
+        geometry: 'box',
+        position: {x: sx, y: y + 0.15, z: sz},
+        scale: {x: 0.8, y: 0.05, z: 0.6},
+        rotation: {x: 0.3, y: floor, z: 0},
+        color: '#2563eb',
+        name: `Solaria_Solar_${floor}`
+      });
+    }
+  }
+
+  // Sky garden trees at top
+  for (let t = 0; t < 5; t++) {
+    const angle = (t / 5) * Math.PI * 2;
+    objects.push({
+      geometry: 'sphere',
+      position: {x: Math.cos(angle) * 0.8, y: 12.8, z: Math.sin(angle) * 0.8},
+      scale: {x: 0.5, y: 0.5, z: 0.5},
+      color: '#15803d',
+      name: `Solaria_Tree_${t}`
+    });
+  }
+
+  return objects;
+}
+
+function generateHyperBlockCondos() {
+  const objects = [];
+  // Base Plate
+  objects.push({ geometry: 'box', position: {x:0, y:0.1, z:0}, scale: {x:12, y:0.2, z:12}, color: '#0f172a', name: 'Hyper_Base' });
+
+  // Grid Stacking of Modular Blocks (creates ~360 objects)
+  let count = 0;
+  for (let x = -2; x <= 2; x++) {
+    for (let z = -2; z <= 2; z++) {
+      for (let y = 0; y < 3; y++) {
+        // Skip random slots for open-air sky parks
+        if ((x + z + y) % 3 === 0) continue;
+
+        const px = x * 2.2;
+        const py = 0.6 + y * 1.5;
+        const pz = z * 2.2;
+
+        // Condo unit block
+        objects.push({
+          geometry: 'box',
+          position: {x: px, y: py, z: pz},
+          scale: {x: 1.8, y: 1.3, z: 1.8},
+          color: '#475569',
+          name: `HBlock_Unit_${count}`
+        });
+
+        // Large front glass pane
+        objects.push({
+          geometry: 'box',
+          position: {x: px, y: py, z: pz + 0.91},
+          scale: {x: 1.2, y: 0.8, z: 0.04},
+          color: '#38bdf8',
+          name: `HBlock_Win_${count}`
+        });
+
+        // Industrial utility pipes
+        objects.push({
+          geometry: 'cylinder',
+          position: {x: px - 0.92, y: py, z: pz},
+          scale: {x: 0.08, y: 1.5, z: 0.08},
+          color: '#94a3b8',
+          name: `HBlock_Pipe_${count}`
+        });
+
+        // Warning neon dot
+        objects.push({
+          geometry: 'sphere',
+          position: {x: px, y: py + 0.66, z: pz},
+          scale: {x: 0.12, y: 0.12, z: 0.12},
+          color: '#f43f5e',
+          name: `HBlock_Beacon_${count}`
+        });
+
+        count++;
+      }
+    }
+  }
+
+  return objects;
+}
+
 // Prebuilt building templates — collections of primitives
 export const TEMPLATES = [
   {
@@ -996,6 +1412,51 @@ export const TEMPLATES = [
     width: 10.0,
     height: 10.0,
     objects: generateCyberHabitationDome(),
+  },
+  {
+    id: 'zenith_residential_tower',
+    name: 'Zenith Residential Tower Complex',
+    icon: '🏢',
+    category: 'residential',
+    width: 12.0,
+    height: 12.0,
+    objects: generateZenithTower(),
+  },
+  {
+    id: 'marina_bay_habitats',
+    name: 'Marina Bay Habitats',
+    icon: '🏙️',
+    category: 'residential',
+    width: 12.0,
+    height: 12.0,
+    objects: generateMarinaBayHabitats(),
+  },
+  {
+    id: 'elysium_skyline_society',
+    name: 'Elysium Skyline Society',
+    icon: '🏰',
+    category: 'residential',
+    width: 12.0,
+    height: 12.0,
+    objects: generateElysiumSociety(),
+  },
+  {
+    id: 'solaria_green_arcology',
+    name: 'Solaria Green Arcology',
+    icon: '🌿',
+    category: 'residential',
+    width: 12.0,
+    height: 12.0,
+    objects: generateSolariaArcology(),
+  },
+  {
+    id: 'hyper_block_condos',
+    name: 'Hyper-Block Condominiums',
+    icon: '🏫',
+    category: 'residential',
+    width: 12.0,
+    height: 12.0,
+    objects: generateHyperBlockCondos(),
   },
   {
     id: 'house',

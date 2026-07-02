@@ -5,6 +5,13 @@ import { useStore } from '../../store/useStore';
 import AssetLibrary from '../../components/AssetLibrary';
 import Icon from '../../components/Icon';
 
+const CameraIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </svg>
+);
+
 function SmoothColorPicker({ value, onChange, disabled, style }) {
   const [localVal, setLocalVal] = useState(value);
   const inputRef = useRef(null);
@@ -263,10 +270,13 @@ export default function EditorModule() {
   const [showPublish, setShowPublish] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [marqueeBox, setMarqueeBox] = useState(null);
+  const [stackPrompt, setStackPrompt] = useState(null);
   const isMarqueeSelecting = useRef(false);
   const marqueeStartPos = useRef({ x: 0, y: 0 });
   const [fixCamera, setFixCamera] = useState(false);
-  const [showCameraHelp, setShowCameraHelp] = useState(true);
+  const [showCameraHelp, setShowCameraHelp] = useState(false); // camera help starts minimized (icon only) on default
+  const [showObjectsList, setShowObjectsList] = useState(false);
+  const [activeRightTab, setActiveRightTab] = useState('transform');
   const isPanning = useRef(false);
   const panLastX = useRef(0);
   const panLastY = useRef(0);
@@ -284,6 +294,7 @@ export default function EditorModule() {
     addObject, deleteObjects, duplicateObjects, selectObject, selectObjects,
     updateObjectProp, updateObjectsProp, setEditorTool, publishToCity, clearScene,
     undo, pushUndoAction, carveSelectedObjects, uncarveSelectedObject,
+    stackingObjectId, setStackingObjectId,
   } = useStore();
 
   // ── Init Three.js ─────────────────────────────────────────────────────
@@ -536,6 +547,8 @@ export default function EditorModule() {
       mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
       mesh.rotation.set(obj.rotation.x, obj.rotation.y, obj.rotation.z);
       mesh.scale.set(obj.scale.x, obj.scale.y, obj.scale.z);
+      mesh.userData.isSolid = !!obj.isSolid;
+      mesh.userData.isStacked = !!obj.isStacked;
       
       if (obj.geometry === 'csg') {
         const csgKey = getCSGKey(obj);
@@ -612,17 +625,21 @@ export default function EditorModule() {
       }
       
       const sel = selectedObjectIds.includes(id);
+      const isGlowingPlatform = stackingObjectId && obj.isSolid && id !== stackingObjectId;
+      const emissiveColor = isGlowingPlatform ? 0xffd700 : (sel ? 0x4ECDC4 : 0x000000);
+      const emissiveIntensity = isGlowingPlatform ? 0.6 : (sel ? 0.28 : 0);
+
       if (Array.isArray(mesh.material)) {
         mesh.material.forEach(mat => {
-          mat.emissive.set(sel ? 0x4ECDC4 : 0x000000);
-          mat.emissiveIntensity = sel ? 0.28 : 0;
+          mat.emissive.set(emissiveColor);
+          mat.emissiveIntensity = emissiveIntensity;
         });
       } else if (mesh.material) {
-        mesh.material.emissive.set(sel ? 0x4ECDC4 : 0x000000);
-        mesh.material.emissiveIntensity = sel ? 0.28 : 0;
+        mesh.material.emissive.set(emissiveColor);
+        mesh.material.emissiveIntensity = emissiveIntensity;
       }
     }
-  }, [editorObjects, selectedObjectId, selectedObjectIds]);
+  }, [editorObjects, selectedObjectId, selectedObjectIds, stackingObjectId]);
 
   const cameraTarget = useRef(new THREE.Vector3(0, 0, 0));
 
@@ -657,6 +674,64 @@ export default function EditorModule() {
           x: Math.max(-20, Math.min(20, parseFloat(pos.x.toFixed(2)))),
           y: 0.5,
           z: Math.max(-20, Math.min(20, parseFloat(pos.z.toFixed(2))))
+        };
+      }
+    }
+    addObject(geometry, spawnPos);
+  }, [addObject]);
+
+  const fitToBottomObject = useCallback((objectId) => {
+    const obj = editorObjects[objectId];
+    if (!obj) return;
+    
+    const meshesToHit = Object.values(meshMapRef.current).filter(m => m.name !== objectId && m.userData.isSolid);
+    const downRay = new THREE.Raycaster(
+      new THREE.Vector3(obj.position.x, obj.position.y + 0.1, obj.position.z),
+      new THREE.Vector3(0, -1, 0)
+    );
+    const downHits = downRay.intersectObjects(meshesToHit);
+    if (downHits.length > 0) {
+      const baseMesh = downHits[0].object;
+      const baseObjId = baseMesh.name;
+      const baseObj = editorObjects[baseObjId];
+      if (baseObj) {
+        updateObjectProp(objectId, 'scale', { ...obj.scale, x: baseObj.scale.x, z: baseObj.scale.z });
+      }
+    }
+  }, [editorObjects, updateObjectProp]);
+
+  const handleTemplateDrop = useCallback((e) => {
+    e.preventDefault();
+    const geometry = e.dataTransfer.getData('text/plain');
+    if (!geometry || !GEOMETRY_LIST.find(g => g.id === geometry)) return;
+
+    if (!cameraRef.current || !mountRef.current) return;
+    const rect = mountRef.current.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    const dropMouse = new THREE.Vector2(mouseX, mouseY);
+    const dropRaycaster = new THREE.Raycaster();
+    dropRaycaster.setFromCamera(dropMouse, cameraRef.current);
+
+    const meshes = Object.values(meshMapRef.current);
+    const hits = dropRaycaster.intersectObjects(meshes);
+    let spawnPos = { x: 0, y: 0.5, z: 0 };
+    if (hits.length > 0) {
+      const hit = hits[0];
+      spawnPos = {
+        x: Math.max(-20, Math.min(20, parseFloat(hit.point.x.toFixed(2)))),
+        y: parseFloat((hit.point.y + 0.5).toFixed(2)),
+        z: Math.max(-20, Math.min(20, parseFloat(hit.point.z.toFixed(2))))
+      };
+    } else {
+      const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const pt = new THREE.Vector3();
+      if (dropRaycaster.ray.intersectPlane(groundPlane, pt)) {
+        spawnPos = {
+          x: Math.max(-20, Math.min(20, parseFloat(pt.x.toFixed(2)))),
+          y: 0.5,
+          z: Math.max(-20, Math.min(20, parseFloat(pt.z.toFixed(2))))
         };
       }
     }
@@ -732,6 +807,29 @@ export default function EditorModule() {
     }
 
     if (e.button === 0) {
+      if (stackingObjectId) {
+        const m = canvasMouse(e);
+        mouseVec.current.set(m.x, m.y);
+        raycasterRef.current.setFromCamera(mouseVec.current, cameraRef.current);
+        const meshes = Object.values(meshMapRef.current);
+        const hits = raycasterRef.current.intersectObjects(meshes);
+        if (hits.length) {
+          const hit = hits[0];
+          const hitId = hit.object.name;
+          const targetObj = editorObjects[hitId];
+          if (targetObj && targetObj.isSolid && hitId !== stackingObjectId) {
+            const stackedCount = Object.values(editorObjects).filter(o => o.stackedOnObjectId === hitId).length;
+            if (stackedCount >= 10) {
+              alert("This platform cannot support more than 10 stacked objects!");
+            } else {
+              setStackPrompt({ childId: stackingObjectId, parentId: hitId });
+            }
+          }
+        }
+        setStackingObjectId(null);
+        return;
+      }
+
       const m = canvasMouse(e);
       mouseVec.current.set(m.x, m.y);
       raycasterRef.current.setFromCamera(mouseVec.current, cameraRef.current);
@@ -899,15 +997,122 @@ export default function EditorModule() {
         const clampedDeltaX = Math.max(-20 - minStartX, Math.min(20 - maxStartX, deltaX));
         const clampedDeltaZ = Math.max(-20 - minStartZ, Math.min(20 - maxStartZ, deltaZ));
 
+        const nextPositions = {};
         Object.entries(startPositions.current).forEach(([id, startPos]) => {
           const cur = editorObjects[id];
           if (cur) {
-            const nextPos = {
-              x: +(startPos.x + clampedDeltaX).toFixed(2),
-              y: startPos.y,
-              z: +(startPos.z + clampedDeltaZ).toFixed(2)
-            };
-            updateObjectProp(id, 'position', nextPos);
+            let nextX = cur.lockX ? startPos.x : +(startPos.x + clampedDeltaX).toFixed(2);
+            let nextZ = cur.lockZ ? startPos.z : +(startPos.z + clampedDeltaZ).toFixed(2);
+            let nextY = startPos.y;
+
+            if (!cur.lockY && cur.isSolid && cur.isStacked) {
+              const meshesToHit = Object.values(meshMapRef.current).filter(m => m.name !== id && m.userData.isSolid);
+              const downRay = new THREE.Raycaster(
+                new THREE.Vector3(nextX, 50, nextZ),
+                new THREE.Vector3(0, -1, 0)
+              );
+              const downHits = downRay.intersectObjects(meshesToHit);
+              let targetSurfaceY = 0;
+              if (downHits.length > 0) {
+                targetSurfaceY = downHits[0].point.y;
+              }
+
+              const mesh = meshMapRef.current[id];
+              let bottomOffset = 0.5 * cur.scale.y;
+              if (mesh && mesh.geometry) {
+                const geom = mesh.geometry;
+                if (!geom.boundingBox) geom.computeBoundingBox();
+                if (geom.boundingBox) {
+                  bottomOffset = -geom.boundingBox.min.y * cur.scale.y;
+                }
+              }
+              nextY = +(targetSurfaceY + bottomOffset).toFixed(2);
+            }
+            nextPositions[id] = { x: nextX, y: nextY, z: nextZ };
+          }
+        });
+
+        // Temporarily apply positions to Three.js meshes for collision resolution
+        Object.entries(nextPositions).forEach(([id, pos]) => {
+          const mesh = meshMapRef.current[id];
+          if (mesh) {
+            mesh.position.set(pos.x, pos.y, pos.z);
+            mesh.updateMatrixWorld(true);
+          }
+        });
+
+        // Resolve collisions against all other solid objects in the scene
+        const maxIterations = 5;
+        let collided = true;
+        for (let iter = 0; iter < maxIterations && collided; iter++) {
+          collided = false;
+
+          for (const id of Object.keys(nextPositions)) {
+            const mesh = meshMapRef.current[id];
+            if (!mesh) continue;
+
+            const draggedBox = new THREE.Box3().setFromObject(mesh);
+            
+            const solidMeshes = Object.values(meshMapRef.current).filter(m => 
+              m.name !== id && 
+              !Object.keys(nextPositions).includes(m.name) && 
+              m.userData.isSolid
+            );
+
+            for (const solidMesh of solidMeshes) {
+              const solidBox = new THREE.Box3().setFromObject(solidMesh);
+              if (draggedBox.intersectsBox(solidBox)) {
+                collided = true;
+                
+                // Calculate overlap on X and Z axes
+                const overlapX = Math.min(draggedBox.max.x, solidBox.max.x) - Math.max(draggedBox.min.x, solidBox.min.x);
+                const overlapZ = Math.min(draggedBox.max.z, solidBox.max.z) - Math.max(draggedBox.min.z, solidBox.min.z);
+
+                if (overlapX < overlapZ) {
+                  // Push along X
+                  const draggedCenterX = (draggedBox.min.x + draggedBox.max.x) / 2;
+                  const solidCenterX = (solidBox.min.x + solidBox.max.x) / 2;
+                  const pushX = draggedCenterX < solidCenterX ? -overlapX : overlapX;
+                  
+                  // Adjust position of all dragged objects by pushX so the group moves together
+                  Object.keys(nextPositions).forEach(dragId => {
+                    const m = meshMapRef.current[dragId];
+                    if (m) {
+                      m.position.x += pushX;
+                      m.updateMatrixWorld(true);
+                    }
+                  });
+                } else {
+                  // Push along Z
+                  const draggedCenterZ = (draggedBox.min.z + draggedBox.max.z) / 2;
+                  const solidCenterZ = (solidBox.min.z + solidBox.max.z) / 2;
+                  const pushZ = draggedCenterZ < solidCenterZ ? -overlapZ : overlapZ;
+
+                  // Adjust position of all dragged objects by pushZ so the group moves together
+                  Object.keys(nextPositions).forEach(dragId => {
+                    const m = meshMapRef.current[dragId];
+                    if (m) {
+                      m.position.z += pushZ;
+                      m.updateMatrixWorld(true);
+                    }
+                  });
+                }
+                break;
+              }
+            }
+            if (collided) break;
+          }
+        }
+
+        // Apply final resolved positions back to the state
+        Object.keys(nextPositions).forEach(id => {
+          const mesh = meshMapRef.current[id];
+          if (mesh) {
+            updateObjectProp(id, 'position', { 
+              x: parseFloat(mesh.position.x.toFixed(2)), 
+              y: parseFloat(mesh.position.y.toFixed(2)), 
+              z: parseFloat(mesh.position.z.toFixed(2)) 
+            });
           }
         });
       }
@@ -1093,128 +1298,12 @@ export default function EditorModule() {
   const selected = selectedObjectId ? editorObjects[selectedObjectId] : null;
 
   return (
-    <div style={{ display:'flex', flex:1, overflow:'hidden', outline:'none' }} tabIndex={0} onKeyDown={onKeyDown}>
-
-      {/* ── Left panel ── */}
-      <div className="side-panel">
-        <div className="panel-section">
-          <div className="panel-label">Add Geometry</div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:5 }}>
-            {GEOMETRY_LIST.map(g => (
-              <button key={g.id} className="btn sm" onClick={() => handleAddObject(g.id)} style={{ justifyContent:'center', fontSize:11 }}>
-                {g.label}
-              </button>
-            ))}
-          </div>
-          <button className="btn primary full" style={{ marginTop:8, display:'flex', alignItems:'center', justifyContent:'center', gap:5 }} onClick={() => setShowLibrary(true)}>
-            <Icon name="stats" size={13} /> Template Library
-          </button>
-        </div>
-
-        <div className="panel-section">
-          <div className="panel-label">Tools</div>
-          <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-            {[
-              { id:'select', icon:'↖', label:'Select', hint:'Click objects' },
-              { id:'move',   icon:'✥', label:'Move',   hint:'Drag selected' },
-            ].map(t => (
-              <button key={t.id} className={`tool-btn ${editorTool===t.id?'active':''}`} onClick={() => setEditorTool(t.id)}>
-                <span style={{ width:18, textAlign:'center', fontSize:15 }}>{t.icon}</span>
-                {t.label}
-                <span style={{ marginLeft:'auto', fontSize:10, opacity:0.4 }}>{t.hint}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="panel-section">
-          <div className="panel-label">Camera Settings</div>
-          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-            <button
-              className={`tool-btn ${fixCamera ? 'active' : ''}`}
-              onClick={() => setFixCamera(!fixCamera)}
-              style={{ width: '100%', justifyContent: 'flex-start' }}
-            >
-              <span style={{ width: 18, textAlign: 'center', fontSize: 14 }}>{fixCamera ? '🔒' : '🔓'}</span>
-              {fixCamera ? 'Camera: Fixed' : 'Camera: Free'}
-              <span style={{ marginLeft: 'auto', fontSize: 10, opacity: 0.5 }}>Revolve only</span>
-            </button>
-            <button
-              className={`tool-btn ${isOrtho ? 'active' : ''}`}
-              onClick={() => setIsOrtho(!isOrtho)}
-              style={{ width: '100%', justifyContent: 'flex-start' }}
-            >
-              <span style={{ width: 18, textAlign: 'center', fontSize: 14 }}>📐</span>
-              {isOrtho ? 'Orthographic' : 'Perspective'}
-              <span style={{ marginLeft: 'auto', fontSize: 10, opacity: 0.5 }}>Press 5</span>
-            </button>
-          </div>
-        </div>
-
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 12px 2px' }}>
-          <div className="panel-label" style={{ marginBottom:0 }}>Objects ({objList.length})</div>
-          {objList.length > 0 && (
-            <button className="btn sm danger" onClick={clearScene} style={{ padding:'2px 8px', fontSize:10 }}>Clear</button>
-          )}
-        </div>
-        <div className="obj-list">
-          {objList.map(obj => (
-            <div key={obj.id} className={`obj-item ${selectedObjectIds.includes(obj.id)?'selected':''}`} onClick={(e) => selectObject(obj.id, e.ctrlKey)}>
-              <div className="obj-dot" style={{ background: obj.isSubtractive ? '#ef4444' : obj.color, border: obj.isSubtractive ? '1px dashed #ff8888' : 'none' }} />
-              <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:11, color: obj.isSubtractive ? '#ff8888' : 'inherit' }}>
-                {obj.name} {obj.isSubtractive && ' 🕳️'}
-              </span>
-              <span style={{ fontSize:10, opacity:0.35 }}>{obj.geometry === 'csg' ? 'carved' : obj.geometry}</span>
-            </div>
-          ))}
-          {!objList.length && (
-            <div style={{ padding:'16px 12px', fontSize:11, color:'var(--text3)', textAlign:'center', lineHeight:1.7 }}>
-              No objects.<br />Add one above.
-            </div>
-          )}
-        </div>
-
-        <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)', marginTop:'auto', display:'flex', flexDirection:'column', gap:6 }}>
-          {selected && (
-            <>
-              {selectedObjectIds.length >= 2 && (
-                <button
-                  className="btn sm"
-                  style={{ justifyContent:'center', background: 'var(--accent)', color: '#fff' }}
-                  onClick={carveSelectedObjects}
-                >
-                  🪓 Carve / Group (Ctrl+G)
-                </button>
-              )}
-              {selectedObjectIds.length === 1 && selected.geometry === 'csg' && (
-                <button
-                  className="btn sm"
-                  style={{ justifyContent:'center', background: 'rgba(78, 205, 196, 0.2)', color: '#4ECDC4', border: '1px solid #4ECDC4' }}
-                  onClick={uncarveSelectedObject}
-                >
-                  🔓 Uncarve / Ungroup
-                </button>
-              )}
-              <button className="btn sm" style={{ justifyContent:'center' }} onClick={() => duplicateObjects(selectedObjectIds)}>⧉ Duplicate</button>
-              <button className="btn sm danger" style={{ justifyContent:'center' }} onClick={() => deleteObjects(selectedObjectIds)}>🗑 Delete</button>
-            </>
-          )}
-          <button className="btn sm" style={{ justifyContent:'center' }} onClick={undo}>↩ Undo (⌘Z)</button>
-          <button
-            className="btn primary"
-            style={{ justifyContent:'center' }}
-            onClick={() => setShowPublish(true)}
-            disabled={selectedObjectIds.length === 0}
-            title={selectedObjectIds.length === 0 ? "Select one or more objects to publish" : ""}
-          >
-            ↑ Publish Selected ({selectedObjectIds.length})
-          </button>
-        </div>
-      </div>
-
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', outline: 'none', zIndex: 10, background: '#0f172a' }} tabIndex={0} onKeyDown={onKeyDown}>
+      
+      {/* ── Background Three.js View Canvas ── */}
       <div
         ref={mountRef}
-        style={{ flex:1, position:'relative', overflow:'hidden', cursor: isOrbiting.current ? 'grabbing' : editorTool==='move' ? 'grab' : 'default' }}
+        style={{ position: 'absolute', inset: 0, cursor: isOrbiting.current ? 'grabbing' : 'default' }}
         onMouseDown={onMouseDown}
         onDoubleClick={onDoubleClick}
         onMouseMove={onMouseMove}
@@ -1222,266 +1311,482 @@ export default function EditorModule() {
         onMouseLeave={onMouseUp}
         onWheel={onWheel}
         onContextMenu={e => e.preventDefault()}
-      >
-        {/* HUD hints */}
-        <div style={{ position:'absolute', bottom:12, left:'50%', transform:'translateX(-50%)', background:'rgba(255,255,255,0.92)', border:'1px solid var(--border2)', borderRadius:6, padding:'4px 14px', fontSize:11, color:'var(--text2)', pointerEvents:'none', whiteSpace:'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          RMB / Alt+drag: orbit · Scroll: zoom · Arrow keys: move · Q/E: rotate · W/S: scale · R/V: up/down · F: focus · Del: delete
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleTemplateDrop}
+      />
+
+      {/* ── Floating Left Panel: View & Camera Locks ── */}
+      <div className="glass-panel" style={{ position: 'absolute', left: 16, top: 76, width: 200, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 50 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, opacity: 0.6, marginBottom: 4 }}>Camera Settings</div>
+        <button
+          className={`glass-button ${fixCamera ? 'active' : ''}`}
+          onClick={() => setFixCamera(!fixCamera)}
+          style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 11 }}
+        >
+          <span>{fixCamera ? '🔒' : '🔓'}</span>
+          {fixCamera ? 'Camera: Fixed' : 'Camera: Free'}
+        </button>
+        <button
+          className={`glass-button ${isOrtho ? 'active' : ''}`}
+          onClick={() => setIsOrtho(!isOrtho)}
+          style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 11 }}
+        >
+          <span>📐</span>
+          {isOrtho ? 'Orthographic' : 'Perspective'}
+        </button>
+        <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+          {[{ key: '1', label: 'Front' }, { key: '3', label: 'Right' }, { key: '7', label: 'Top' }].map(snap => (
+            <button
+              key={snap.key}
+              className="glass-button"
+              style={{ flex: 1, padding: '4px 0', fontSize: 10 }}
+              onClick={() => {
+                setIsOrtho(true);
+                if (snap.key === '1') {
+                  targetPhiRef.current = Math.PI / 2 - 0.04;
+                  targetThetaRef.current = -Math.PI / 2;
+                } else if (snap.key === '3') {
+                  targetPhiRef.current = Math.PI / 2 - 0.04;
+                  targetThetaRef.current = 0;
+                } else {
+                  targetPhiRef.current = 0.08;
+                  targetThetaRef.current = -Math.PI / 2;
+                }
+              }}
+            >
+              {snap.label}
+            </button>
+          ))}
         </div>
-        {/* Object count badge */}
-        <div style={{ position:'absolute', top:10, left:10, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, padding:'3px 10px', fontSize:11, color:'var(--text2)' }}>
-          {objList.length} object{objList.length!==1?'s':''}
-        </div>
-        {/* Camera guide floating help section */}
-        {showCameraHelp ? (
-          <div style={{
-            position: 'absolute', top: 10, right: 10,
-            background: 'var(--bg2)', border: '1px solid var(--border2)',
-            borderRadius: 10, padding: '12px 16px', width: 240,
-            boxShadow: '0 4px 15px rgba(0,0,0,0.08)', zIndex: 100,
-            fontSize: 12, color: 'var(--text)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, fontWeight: 700 }}>
-              <span style={{ fontSize: 13 }}>🎥 Camera Navigation</span>
-              <button onClick={() => setShowCameraHelp(false)} style={{ background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: 13 }}>✕</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, lineHeight: 1.5 }}>
-              <div><strong>Orbit:</strong> RMB / Alt + Drag</div>
-              <div><strong>Pan:</strong> Shift + Left/RMB Drag</div>
-              <div><strong>Zoom to Cursor:</strong> Scroll Wheel</div>
-              <div><strong>Focus Object:</strong> Select shape & press <code>F</code></div>
-              <div><strong>Snap Axis:</strong> <code>1</code> (Front), <code>3</code> (Right), <code>7</code> (Top) <span style={{ opacity: 0.6 }}>(Ctrl for reverse)</span></div>
-              <div><strong>Persp/Ortho:</strong> Press <code>5</code> to toggle</div>
-            </div>
+      </div>
+
+      {/* ── Top Center/Right: Floating Camera Guide Toggle ── */}
+      <div style={{ position: 'absolute', top: 76, right: 16, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+        <button
+          className="glass-button"
+          onClick={() => setShowCameraHelp(!showCameraHelp)}
+          style={{ width: 36, height: 36, borderRadius: '50%', padding: 0 }}
+          title="Camera Guide"
+        >
+          <CameraIcon />
+        </button>
+        
+        {showCameraHelp && (
+          <div className="glass-panel" style={{ padding: 12, width: 220, fontSize: 11, display: 'flex', flexDirection: 'column', gap: 6, animation: 'fadeIn 0.2s ease' }}>
+            <div style={{ fontWeight: 700, marginBottom: 2 }}>🎥 Camera Navigation</div>
+            <div><strong>Orbit:</strong> RMB / Alt + Drag</div>
+            <div><strong>Pan:</strong> Shift + Drag</div>
+            <div><strong>Zoom:</strong> Scroll Wheel</div>
+            <div><strong>Focus Object:</strong> Select & press <code>F</code></div>
+            <div><strong>Snap Axis:</strong> <code>1</code>, <code>3</code>, <code>7</code> keys</div>
           </div>
-        ) : (
-          <button
-            onClick={() => setShowCameraHelp(true)}
-            style={{
-              position: 'absolute', top: 10, right: 10,
-              background: 'var(--bg2)', border: '1px solid var(--border2)',
-              borderRadius: 6, padding: '5px 12px', fontSize: 11,
-              cursor: 'pointer', color: 'var(--text2)', zIndex: 100,
-              fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-            }}
-          >
-            <span>❓ Navigation Guide</span>
-          </button>
-        )}
-        {/* Marquee select box overlay */}
-        {marqueeBox && (
-          <div style={{
-            position: 'absolute',
-            left: Math.min(marqueeBox.start.x, marqueeBox.end.x),
-            top: Math.min(marqueeBox.start.y, marqueeBox.end.y),
-            width: Math.abs(marqueeBox.end.x - marqueeBox.start.x),
-            height: Math.abs(marqueeBox.end.y - marqueeBox.start.y),
-            border: '1.5px dashed var(--accent)',
-            background: 'rgba(37, 99, 235, 0.08)',
-            pointerEvents: 'none',
-            zIndex: 10,
-          }} />
         )}
       </div>
 
-      {/* ── Right properties panel ── */}
-      <div className="side-panel side-panel-right">
-        {selected ? (
-          <>
-            <div className="panel-section">
-              <div className="panel-title" style={{ wordBreak:'break-all' }}>{selected.name}</div>
-              <div className="panel-sub">@{selected.createdBy} · {selected.geometry}</div>
+      {/* ── Bottom Center: Draggable Shape Templates Bar ── */}
+      <div className="glass-panel" style={{ position: 'absolute', left: '50%', bottom: 16, transform: 'translateX(-50%)', display: 'flex', gap: 6, padding: '6px 10px', alignItems: 'center', zIndex: 50 }}>
+        <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', paddingRight: 4, borderRight: '1px solid rgba(255,255,255,0.1)' }}>Drag Templates</div>
+        {GEOMETRY_LIST.map(g => {
+          const emoji = g.id === 'box' ? '⬜' : g.id === 'sphere' ? '⚪' : g.id === 'cylinder' ? '💈' : g.id === 'cone' ? '📐' : g.id === 'torus' ? '🍩' : '🔺';
+          return (
+            <div
+              key={g.id}
+              className="glass-button"
+              draggable
+              onDragStart={(e) => e.dataTransfer.setData('text/plain', g.id)}
+              onClick={() => handleAddObject(g.id)}
+              style={{ cursor: 'grab', padding: '6px 10px', fontSize: 10, fontWeight: 600, userSelect: 'none', gap: 4 }}
+            >
+              <span>{emoji}</span>
+              {g.label}
             </div>
+          );
+        })}
+        <button
+          className="glass-button"
+          onClick={() => setShowLibrary(true)}
+          style={{ padding: '6px 10px', fontSize: 10, fontWeight: 600, background: 'rgba(99,102,241,0.25)' }}
+        >
+          📂 Templates
+        </button>
+      </div>
 
-            <PropSection title="Position" obj={selected} prop="position" fields={['x','y','z']} id={selectedObjectId} update={updateObjectProp} step={0.1} />
-            <PropSection title="Rotation" obj={selected} prop="rotation" fields={['x','y','z']} id={selectedObjectId} update={updateObjectProp} step={0.05} deg />
-            <PropSection title="Scale" obj={selected} prop="scale" fields={['x','y','z']} id={selectedObjectId} update={updateObjectProp} step={0.05} />
-
-            <div className="panel-section">
-              <div className="panel-label">Color</div>
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-                <SmoothColorPicker value={selected.color}
-                  onChange={e => {
-                    const color = e.target.value;
-                    if (selectedObjectIds.length > 1) {
-                      updateObjectsProp(selectedObjectIds, 'color', color);
-                    } else {
-                      updateObjectProp(selectedObjectId, 'color', color);
-                    }
-                  }}
-                  style={{ width:32, height:28, border:'none', borderRadius:4, cursor:'pointer', background:'transparent', padding:0 }} />
-                <input className="form-input" value={selected.color}
-                  onChange={e => {
-                    const color = e.target.value;
-                    if (selectedObjectIds.length > 1) {
-                      updateObjectsProp(selectedObjectIds, 'color', color);
-                    } else {
-                      updateObjectProp(selectedObjectId, 'color', color);
-                    }
-                  }}
-                  style={{ fontFamily:'monospace', fontSize:11 }} />
-              </div>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-                {['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#F7DC6F','#C8A028','#378ADD','#E24B4A','#fff','#888'].map(c => (
-                  <div key={c} onClick={() => {
-                    if (selectedObjectIds.length > 1) {
-                      updateObjectsProp(selectedObjectIds, 'color', c);
-                    } else {
-                      updateObjectProp(selectedObjectId, 'color', c);
-                    }
-                  }}
-                    style={{ width:20, height:20, borderRadius:3, background:c, cursor:'pointer', border:selected.color===c?'2px solid var(--accent)':'1px solid rgba(255,255,255,0.15)', flexShrink:0 }} />
-                ))}
-              </div>
+      {/* ── Bottom Left: Scene Objects List Button & Dropdown ── */}
+      <div style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 50 }}>
+        {showObjectsList && (
+          <div className="glass-panel" style={{ width: 230, maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, padding: 10, marginBottom: 8, animation: 'fadeIn 0.2s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', opacity: 0.6 }}>Placed Objects ({objList.length})</span>
+              {objList.length > 0 && (
+                <button className="glass-button danger" onClick={clearScene} style={{ padding: '2px 6px', fontSize: 9 }}>Clear</button>
+              )}
             </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {objList.map(obj => (
+                <div
+                  key={obj.id}
+                  className={`glass-button ${selectedObjectIds.includes(obj.id) ? 'active' : ''}`}
+                  onClick={(e) => selectObject(obj.id, e.ctrlKey)}
+                  style={{ justifyContent: 'flex-start', padding: '4px 8px', fontSize: 10, width: '100%', gap: 6 }}
+                >
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: obj.isSubtractive ? '#ef4444' : obj.color }} />
+                  <span style={{ flex: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', textAlign: 'left' }}>
+                    {obj.name}
+                  </span>
+                  <span style={{ fontSize: 9, opacity: 0.4 }}>{obj.geometry}</span>
+                </div>
+              ))}
+              {!objList.length && (
+                <div style={{ padding: '12px 6px', fontSize: 10, opacity: 0.5, textAlign: 'center' }}>No objects. Drag some in!</div>
+              )}
+            </div>
+          </div>
+        )}
+        <button
+          className={`glass-button ${showObjectsList ? 'active' : ''}`}
+          onClick={() => setShowObjectsList(!showObjectsList)}
+          style={{ padding: '8px 12px', fontSize: 11, fontWeight: 600 }}
+        >
+          📁 Placed Objects ({objList.length})
+        </button>
+      </div>
 
-            {selected.geometry !== 'csg' && (
-              <div className="panel-section">
-                <div className="panel-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Subtractive (Cutter) 🕳️</span>
-                  <input
-                    type="checkbox"
-                    checked={!!selected.isSubtractive}
-                    onChange={(e) => {
-                      const val = e.target.checked;
-                      if (selectedObjectIds.length > 1) {
-                        updateObjectsProp(selectedObjectIds, 'isSubtractive', val);
-                      } else {
-                        updateObjectProp(selectedObjectId, 'isSubtractive', val);
-                      }
-                    }}
-                    style={{ cursor: 'pointer', width: 16, height: 16 }}
-                  />
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4, lineHeight: 1.4 }}>
-                  Subtractive shapes carve space out of other Solid shapes when merged.
-                </div>
-              </div>
+      {/* ── Floating Right Side Panel: Tabbed Edit Tools (Selection Active Only) ── */}
+      {selected && (
+        <div className="glass-panel" style={{ position: 'absolute', right: 16, top: 76, bottom: 16, width: 270, padding: 12, display: 'flex', flexDirection: 'column', gap: 10, zIndex: 50, overflowY: 'auto' }}>
+          
+          {/* Header */}
+          <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, wordBreak: 'break-all' }}>{selected.name}</div>
+            <div style={{ fontSize: 9, opacity: 0.5 }}>@{selected.createdBy} · {selected.geometry}</div>
+          </div>
+
+          {/* Three Tab Icon selector */}
+          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', padding: 3, borderRadius: 8, gap: 2 }}>
+            {[
+              { id: 'transform', label: '📐 Layout' },
+              { id: 'aesthetics', label: '🎨 Visual' },
+              { id: 'physics', label: '⚙️ Physics' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveRightTab(tab.id)}
+                className={`glass-button ${activeRightTab === tab.id ? 'active' : ''}`}
+                style={{ flex: 1, padding: '5px 0', fontSize: 10, fontWeight: 700 }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Content tabs */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {activeRightTab === 'transform' && (
+              <>
+                <PropSection title="Position" obj={selected} prop="position" fields={['x','y','z']} id={selectedObjectId} update={updateObjectProp} step={0.1} />
+                <PropSection title="Rotation" obj={selected} prop="rotation" fields={['x','y','z']} id={selectedObjectId} update={updateObjectProp} step={0.05} deg />
+                <PropSection title="Scale" obj={selected} prop="scale" fields={['x','y','z']} id={selectedObjectId} update={updateObjectProp} step={0.05} />
+                
+                {selected.isStacked && (
+                  <button
+                    className="glass-button"
+                    style={{ marginTop: 4, width: '100%', fontSize: 10, padding: '6px 0', fontWeight: 600, background: 'rgba(59,130,246,0.2)' }}
+                    onClick={() => fitToBottomObject(selectedObjectId)}
+                  >
+                    📐 Fit to Base Size (Auto XZ)
+                  </button>
+                )}
+              </>
             )}
 
-            <div className="panel-section">
-              <div className="panel-label">Text Overlay</div>
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                <div>
-                  <label style={{ fontSize:10, color:'var(--text3)', display:'block', marginBottom:3 }}>Text Content</label>
-                  <input className="form-input" value={selected.text || ''} placeholder="Type text to display..."
-                    onChange={e => updateObjectProp(selectedObjectId, 'text', e.target.value)} />
+            {activeRightTab === 'aesthetics' && (
+              <>
+                {/* Color section */}
+                <div className="panel-section">
+                  <div className="panel-label" style={{ fontSize: 10, fontWeight: 700, marginBottom: 4 }}>Object Color</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+                    <SmoothColorPicker value={selected.color}
+                      onChange={e => {
+                        const color = e.target.value;
+                        if (selectedObjectIds.length > 1) updateObjectsProp(selectedObjectIds, 'color', color);
+                        else updateObjectProp(selectedObjectId, 'color', color);
+                      }}
+                      style={{ width:28, height:24, border:'none', borderRadius:4, cursor:'pointer', background:'transparent', padding:0 }} />
+                    <input className="form-input" value={selected.color}
+                      onChange={e => {
+                        const color = e.target.value;
+                        if (selectedObjectIds.length > 1) updateObjectsProp(selectedObjectIds, 'color', color);
+                        else updateObjectProp(selectedObjectId, 'color', color);
+                      }}
+                      style={{ fontFamily:'monospace', fontSize:10, padding: '3px 6px', height: 24, flex: 1 }} />
+                  </div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                    {['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#F7DC6F','#C8A028','#378ADD','#E24B4A','#fff','#888'].map(c => (
+                      <div key={c} onClick={() => {
+                        if (selectedObjectIds.length > 1) updateObjectsProp(selectedObjectIds, 'color', c);
+                        else updateObjectProp(selectedObjectId, 'color', c);
+                      }}
+                        style={{ width:18, height:18, borderRadius:3, background:c, cursor:'pointer', border:selected.color===c?'2px solid var(--accent)':'1px solid rgba(255,255,255,0.15)' }} />
+                    ))}
+                  </div>
                 </div>
-                
-                {selected.text && (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                      <div>
-                        <label style={{ fontSize:10, color:'var(--text3)', display:'block', marginBottom:3 }}>Text Color</label>
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <SmoothColorPicker value={selected.textColor || '#ffffff'}
-                            onChange={e => updateObjectProp(selectedObjectId, 'textColor', e.target.value)}
-                            style={{ width: 28, height: 24, border: 'none', borderRadius: 4, cursor: 'pointer', padding: 0 }} />
-                          <input className="form-input" value={selected.textColor || '#ffffff'}
-                            onChange={e => updateObjectProp(selectedObjectId, 'textColor', e.target.value)}
-                            style={{ fontFamily: 'monospace', fontSize: 10, padding: '3px 4px', width: '100%' }} />
+
+                {/* Text overlay section */}
+                <div className="panel-section" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div className="panel-label" style={{ fontSize: 10, fontWeight: 700, marginBottom: 0 }}>Text Overlay</div>
+                  <input className="form-input" value={selected.text || ''} placeholder="Type text content..."
+                    onChange={e => updateObjectProp(selectedObjectId, 'text', e.target.value)} style={{ padding: '4px 6px', fontSize: 10 }} />
+                  
+                  {selected.text && (
+                    <div style={{ display:'flex', flexDirection:'column', gap:6, animation: 'fadeIn 0.2s ease' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                        <div>
+                          <label style={{ fontSize: 8, opacity: 0.6, display:'block', marginBottom:2 }}>Text Color</label>
+                          <div style={{ display: 'flex', gap: 3 }}>
+                            <SmoothColorPicker value={selected.textColor || '#ffffff'}
+                              onChange={e => updateObjectProp(selectedObjectId, 'textColor', e.target.value)}
+                              style={{ width: 22, height: 20, border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0 }} />
+                            <input className="form-input" value={selected.textColor || '#ffffff'}
+                              onChange={e => updateObjectProp(selectedObjectId, 'textColor', e.target.value)}
+                              style={{ fontFamily: 'monospace', fontSize: 8, padding: '2px', width: '100%' }} />
+                          </div>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 8, opacity: 0.6, display:'block', marginBottom:2 }}>Font Size</label>
+                          <input className="form-input" type="number" min={12} max={100} value={selected.textSize || 32}
+                            onChange={e => {
+                              const size = parseInt(e.target.value);
+                              if (!isNaN(size)) updateObjectProp(selectedObjectId, 'textSize', size);
+                            }}
+                            style={{ fontSize: 9, padding: '2px 4px', height: 20 }} />
                         </div>
                       </div>
+
+                      {/* Surface selection */}
+                      {SHAPE_FACES[selected.geometry] && (
+                        <div>
+                          <label style={{ fontSize: 8, opacity: 0.6, display:'block', marginBottom:2 }}>Surfaces (None=All)</label>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                            {SHAPE_FACES[selected.geometry].map(faceName => {
+                              const activeSurfaces = selected.textSurfaces || [];
+                              const isSelected = activeSurfaces.includes(faceName);
+                              return (
+                                <button
+                                  key={faceName}
+                                  onClick={() => {
+                                    const nextSurfaces = isSelected ? activeSurfaces.filter(f => f !== faceName) : [...activeSurfaces, faceName];
+                                    updateObjectProp(selectedObjectId, 'textSurfaces', nextSurfaces);
+                                  }}
+                                  style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.1)', background: isSelected ? 'var(--accent)' : 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer' }}
+                                >
+                                  {faceName}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       <div>
-                        <label style={{ fontSize:10, color:'var(--text3)', display:'block', marginBottom:3 }}>Font Size</label>
-                        <input className="form-input" type="number" min={12} max={100} value={selected.textSize || 32}
-                          onChange={e => {
-                            const size = parseInt(e.target.value);
-                            if (!isNaN(size)) {
-                              updateObjectProp(selectedObjectId, 'textSize', size);
+                        <label style={{ fontSize: 8, opacity: 0.6, display:'block', marginBottom:2 }}>Font Family</label>
+                        <select className="form-input" value={selected.textFont || 'sans-serif'}
+                          onChange={e => updateObjectProp(selectedObjectId, 'textFont', e.target.value)}
+                          style={{ width: '100%', fontSize: 9, height: 22, padding: '2px' }}>
+                          <option value="sans-serif">Sans-serif</option>
+                          <option value="serif">Serif</option>
+                          <option value="monospace">Monospace</option>
+                          <option value="cursive">Cursive</option>
+                          <option value="Impact">Impact</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="panel-section">
+                  <div className="panel-label" style={{ fontSize: 10, fontWeight: 700, marginBottom: 2 }}>Rename Asset</div>
+                  <input className="form-input" value={selected.name}
+                    onChange={e => updateObjectProp(selectedObjectId, 'name', e.target.value)} style={{ padding: '4px 6px', fontSize: 10 }} />
+                </div>
+              </>
+            )}
+
+            {activeRightTab === 'physics' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* Solidity Toggle */}
+                <div className="panel-section" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700 }}>Solid Object 🧱</span>
+                    <input
+                      type="checkbox"
+                      checked={!!selected.isSolid}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        if (selectedObjectIds.length > 1) updateObjectsProp(selectedObjectIds, 'isSolid', val);
+                        else updateObjectProp(selectedObjectId, 'isSolid', val);
+                      }}
+                      style={{ cursor: 'pointer', width: 14, height: 14 }}
+                    />
+                  </div>
+                  <div style={{ fontSize: 9, opacity: 0.5, lineHeight: 1.3 }}>
+                    Solid objects block other objects from penetrating and act as platforms.
+                  </div>
+                </div>
+
+                {/* Stacking Actions */}
+                <div className="panel-section" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {selected.stackedOnObjectId ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700 }}>Stacked Status 📚</span>
+                      <div style={{ fontSize: 9, opacity: 0.5, marginBottom: 4 }}>
+                        Stacked on: {editorObjects[selected.stackedOnObjectId]?.name || selected.stackedOnObjectId}
+                      </div>
+                      <button
+                        className="glass-button"
+                        style={{ width: '100%', fontSize: 10, padding: '6px 0', fontWeight: 600, background: 'rgba(239,68,68,0.2)' }}
+                        onClick={() => {
+                          updateObjectProp(selectedObjectId, 'stackedOnObjectId', null);
+                        }}
+                      >
+                        Unstack Object
+                      </button>
+                    </div>
+                  ) : (
+                    Object.values(editorObjects).some(obj => obj.isSolid && obj.id !== selectedObjectId) && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700 }}>Stacking Controls 📚</span>
+                        <button
+                          className={`glass-button ${stackingObjectId === selectedObjectId ? 'active' : ''}`}
+                          style={{ width: '100%', fontSize: 10, padding: '6px 0', fontWeight: 600 }}
+                          onClick={() => {
+                            if (stackingObjectId === selectedObjectId) {
+                              setStackingObjectId(null);
+                            } else {
+                              setStackingObjectId(selectedObjectId);
                             }
                           }}
-                          style={{ fontSize: 11, padding: '3px 4px' }} />
-                      </div>
-                    </div>
-
-                    {/* Surface Selection */}
-                    {SHAPE_FACES[selected.geometry] && (
-                      <div style={{ marginTop: 4, marginBottom: 4 }}>
-                        <label style={{ fontSize:10, color:'var(--text3)', display:'block', marginBottom:4 }}>
-                          Target Surfaces (None = All)
-                        </label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                          {SHAPE_FACES[selected.geometry].map(faceName => {
-                            const activeSurfaces = selected.textSurfaces || [];
-                            const isSelected = activeSurfaces.includes(faceName);
-                            return (
-                              <button
-                                key={faceName}
-                                onClick={() => {
-                                  const nextSurfaces = isSelected
-                                    ? activeSurfaces.filter(f => f !== faceName)
-                                    : [...activeSurfaces, faceName];
-                                  updateObjectProp(selectedObjectId, 'textSurfaces', nextSurfaces);
-                                }}
-                                style={{
-                                  fontSize: '10px',
-                                  padding: '2px 6px',
-                                  borderRadius: '3px',
-                                  border: '1px solid var(--border)',
-                                  background: isSelected ? 'var(--accent)' : 'var(--bg3)',
-                                  color: isSelected ? '#fff' : 'var(--text2)',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease'
-                                }}
-                              >
-                                {faceName}
-                              </button>
-                            );
-                          })}
+                        >
+                          {stackingObjectId === selectedObjectId ? '❌ Cancel Stacking' : '🥞 Stack on...'}
+                        </button>
+                        <div style={{ fontSize: 9, opacity: 0.5, lineHeight: 1.3 }}>
+                          {stackingObjectId === selectedObjectId ? 'Click on a highlighted platform in the scene.' : 'Click to select a platform to stack this object on.'}
                         </div>
                       </div>
-                    )}
+                    )
+                  )}
+                </div>
 
-                    <div>
-                      <label style={{ fontSize:10, color:'var(--text3)', display:'block', marginBottom:3 }}>Font Family</label>
-                      <select className="form-input" value={selected.textFont || 'sans-serif'}
-                        onChange={e => updateObjectProp(selectedObjectId, 'textFont', e.target.value)}
-                        style={{ width: '100%', fontSize: 11, height: 26, padding: '2px 4px' }}>
-                        <option value="sans-serif">Sans-serif</option>
-                        <option value="serif">Serif</option>
-                        <option value="monospace">Monospace</option>
-                        <option value="cursive">Cursive</option>
-                        <option value="Impact">Impact</option>
-                      </select>
+                {/* Subtractive toggle */}
+                {selected.geometry !== 'csg' && (
+                  <div className="panel-section" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700 }}>Subtractive (Cutter) 🕳️</span>
+                      <input
+                        type="checkbox"
+                        checked={!!selected.isSubtractive}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          if (selectedObjectIds.length > 1) updateObjectsProp(selectedObjectIds, 'isSubtractive', val);
+                          else updateObjectProp(selectedObjectId, 'isSubtractive', val);
+                        }}
+                        style={{ cursor: 'pointer', width: 14, height: 14 }}
+                      />
                     </div>
-                  </>
+                    <div style={{ fontSize: 9, opacity: 0.5, lineHeight: 1.3 }}>
+                      Carves space out of solid shapes when grouped.
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-
-            <div className="panel-section">
-              <div className="panel-label">Name</div>
-              <input className="form-input" value={selected.name}
-                onChange={e => updateObjectProp(selectedObjectId,'name',e.target.value)} />
-            </div>
-          </>
-        ) : (
-          <div style={{ padding:'24px 16px', fontSize:12, color:'var(--text3)', textAlign:'center', lineHeight:1.9 }}>
-            <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}>
-              <Icon name="pencil" size={28} />
-            </div>
-            <strong style={{ color:'var(--text2)' }}>Select an object</strong>
-            <br />to edit properties
-            <br /><br />
-            <div style={{ textAlign:'left', background:'var(--bg3)', borderRadius:8, padding:'12px 14px', fontSize:11, lineHeight:2 }}>
-              <strong style={{ color:'var(--text2)' }}>Keyboard shortcuts</strong><br />
-              Arrow keys → move XZ<br />
-              R / V → move up / down<br />
-              Q / E → rotate Y<br />
-              W / S → scale ±<br />
-              F → focus selection<br />
-              Del → delete<br />
-              ⌘A → select all<br />
-              ⌘D → duplicate<br />
-              ⌘Z → undo
-            </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Bottom actions list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 'auto' }}>
+            {selectedObjectIds.length >= 2 && (
+              <button className="glass-button" onClick={carveSelectedObjects} style={{ padding: '6px 0', fontSize: 10, background: 'var(--accent)' }}>
+                🪓 Carve / Group (Ctrl+G)
+              </button>
+            )}
+            {selectedObjectIds.length === 1 && selected.geometry === 'csg' && (
+              <button className="glass-button" onClick={uncarveSelectedObject} style={{ padding: '6px 0', fontSize: 10, background: 'rgba(78,205,196,0.15)', color: '#4ECDC4' }}>
+                🔓 Uncarve / Ungroup
+              </button>
+            )}
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button className="glass-button" onClick={() => duplicateObjects(selectedObjectIds)} style={{ flex: 1, padding: '5px 0', fontSize: 9 }}>⧉ Duplicate</button>
+              <button className="glass-button danger" onClick={() => deleteObjects(selectedObjectIds)} style={{ flex: 1, padding: '5px 0', fontSize: 9 }}>🗑 Delete</button>
+            </div>
+            <button className="glass-button" onClick={undo} style={{ padding: '5px 0', fontSize: 9 }}>↩ Undo (⌘Z)</button>
+            <button
+              className="glass-button"
+              onClick={() => setShowPublish(true)}
+              style={{ padding: '7px 0', fontSize: 10, fontWeight: 700, background: 'rgba(16,185,129,0.3)' }}
+            >
+              ↑ Publish Selected ({selectedObjectIds.length})
+            </button>
+          </div>
+
+        </div>
+      )}
+
+      {/* Marquee Select Box Overlay */}
+      {marqueeBox && (
+        <div style={{
+          position: 'absolute',
+          left: Math.min(marqueeBox.start.x, marqueeBox.end.x),
+          top: Math.min(marqueeBox.start.y, marqueeBox.end.y),
+          width: Math.abs(marqueeBox.end.x - marqueeBox.start.x),
+          height: Math.abs(marqueeBox.end.y - marqueeBox.start.y),
+          border: '1.5px dashed var(--accent)',
+          background: 'rgba(37, 99, 235, 0.08)',
+          pointerEvents: 'none',
+          zIndex: 10,
+        }} />
+      )}
 
       {showPublish && <PublishModal onClose={() => setShowPublish(false)} onPublish={name => { publishToCity(name); setShowPublish(false); }} count={selectedObjectIds.length} />}
       {showLibrary && <AssetLibrary onClose={() => setShowLibrary(false)} spawnOffset={getSpawnOffset()} />}
+      {stackPrompt && (
+        <div className="modal-overlay" onClick={() => setStackPrompt(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">Stacking Method</div>
+              <button className="modal-close" onClick={() => setStackPrompt(null)}>✕</button>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.7, marginBottom: 16 }}>
+              Choose how you want to stack this object on the platform:
+            </p>
+            <div className="modal-footer" style={{ gap: 10 }}>
+              <button className="btn" onClick={() => {
+                const child = editorObjects[stackPrompt.childId];
+                const parent = editorObjects[stackPrompt.parentId];
+                if (child && parent) {
+                  const posY = parent.position.y + parent.scale.y/2 + child.scale.y/2;
+                  updateObjectProp(stackPrompt.childId, 'stackedOnObjectId', stackPrompt.parentId);
+                  updateObjectProp(stackPrompt.childId, 'position', { ...child.position, y: posY });
+                }
+                setStackPrompt(null);
+              }}>
+                Stack
+              </button>
+              <button className="btn primary" onClick={() => {
+                const child = editorObjects[stackPrompt.childId];
+                const parent = editorObjects[stackPrompt.parentId];
+                if (child && parent) {
+                  const posY = parent.position.y + parent.scale.y/2 + child.scale.y/2;
+                  updateObjectProp(stackPrompt.childId, 'stackedOnObjectId', stackPrompt.parentId);
+                  updateObjectProp(stackPrompt.childId, 'scale', { ...child.scale, x: parent.scale.x, z: parent.scale.z });
+                  updateObjectProp(stackPrompt.childId, 'position', { x: parent.position.x, y: posY, z: parent.position.z });
+                }
+                setStackPrompt(null);
+              }}>
+                Stack and Fit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1493,13 +1798,16 @@ function PropSection({ title, obj, prop, fields, id, update, step, deg }) {
       {fields.map(f => {
         const raw = (obj[prop] && obj[prop][f] !== undefined) ? obj[prop][f] : (prop === 'scale' ? 1.0 : 0.0);
         const display = deg ? +(raw * 180 / Math.PI).toFixed(2) : +raw.toFixed(3);
+        const lockPropName = 'lock' + f.toUpperCase();
+        const isLocked = prop === 'position' ? ((f === 'y' && obj.stackedOnObjectId) ? true : !!obj[lockPropName]) : false;
         return (
           <div key={f} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
             <span style={{ fontSize:10, color:'var(--text3)', width:12, textAlign:'center', fontWeight:700, textTransform:'uppercase' }}>{f}</span>
             <input
               className="form-input"
-              style={{ fontFamily:'monospace', fontSize:11, padding:'3px 6px' }}
+              style={{ fontFamily:'monospace', fontSize:11, padding:'3px 6px', flex: 1 }}
               type="number" step={step || 0.1} value={display}
+              disabled={isLocked}
               onChange={e => {
                 let v = parseFloat(e.target.value);
                 if (!isNaN(v)) {
@@ -1511,6 +1819,20 @@ function PropSection({ title, obj, prop, fields, id, update, step, deg }) {
                 }
               }}
             />
+            {prop === 'position' && (
+              <button
+                className={`glass-button ${isLocked ? 'active' : ''}`}
+                style={{ padding: '3px 6px', fontSize: 10, minWidth: 26, height: 22, flexShrink: 0 }}
+                onClick={() => {
+                  if (f === 'y' && obj.stackedOnObjectId) return;
+                  update(id, lockPropName, !isLocked);
+                }}
+                disabled={f === 'y' && obj.stackedOnObjectId}
+                title={isLocked ? `Unlock ${f.toUpperCase()} axis` : `Lock ${f.toUpperCase()} axis`}
+              >
+                {isLocked ? '🔒' : '🔓'}
+              </button>
+            )}
           </div>
         );
       })}

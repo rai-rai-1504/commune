@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
-import { useStore } from '../../store/useStore';
+import { useStore, PRESET_PALETTES } from '../../store/useStore';
 import { TEMPLATES } from '../../components/AssetLibrary';
 import BuildingThumbnail from './BuildingThumbnail';
 import Icon from '../../components/Icon';
@@ -592,7 +592,9 @@ export default function CityModule() {
     addRoadSegment, removeRoadSegment,
     selectedAssetIds, selectAssets, removeAssets, undoCity,
     publishedBuildings, deletePublishedBuilding, lockAllAssets,
-    updateRoad, addZone, removeZone, updateZone
+    updateRoad, addZone, removeZone, updateZone,
+    selectPendingAsset, randomiseAssetColors, toggleRandomiseAssetColors,
+    randomColorPalette, toggleColorFamilyInPalette, activePaletteId, selectActivePalette
   } = useStore();
 
   const canvasRef = useRef(null);
@@ -808,7 +810,7 @@ export default function CityModule() {
     
     const delta = zoomIn ? 1.25 : 0.8;
     const currentTargetZoom = targetZoomRef.current;
-    const nextZoom = Math.max(0.35, Math.min(3.5, currentTargetZoom * delta));
+    const nextZoom = Math.max(0.05, Math.min(3.5, currentTargetZoom * delta));
     
     if (currentTargetZoom !== nextZoom) {
       targetZoomRef.current = nextZoom;
@@ -857,34 +859,7 @@ export default function CityModule() {
     }
     if (!isStation && metroView) return false;
 
-    const w = pendingPlacementAsset.width || 2.0;
-    const h = pendingPlacementAsset.height || 2.0;
-    const padding = 0.5;
-
-    // 1. Check overlaps with existing placed assets
-    for (const asset of city.placedAssets || []) {
-      const dx = Math.abs(asset.col - col);
-      const dz = Math.abs(asset.row - row);
-      const minX = (w + (asset.width || 2.0)) / 2 - padding;
-      const minZ = (h + (asset.height || 2.0)) / 2 - padding;
-      if (dx < minX && dz < minZ) {
-        return false;
-      }
-    }
-
-    // 2. Check overlaps with roads and railway tracks
-    for (const road of city.roads || []) {
-      if (road.points.length < 2) continue;
-      for (let i = 0; i < road.points.length - 1; i++) {
-        const a = road.points[i];
-        const b = road.points[i + 1];
-        const dist = distanceToSegment({ x: col, z: row }, a, b);
-        if (dist < (w / 2 + 0.8)) {
-          return false;
-        }
-      }
-    }
-
+    // Overlapping roads and buildings is allowed, do not restrict placement
     return true;
   }, [city, pendingPlacementAsset, metroView]);
 
@@ -903,7 +878,7 @@ export default function CityModule() {
     const ports = [];
     (city.placedAssets || []).forEach(asset => {
       if (asset.isMetroStation || asset.name === 'Elevated Metro Station') {
-        const rot = asset.rotation || 0;
+        const rot = -(asset.rotation || 0);
         
         const offsets = [
           { label: 'A1', dx: -10.0 / 3.4, dz: -1.8 / 3.4 },
@@ -2505,7 +2480,7 @@ const draw = useCallback(() => {
 
     const delta = e.deltaY > 0 ? 0.82 : 1.22;
     const currentTargetZoom = targetZoomRef.current;
-    const nextZoom = Math.max(0.35, Math.min(3.5, currentTargetZoom * delta));
+    const nextZoom = Math.max(0.05, Math.min(3.5, currentTargetZoom * delta));
 
     if (currentTargetZoom !== nextZoom) {
       targetZoomRef.current = nextZoom;
@@ -3640,19 +3615,17 @@ const draw = useCallback(() => {
                   key={t.id}
                   className={`glass-button ${isAct ? 'active' : ''}`}
                   onClick={() => {
-                    useStore.setState({
-                      pendingPlacementAsset: {
-                        name: t.name,
-                        objects: t.objects,
-                        color: '#334155',
-                        width: t.width || 20.0,
-                        height: t.height || 10.0,
-                        isMetroStation: true
-                      },
-                      cityTool: 'select',
+                    selectPendingAsset({
+                      name: t.name,
+                      objects: t.objects,
+                      color: '#334155',
+                      width: t.width || 20.0,
+                      height: t.height || 10.0,
+                      isMetroStation: true
                     });
                   }}
-                  style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 74, gap: 4 }}
+                  title={t.name}
+                  style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 88, gap: 4 }}
                 >
                   <BuildingThumbnail asset={t} />
                   <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '85px', textAlign: 'center' }}>{t.name}</span>
@@ -3670,7 +3643,7 @@ const draw = useCallback(() => {
                   setActiveRoadType('railway');
                   useStore.setState({ cityTool: 'road', pendingPlacementAsset: null });
                 }}
-                style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 90, height: 74, gap: 4, justifyContent: 'center' }}
+                style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 90, height: 88, gap: 4, justifyContent: 'center' }}
               >
                 <Icon name="road" size={16} />
                 <span style={{ fontSize: 10, fontWeight: 600 }}>Metro Tracks</span>
@@ -3684,19 +3657,17 @@ const draw = useCallback(() => {
                     key={t.id}
                     className={`glass-button ${isAct ? 'active' : ''}`}
                     onClick={() => {
-                      useStore.setState({
-                        pendingPlacementAsset: {
-                          name: t.name,
-                          objects: t.objects,
-                          color: '#334155',
-                          width: t.width || 20.0,
-                          height: t.height || 10.0,
-                          isMetroStation: true
-                        },
-                        cityTool: 'select',
+                      selectPendingAsset({
+                        name: t.name,
+                        objects: t.objects,
+                        color: '#334155',
+                        width: t.width || 20.0,
+                        height: t.height || 10.0,
+                        isMetroStation: true
                       });
                     }}
-                    style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 74, gap: 4 }}
+                    title={t.name}
+                    style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 88, gap: 4 }}
                   >
                     <BuildingThumbnail asset={t} />
                     <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '85px', textAlign: 'center' }}>{t.name}</span>
@@ -3721,7 +3692,7 @@ const draw = useCallback(() => {
                   setActiveRoadType(r.id);
                   useStore.setState({ cityTool: 'road', pendingPlacementAsset: null });
                 }}
-                style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 90, height: 74, gap: 4, justifyContent: 'center' }}
+                style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 90, height: 88, gap: 4, justifyContent: 'center' }}
               >
                 <span style={{ fontSize: 16 }}>{r.icon}</span>
                 <span style={{ fontSize: 10, fontWeight: 600 }}>{r.name}</span>
@@ -3746,18 +3717,16 @@ const draw = useCallback(() => {
                   key={t.id}
                   className={`glass-button ${isAct ? 'active' : ''}`}
                   onClick={() => {
-                    useStore.setState({
-                      pendingPlacementAsset: {
-                        name: t.name,
-                        objects: t.objects,
-                        color: t.objects[0]?.color || '#4ECDC4',
-                        width: t.width || 2.0,
-                        height: t.height || 2.0,
-                      },
-                      cityTool: 'select',
+                    selectPendingAsset({
+                      name: t.name,
+                      objects: t.objects,
+                      color: t.objects[0]?.color || '#4ECDC4',
+                      width: t.width || 2.0,
+                      height: t.height || 2.0,
                     });
                   }}
-                  style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 74, gap: 4 }}
+                  title={t.name}
+                  style={{ flexDirection: 'column', padding: '6px 10px', minWidth: 100, height: 88, gap: 4 }}
                 >
                   <BuildingThumbnail asset={t} />
                   <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '85px', textAlign: 'center' }}>{t.name}</span>
@@ -3781,18 +3750,16 @@ const draw = useCallback(() => {
                     <button
                       className={`glass-button ${isAct ? 'active' : ''}`}
                       onClick={() => {
-                        useStore.setState({
-                          pendingPlacementAsset: {
-                            name: b.name,
-                            objects: b.objects,
-                            color: b.objects[0]?.color || '#4ECDC4',
-                            width: b.width || 2.0,
-                            height: b.height || 2.0,
-                          },
-                          cityTool: 'select',
+                        selectPendingAsset({
+                          name: b.name,
+                          objects: b.objects,
+                          color: b.objects[0]?.color || '#4ECDC4',
+                          width: b.width || 2.0,
+                          height: b.height || 2.0,
                         });
                       }}
-                      style={{ flexDirection: 'column', padding: '6px 20px 6px 10px', minWidth: 100, height: 74, gap: 4 }}
+                      title={b.name}
+                      style={{ flexDirection: 'column', padding: '6px 20px 6px 10px', minWidth: 100, height: 88, gap: 4 }}
                     >
                       <BuildingThumbnail asset={b} />
                       <span style={{ fontSize: 9, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '65px', textAlign: 'center' }}>{b.name}</span>
@@ -3824,6 +3791,120 @@ const draw = useCallback(() => {
                 );
               })
             )
+          )}
+        </div>
+      )}
+
+      {/* ── Colors panel positioned dynamically above building choices ── */}
+      {!zoneView && (
+        <div style={{
+          position: 'absolute',
+          bottom: activeCategory ? 220 : 74,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
+          transition: 'bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
+          {/* Main Color Customization Toggle */}
+          <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '4px 8px',
+            borderRadius: 20,
+            pointerEvents: 'auto',
+            fontSize: 10,
+            fontWeight: 600
+          }}>
+            <span style={{ color: 'rgba(255,255,255,0.7)', padding: '0 4px' }}>🎨 Colors</span>
+            <button
+              className={zoneView || metroView ? `clay-button ${!randomiseAssetColors ? 'active' : ''}` : `glass-button ${!randomiseAssetColors ? 'active' : ''}`}
+              onClick={() => { if (randomiseAssetColors) toggleRandomiseAssetColors(); }}
+              style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
+            >
+              Default
+            </button>
+            <button
+              className={zoneView || metroView ? `clay-button ${randomiseAssetColors ? 'active' : ''}` : `glass-button ${randomiseAssetColors ? 'active' : ''}`}
+              onClick={() => { if (!randomiseAssetColors) toggleRandomiseAssetColors(); }}
+              style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
+            >
+              Random
+            </button>
+          </div>
+
+          {/* Palette Preset Selectors */}
+          {randomiseAssetColors && (
+            <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '3px 6px',
+              borderRadius: 14,
+              pointerEvents: 'auto'
+            }}>
+              {PRESET_PALETTES.map(p => {
+                const isSel = p.id === activePaletteId;
+                return (
+                  <button
+                    key={p.id}
+                    className={zoneView || metroView ? `clay-button ${isSel ? 'active' : ''}` : `glass-button ${isSel ? 'active' : ''}`}
+                    onClick={() => selectActivePalette(p.id)}
+                    style={{
+                      borderRadius: 10,
+                      padding: '2px 8px',
+                      fontSize: 8,
+                      border: 'none',
+                      height: 18,
+                      fontWeight: isSel ? 700 : 500
+                    }}
+                  >
+                    {p.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Color Pool Selector */}
+          {randomiseAssetColors && (
+            <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              borderRadius: 20,
+              pointerEvents: 'auto'
+            }}>
+              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginRight: 2 }}>Colors:</span>
+              {(PRESET_PALETTES.find(p => p.id === activePaletteId)?.colors || []).map(colorFamily => {
+                const isActive = randomColorPalette.includes(colorFamily.id);
+                return (
+                  <button
+                    key={colorFamily.id}
+                    onClick={() => toggleColorFamilyInPalette(colorFamily.id)}
+                    title={`Toggle ${colorFamily.label}`}
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: '50%',
+                      backgroundColor: colorFamily.color,
+                      border: isActive ? '2px solid #ffffff' : '2px solid transparent',
+                      boxShadow: isActive ? '0 0 3px rgba(255,255,255,0.8)' : 'none',
+                      cursor: 'pointer',
+                      opacity: isActive ? 1.0 : 0.35,
+                      transform: isActive ? 'scale(1.15)' : 'scale(1.0)',
+                      transition: 'all 0.15s ease',
+                      padding: 0
+                    }}
+                  />
+                );
+              })}
+            </div>
           )}
         </div>
       )}
@@ -3861,16 +3942,13 @@ const draw = useCallback(() => {
                       useStore.setState({ cityTool: 'road', pendingPlacementAsset: null });
                     } else if (nextCat === 'metro_stations') {
                       const stationTemplate = TEMPLATES.find(t => t.id === 'metro_station');
-                      useStore.setState({
-                        cityTool: 'select',
-                        pendingPlacementAsset: {
-                          name: stationTemplate.name,
-                          objects: stationTemplate.objects,
-                          color: '#334155',
-                          width: stationTemplate.width || 20.0,
-                          height: stationTemplate.height || 10.0,
-                          isMetroStation: true,
-                        }
+                      selectPendingAsset({
+                        name: stationTemplate.name,
+                        objects: stationTemplate.objects,
+                        color: '#334155',
+                        width: stationTemplate.width || 20.0,
+                        height: stationTemplate.height || 10.0,
+                        isMetroStation: true,
                       });
                     } else {
                       useStore.setState({ pendingPlacementAsset: null, cityTool: 'select' });

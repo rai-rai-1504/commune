@@ -11,6 +11,183 @@ function mergeVC(a, b) {
 }
 
 
+// ── Green color check and color randomization helpers ───────────────────
+function isGreenColor(colorStr) {
+  if (!colorStr) return false;
+  const lower = colorStr.toLowerCase();
+  if (lower.includes('green')) return true;
+  if (lower.startsWith('#')) {
+    let r, g, b;
+    if (lower.length === 4) {
+      r = parseInt(lower[1] + lower[1], 16);
+      g = parseInt(lower[2] + lower[2], 16);
+      b = parseInt(lower[3] + lower[3], 16);
+    } else if (lower.length === 7) {
+      r = parseInt(lower.substring(1, 3), 16);
+      g = parseInt(lower.substring(3, 5), 16);
+      b = parseInt(lower.substring(5, 7), 16);
+    } else {
+      return false;
+    }
+    // Dominant green check
+    if (g > r && g > b && g > (r + b) * 0.6) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export const PRESET_PALETTES = [
+  {
+    id: 'modern',
+    name: 'Modern Architecture',
+    colors: [
+      { id: 'white', label: 'White/Cream', color: '#f8fafc', generator: () => `hsl(${30 + Math.floor(Math.random() * 30)}, ${5 + Math.floor(Math.random() * 10)}%, ${85 + Math.floor(Math.random() * 10)}%)` },
+      { id: 'grey', label: 'Grey', color: '#64748b', generator: () => `hsl(${Math.floor(Math.random() * 360)}, ${Math.floor(Math.random() * 8)}%, ${30 + Math.floor(Math.random() * 45)}%)` },
+      { id: 'beige', label: 'Beige/Tan', color: '#d97706', generator: () => `hsl(${30 + Math.floor(Math.random() * 15)}, ${20 + Math.floor(Math.random() * 20)}%, ${65 + Math.floor(Math.random() * 15)}%)` },
+      { id: 'black', label: 'Black/Charcoal', color: '#1e293b', generator: () => `hsl(${Math.floor(Math.random() * 360)}, ${Math.floor(Math.random() * 10)}%, ${8 + Math.floor(Math.random() * 10)}%)` },
+      { id: 'blue', label: 'Slate Blue', color: '#334155', generator: () => `hsl(${200 + Math.floor(Math.random() * 25)}, ${15 + Math.floor(Math.random() * 25)}%, ${35 + Math.floor(Math.random() * 20)}%)` },
+      { id: 'red', label: 'Brick Red', color: '#991b1b', generator: () => `hsl(${Math.random() > 0.5 ? 355 + Math.floor(Math.random() * 5) : Math.floor(Math.random() * 15)}, ${45 + Math.floor(Math.random() * 20)}%, ${35 + Math.floor(Math.random() * 15)}%)` },
+      { id: 'brown', label: 'Brown/Wood', color: '#78350f', generator: () => `hsl(${15 + Math.floor(Math.random() * 20)}, ${30 + Math.floor(Math.random() * 20)}%, ${25 + Math.floor(Math.random() * 20)}%)` },
+    ]
+  },
+  {
+    id: 'warm',
+    name: 'Warm Terracotta',
+    colors: [
+      { id: 'terracotta', label: 'Terracotta', color: '#c2410c', generator: () => `hsl(${10 + Math.floor(Math.random() * 15)}, ${50 + Math.floor(Math.random() * 15)}%, ${45 + Math.floor(Math.random() * 10)}%)` },
+      { id: 'sand', label: 'Sand/Clay', color: '#eab308', generator: () => `hsl(${35 + Math.floor(Math.random() * 15)}, ${35 + Math.floor(Math.random() * 15)}%, ${65 + Math.floor(Math.random() * 15)}%)` },
+      { id: 'mustard', label: 'Mustard', color: '#ca8a04', generator: () => `hsl(${45 + Math.floor(Math.random() * 10)}, ${50 + Math.floor(Math.random() * 15)}%, ${50 + Math.floor(Math.random() * 10)}%)` },
+      { id: 'peach', label: 'Peach', color: '#fdba74', generator: () => `hsl(${20 + Math.floor(Math.random() * 15)}, ${50 + Math.floor(Math.random() * 15)}%, ${75 + Math.floor(Math.random() * 10)}%)` },
+      { id: 'charcoal', label: 'Charcoal', color: '#374151', generator: () => `hsl(${210 + Math.floor(Math.random() * 20)}, ${5 + Math.floor(Math.random() * 10)}%, ${15 + Math.floor(Math.random() * 15)}%)` },
+      { id: 'cream', label: 'Cream', color: '#fef3c7', generator: () => `hsl(${35 + Math.floor(Math.random() * 15)}, ${10 + Math.floor(Math.random() * 15)}%, ${90 + Math.floor(Math.random() * 5)}%)` },
+      { id: 'bronze', label: 'Bronze', color: '#854d0e', generator: () => `hsl(${25 + Math.floor(Math.random() * 10)}, ${35 + Math.floor(Math.random() * 15)}%, ${35 + Math.floor(Math.random() * 10)}%)` },
+    ]
+  },
+  {
+    id: 'cyberpunk',
+    name: 'Cyberpunk City',
+    colors: [
+      { id: 'neon_blue', label: 'Neon Blue', color: '#06b6d4', generator: () => `hsl(${185 + Math.floor(Math.random() * 20)}, 95%, 50%)` },
+      { id: 'hot_pink', label: 'Hot Pink', color: '#ec4899', generator: () => `hsl(${320 + Math.floor(Math.random() * 25)}, 95%, 55%)` },
+      { id: 'toxic_green', label: 'Toxic Green', color: '#22c55e', generator: () => `hsl(${95 + Math.floor(Math.random() * 30)}, 90%, 48%)` },
+      { id: 'laser_purple', label: 'Laser Purple', color: '#a855f7', generator: () => `hsl(${265 + Math.floor(Math.random() * 20)}, 90%, 55%)` },
+      { id: 'acid_yellow', label: 'Acid Yellow', color: '#eab308', generator: () => `hsl(${55 + Math.floor(Math.random() * 10)}, 95%, 50%)` },
+      { id: 'dark_grey', label: 'Dark Void', color: '#090d16', generator: () => `hsl(${220 + Math.floor(Math.random() * 20)}, 25%, ${6 + Math.floor(Math.random() * 8)}%)` },
+      { id: 'neon_cyan', label: 'Neon Cyan', color: '#00f2ff', generator: () => `hsl(${175 + Math.floor(Math.random() * 15)}, 100%, 50%)` },
+    ]
+  },
+  {
+    id: 'coastal',
+    name: 'Coastal Breeze',
+    colors: [
+      { id: 'seafoam', label: 'Seafoam', color: '#a7f3d0', generator: () => `hsl(${140 + Math.floor(Math.random() * 25)}, ${35 + Math.floor(Math.random() * 15)}%, ${75 + Math.floor(Math.random() * 10)}%)` },
+      { id: 'ocean_blue', label: 'Ocean Blue', color: '#0284c7', generator: () => `hsl(${200 + Math.floor(Math.random() * 15)}, ${55 + Math.floor(Math.random() * 15)}%, ${45 + Math.floor(Math.random() * 15)}%)` },
+      { id: 'sky_blue', label: 'Sky Blue', color: '#bae6fd', generator: () => `hsl(${195 + Math.floor(Math.random() * 15)}, ${45 + Math.floor(Math.random() * 15)}%, ${80 + Math.floor(Math.random() * 8)}%)` },
+      { id: 'sand_beige', label: 'Sandy Beige', color: '#fef3c7', generator: () => `hsl(${35 + Math.floor(Math.random() * 15)}, ${25 + Math.floor(Math.random() * 15)}%, ${80 + Math.floor(Math.random() * 10)}%)` },
+      { id: 'pearl_white', label: 'Pearl White', color: '#f8fafc', generator: () => `hsl(${210 + Math.floor(Math.random() * 20)}, ${10 + Math.floor(Math.random() * 10)}%, ${92 + Math.floor(Math.random() * 6)}%)` },
+      { id: 'coral', label: 'Coral Pink', color: '#fca5a5', generator: () => `hsl(${0 + Math.floor(Math.random() * 15)}, ${60 + Math.floor(Math.random() * 15)}%, ${75 + Math.floor(Math.random() * 10)}%)` },
+      { id: 'slate', label: 'Slate Grey', color: '#94a3b8', generator: () => `hsl(${210 + Math.floor(Math.random() * 15)}, ${15 + Math.floor(Math.random() * 10)}%, ${60 + Math.floor(Math.random() * 15)}%)` },
+    ]
+  }
+];
+
+function randomizeObjectsColor(objects, activeColorIds, paletteId) {
+  if (!objects) return [];
+  const colorMap = {};
+  const activePalette = PRESET_PALETTES.find(p => p.id === (paletteId || 'modern')) || PRESET_PALETTES[0];
+  const activeIds = activeColorIds && activeColorIds.length > 0 ? activeColorIds : activePalette.colors.map(c => c.id);
+  const colorsToUse = activePalette.colors.filter(c => activeIds.includes(c.id));
+  const finalColors = colorsToUse.length > 0 ? colorsToUse : activePalette.colors;
+
+  return objects.map(obj => {
+    if (isGreenColor(obj.color)) {
+      return obj;
+    }
+    if (obj.children && obj.children.length > 0) {
+      return { ...obj, children: randomizeObjectsColor(obj.children, activeIds, paletteId) };
+    }
+    if (!colorMap[obj.color]) {
+      const chosenColorInfo = finalColors[Math.floor(Math.random() * finalColors.length)];
+      colorMap[obj.color] = chosenColorInfo.generator();
+    }
+    return { ...obj, color: colorMap[obj.color] };
+  });
+}
+
+function propagateAndConstrain(objects, updatedId, property, prevValue, nextValue) {
+  const nextObjects = { ...objects };
+
+  // 1. Delta propagation for position
+  if (property === 'position' && prevValue && nextValue && nextObjects[updatedId]) {
+    const dx = nextValue.x - prevValue.x;
+    const dy = nextValue.y - prevValue.y;
+    const dz = nextValue.z - prevValue.z;
+
+    // Find all children stacked on this object
+    for (const [id, obj] of Object.entries(nextObjects)) {
+      if (obj.stackedOnObjectId === updatedId) {
+        nextObjects[id] = {
+          ...obj,
+          position: {
+            x: obj.position.x + dx,
+            y: obj.position.y + dy,
+            z: obj.position.z + dz
+          }
+        };
+      }
+    }
+  }
+
+  // 2. Cascade constraints loop
+  let changed = true;
+  let iterations = 0;
+  while (changed && iterations < 10) {
+    changed = false;
+    iterations++;
+    for (const [id, obj] of Object.entries(nextObjects)) {
+      if (obj.stackedOnObjectId) {
+        const platform = nextObjects[obj.stackedOnObjectId];
+        if (!platform) {
+          nextObjects[id] = { ...obj, stackedOnObjectId: null };
+          changed = true;
+          continue;
+        }
+
+        // Clamp scale: child scale cannot exceed platform scale
+        const scaleX = Math.min(obj.scale.x, platform.scale.x);
+        const scaleZ = Math.min(obj.scale.z, platform.scale.z);
+
+        // Lock Y position
+        const posY = platform.position.y + platform.scale.y / 2 + obj.scale.y / 2;
+
+        // Bound X and Z positions to stay within platform bounds
+        const halfRangeX = Math.max(0, (platform.scale.x - scaleX) / 2);
+        const posX = Math.max(platform.position.x - halfRangeX, Math.min(platform.position.x + halfRangeX, obj.position.x));
+
+        const halfRangeZ = Math.max(0, (platform.scale.z - scaleZ) / 2);
+        const posZ = Math.max(platform.position.z - halfRangeZ, Math.min(platform.position.z + halfRangeZ, obj.position.z));
+
+        if (
+          Math.abs(obj.position.x - posX) > 0.001 ||
+          Math.abs(obj.position.y - posY) > 0.001 ||
+          Math.abs(obj.position.z - posZ) > 0.001 ||
+          Math.abs(obj.scale.x - scaleX) > 0.001 ||
+          Math.abs(obj.scale.z - scaleZ) > 0.001
+        ) {
+          nextObjects[id] = {
+            ...obj,
+            position: { x: parseFloat(posX.toFixed(2)), y: parseFloat(posY.toFixed(2)), z: parseFloat(posZ.toFixed(2)) },
+            scale: { ...obj.scale, x: parseFloat(scaleX.toFixed(2)), z: parseFloat(scaleZ.toFixed(2)) }
+          };
+          changed = true;
+        }
+      }
+    }
+  }
+  return nextObjects;
+}
+
 export const useStore = create((set, get) => ({
   // ── Connection ─────────────────────────────────────────────────────────
   ws: null,
@@ -31,6 +208,10 @@ export const useStore = create((set, get) => ({
   selectedObjectIds: [],
   pendingPlacementAsset: null,
   editorTool: 'select',
+  stackingObjectId: null,
+  setStackingObjectId(id) {
+    set({ stackingObjectId: id });
+  },
   editorCursors: {},      // clientId -> {username, color, position}
   undoStack: [],
   redoStack: [],
@@ -44,6 +225,9 @@ export const useStore = create((set, get) => ({
   selectedAssetIds: [],   // multi-selected placed assets
   cityUndoStack: [],      // city actions undo stack
   publishedBuildings: JSON.parse(localStorage.getItem('commune_published_buildings') || '[]'),
+  randomiseAssetColors: false,
+  randomColorPalette: ['white', 'grey', 'beige', 'black', 'blue', 'red', 'brown'],
+  activePaletteId: 'modern',
 
   // ── Governance ─────────────────────────────────────────────────────────
   proposals: [],
@@ -260,47 +444,92 @@ export const useStore = create((set, get) => ({
 
   updateObjectProp(objectId, property, value, skipUndo = false) {
     const ts = Date.now();
-    const prev = get().editorObjects[objectId]?.[property];
-    const op = { kind: 'UPDATE', objectId, property, value, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
+    const oldObjs = get().editorObjects;
+    const prev = oldObjs[objectId]?.[property];
+    
+    // Create candidate updated object
+    let candidateObjs = {
+      ...oldObjs,
+      [objectId]: oldObjs[objectId] ? { ...oldObjs[objectId], [property]: value, [property + '_ts']: ts } : oldObjs[objectId]
+    };
+    
+    // Apply propagation and constraints
+    const nextObjs = propagateAndConstrain(candidateObjs, objectId, property, prev, value);
+    
     set(state => {
       const nextUndoStack = skipUndo ? state.undoStack : [...state.undoStack, { type: 'UPDATE', objectId, property, value: prev }].slice(-30);
       return {
-        editorObjects: {
-          ...state.editorObjects,
-          [objectId]: state.editorObjects[objectId]
-            ? { ...state.editorObjects[objectId], [property]: value, [property + '_ts']: ts }
-            : state.editorObjects[objectId],
-        },
+        editorObjects: nextObjs,
         undoStack: nextUndoStack,
         redoStack: [],
       };
     });
-    get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+
+    // Send updates for all changed objects
+    for (const [id, nextObj] of Object.entries(nextObjs)) {
+      const oldObj = oldObjs[id];
+      if (!oldObj) continue;
+      
+      if (oldObj.position.x !== nextObj.position.x || oldObj.position.y !== nextObj.position.y || oldObj.position.z !== nextObj.position.z) {
+        const op = { kind: 'UPDATE', objectId: id, property: 'position', value: nextObj.position, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
+        get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+      }
+      if (oldObj.scale.x !== nextObj.scale.x || oldObj.scale.y !== nextObj.scale.y || oldObj.scale.z !== nextObj.scale.z) {
+        const op = { kind: 'UPDATE', objectId: id, property: 'scale', value: nextObj.scale, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
+        get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+      }
+      if (id === objectId && property !== 'position' && property !== 'scale') {
+        const op = { kind: 'UPDATE', objectId: id, property, value, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
+        get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+      }
+    }
   },
 
   updateObjectsProp(objectIds, property, value) {
     const ts = Date.now();
+    const oldObjs = get().editorObjects;
     const prevValues = {};
     objectIds.forEach(id => {
-      prevValues[id] = get().editorObjects[id]?.[property];
+      prevValues[id] = oldObjs[id]?.[property];
     });
+
+    let candidateObjs = { ...oldObjs };
+    objectIds.forEach(id => {
+      if (candidateObjs[id]) {
+        candidateObjs[id] = { ...candidateObjs[id], [property]: value, [property + '_ts']: ts };
+      }
+    });
+
+    let nextObjs = candidateObjs;
+    objectIds.forEach(id => {
+      nextObjs = propagateAndConstrain(nextObjs, id, property, prevValues[id], value);
+    });
+
     set(state => {
-      const nextObjs = { ...state.editorObjects };
-      objectIds.forEach(id => {
-        if (nextObjs[id]) {
-          nextObjs[id] = { ...nextObjs[id], [property]: value, [property + '_ts']: ts };
-        }
-      });
       return {
         editorObjects: nextObjs,
         undoStack: [...state.undoStack, { type: 'UPDATE_GROUP', property, values: prevValues }].slice(-30),
         redoStack: [],
       };
     });
-    objectIds.forEach(id => {
-      const op = { kind: 'UPDATE', objectId: id, property, value, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
-      get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
-    });
+
+    for (const [id, nextObj] of Object.entries(nextObjs)) {
+      const oldObj = oldObjs[id];
+      if (!oldObj) continue;
+
+      if (oldObj.position.x !== nextObj.position.x || oldObj.position.y !== nextObj.position.y || oldObj.position.z !== nextObj.position.z) {
+        const op = { kind: 'UPDATE', objectId: id, property: 'position', value: nextObj.position, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
+        get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+      }
+      if (oldObj.scale.x !== nextObj.scale.x || oldObj.scale.y !== nextObj.scale.y || oldObj.scale.z !== nextObj.scale.z) {
+        const op = { kind: 'UPDATE', objectId: id, property: 'scale', value: nextObj.scale, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
+        get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+      }
+      if (objectIds.includes(id) && property !== 'position' && property !== 'scale') {
+        const op = { kind: 'UPDATE', objectId: id, property, value, timestamp: ts, vectorClock: { ...get().editorVectorClock } };
+        get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op });
+      }
+    }
   },
 
   deleteObject(objectId, skipUndo = false) {
@@ -310,6 +539,15 @@ export const useStore = create((set, get) => ({
     set(state => {
       const objs = { ...state.editorObjects };
       delete objs[objectId];
+      
+      for (const [id, obj] of Object.entries(objs)) {
+        if (obj.stackedOnObjectId === objectId) {
+          objs[id] = { ...obj, stackedOnObjectId: null };
+          const childOp = { kind: 'UPDATE', objectId: id, property: 'stackedOnObjectId', value: null, timestamp: Date.now(), vectorClock: { ...get().editorVectorClock } };
+          get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op: childOp });
+        }
+      }
+
       const nextIds = state.selectedObjectIds.filter(id => id !== objectId);
       const primaryId = nextIds.length > 0 ? nextIds[nextIds.length - 1] : null;
       const nextUndoStack = skipUndo ? state.undoStack : [...state.undoStack, { type: 'RESTORE', snapshot }].slice(-30);
@@ -330,6 +568,15 @@ export const useStore = create((set, get) => ({
     set(state => {
       const nextObjs = { ...state.editorObjects };
       objectIds.forEach(id => delete nextObjs[id]);
+      
+      for (const [id, obj] of Object.entries(nextObjs)) {
+        if (objectIds.includes(obj.stackedOnObjectId)) {
+          nextObjs[id] = { ...obj, stackedOnObjectId: null };
+          const childOp = { kind: 'UPDATE', objectId: id, property: 'stackedOnObjectId', value: null, timestamp: Date.now(), vectorClock: { ...get().editorVectorClock } };
+          get().send({ type: 'EDITOR_OP', sceneId: get().editorSceneId, op: childOp });
+        }
+      }
+
       const nextIds = state.selectedObjectIds.filter(id => !objectIds.includes(id));
       const primaryId = nextIds.length > 0 ? nextIds[nextIds.length - 1] : null;
       const nextUndoStack = skipUndo ? state.undoStack : [...state.undoStack, { type: 'RESTORE_GROUP', snapshots }].slice(-30);
@@ -769,20 +1016,158 @@ export const useStore = create((set, get) => ({
   },
 
   placePendingAsset(col, row, rotation = 0) {
-    const { pendingPlacementAsset } = get();
+    const { pendingPlacementAsset, randomiseAssetColors } = get();
     if (!pendingPlacementAsset) return;
+
+    let objectsToPlace = pendingPlacementAsset.objects;
+    let assetColor = pendingPlacementAsset.color;
+    const isStation = pendingPlacementAsset.isMetroStation || pendingPlacementAsset.name.toLowerCase().includes('metro');
+
+    if (randomiseAssetColors && !isStation) {
+      objectsToPlace = randomizeObjectsColor(pendingPlacementAsset.originalObjects || pendingPlacementAsset.objects, get().randomColorPalette, get().activePaletteId);
+      if (objectsToPlace && objectsToPlace.length > 0) {
+        assetColor = objectsToPlace[0].color;
+      }
+    }
+
     const id = uuid();
     get().send({
       type: 'CITY_PLACE_ASSET',
       id,
       name: pendingPlacementAsset.name,
-      objects: pendingPlacementAsset.objects,
-      col, row, color: pendingPlacementAsset.color,
+      objects: objectsToPlace,
+      col, row, color: assetColor,
       width: pendingPlacementAsset.width, height: pendingPlacementAsset.height,
       rotation,
     });
     get().pushCityUndo({ type: 'REMOVE_ASSET', assetId: id });
     get().pushNotif(`Placed "${pendingPlacementAsset.name}" in the city!`);
+
+    // Immediately generate a new randomized preview for the next placement!
+    if (randomiseAssetColors && !isStation) {
+      const randomizedPreviewObjects = randomizeObjectsColor(pendingPlacementAsset.originalObjects || pendingPlacementAsset.objects, get().randomColorPalette, get().activePaletteId);
+      set({
+        pendingPlacementAsset: {
+          ...pendingPlacementAsset,
+          originalObjects: pendingPlacementAsset.originalObjects || pendingPlacementAsset.objects,
+          objects: randomizedPreviewObjects,
+          color: randomizedPreviewObjects[0]?.color || assetColor
+        }
+      });
+    }
+  },
+
+  selectPendingAsset(asset) {
+    if (!asset) {
+      set({ pendingPlacementAsset: null });
+      return;
+    }
+    const isStation = asset.isMetroStation || asset.name.toLowerCase().includes('metro');
+    if (get().randomiseAssetColors && !isStation) {
+      const randomized = randomizeObjectsColor(asset.objects, get().randomColorPalette, get().activePaletteId);
+      set({
+        pendingPlacementAsset: {
+          ...asset,
+          originalObjects: asset.objects,
+          objects: randomized,
+          color: randomized[0]?.color || asset.color
+        },
+        cityTool: 'select'
+      });
+    } else {
+      set({
+        pendingPlacementAsset: asset,
+        cityTool: 'select'
+      });
+    }
+  },
+
+  toggleRandomiseAssetColors() {
+    const nextVal = !get().randomiseAssetColors;
+    set({ randomiseAssetColors: nextVal });
+
+    const { pendingPlacementAsset } = get();
+    if (pendingPlacementAsset) {
+      const isStation = pendingPlacementAsset.isMetroStation || pendingPlacementAsset.name.toLowerCase().includes('metro');
+      if (!isStation) {
+        if (nextVal) {
+          const original = pendingPlacementAsset.originalObjects || pendingPlacementAsset.objects;
+          const randomized = randomizeObjectsColor(original, get().randomColorPalette, get().activePaletteId);
+          set({
+            pendingPlacementAsset: {
+              ...pendingPlacementAsset,
+              originalObjects: original,
+              objects: randomized,
+              color: randomized[0]?.color || pendingPlacementAsset.color
+            }
+          });
+        } else {
+          const original = pendingPlacementAsset.originalObjects || pendingPlacementAsset.objects;
+          set({
+            pendingPlacementAsset: {
+              ...pendingPlacementAsset,
+              objects: original,
+              color: original[0]?.color || pendingPlacementAsset.color
+            }
+          });
+        }
+      }
+    }
+  },
+
+  toggleColorFamilyInPalette(familyId) {
+    set(state => {
+      let nextPalette = [...state.randomColorPalette];
+      if (nextPalette.includes(familyId)) {
+        nextPalette = nextPalette.filter(id => id !== familyId);
+      } else {
+        nextPalette.push(familyId);
+      }
+      return { randomColorPalette: nextPalette };
+    });
+
+    const { pendingPlacementAsset } = get();
+    if (pendingPlacementAsset) {
+      const isStation = pendingPlacementAsset.isMetroStation || pendingPlacementAsset.name.toLowerCase().includes('metro');
+      if (!isStation && get().randomiseAssetColors) {
+        const original = pendingPlacementAsset.originalObjects || pendingPlacementAsset.objects;
+        const randomized = randomizeObjectsColor(original, get().randomColorPalette, get().activePaletteId);
+        set({
+          pendingPlacementAsset: {
+            ...pendingPlacementAsset,
+            originalObjects: original,
+            objects: randomized,
+            color: randomized[0]?.color || pendingPlacementAsset.color
+          }
+        });
+      }
+    }
+  },
+
+  selectActivePalette(paletteId) {
+    const palette = PRESET_PALETTES.find(p => p.id === paletteId);
+    if (!palette) return;
+    set({
+      activePaletteId: paletteId,
+      randomColorPalette: palette.colors.map(c => c.id)
+    });
+
+    const { pendingPlacementAsset } = get();
+    if (pendingPlacementAsset) {
+      const isStation = pendingPlacementAsset.isMetroStation || pendingPlacementAsset.name.toLowerCase().includes('metro');
+      if (!isStation && get().randomiseAssetColors) {
+        const original = pendingPlacementAsset.originalObjects || pendingPlacementAsset.objects;
+        const randomized = randomizeObjectsColor(original, palette.colors.map(c => c.id), paletteId);
+        set({
+          pendingPlacementAsset: {
+            ...pendingPlacementAsset,
+            originalObjects: original,
+            objects: randomized,
+            color: randomized[0]?.color || pendingPlacementAsset.color
+          }
+        });
+      }
+    }
   },
 
   // ── City actions ───────────────────────────────────────────────────────
@@ -802,27 +1187,7 @@ export const useStore = create((set, get) => ({
   },
 
   addRoadSegment(points, roadType = 'standard', skipUndo = false) {
-    // Collision check for railways/roads vs assets
-    const city = get().city;
-    if (roadType !== 'railway' && city && city.placedAssets) {
-      const distanceToSegment = (p, a, z) => {
-        const l2 = (a.x - z.x)**2 + (a.z - z.z)**2;
-        if (l2 === 0) return Math.sqrt((p.x - a.x)**2 + (p.z - a.z)**2);
-        let t = ((p.x - a.x) * (z.x - a.x) + (p.z - a.z) * (z.z - a.z)) / l2;
-        t = Math.max(0, Math.min(1, t));
-        return Math.sqrt((p.x - (a.x + t * (z.x - a.x)))**2 + (p.z - (a.z + t * (z.z - a.z)))**2);
-      };
-      for (const asset of city.placedAssets) {
-        const assetRadius = ((asset.width || 2) + (asset.height || 2)) / 4 + 0.4;
-        for (let i = 0; i < points.length - 1; i++) {
-          const dist = distanceToSegment({ x: asset.col, z: asset.row }, points[i], points[i+1]);
-          if (dist < assetRadius) {
-            get().pushNotif(`Cannot lay network: overlaps with "${asset.name}"!`);
-            return;
-          }
-        }
-      }
-    }
+    // Collision check bypassed to allow building roads anywhere
 
     const id = uuid();
     const newRoad = { id, points, roadType };
@@ -1095,6 +1460,11 @@ function mkObj(op, createdBy) {
     createdBy: createdBy || 'unknown',
     timestamp: Date.now(),
     isSubtractive: op.isSubtractive || false,
+    isSolid: op.isSolid || false,
+    isStacked: op.isStacked || false,
+    lockX: op.lockX || false,
+    lockY: op.lockY || false,
+    lockZ: op.lockZ || false,
     children: op.children || undefined,
     text: op.text || undefined,
     textColor: op.textColor || undefined,
