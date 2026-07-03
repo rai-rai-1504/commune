@@ -1338,8 +1338,988 @@ function generateHyperBlockCondos() {
   return objects;
 }
 
+// ── 20 New High-Complexity Procedural Generators ─────────────────
+function generateEmpireFinancialCenter() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x:0, y:8, z:0}, scale: {x:6, y:16, z:6}, color: '#1e293b', name: 'Core_Base' });
+  o.push({ geometry: 'box', position: {x:0, y:20, z:0}, scale: {x:4.5, y:8, z:4.5}, color: '#334155', name: 'Core_Middle' });
+  o.push({ geometry: 'box', position: {x:0, y:26, z:0}, scale: {x:3, y:4, z:3}, color: '#475569', name: 'Core_Top' });
+  o.push({ geometry: 'cylinder', position: {x:0, y:30, z:0}, scale: {x:0.2, y:4, z:0.2}, color: '#00f2ff', name: 'Spire' });
+  const colors = ['#38bdf8', '#0ea5e9', '#0284c7'];
+  for (let floor = 0; floor < 15; floor++) {
+    const y = 1.0 + floor * 1.0;
+    const width = floor < 10 ? 5.8 : (floor < 13 ? 4.3 : 2.8);
+    const halfW = width / 2;
+    for (let col = 0; col < 10; col++) {
+      const ratio = (col - 4.5) / 5;
+      const offset = ratio * halfW;
+      const winColor = colors[(floor + col) % colors.length];
+      o.push({ geometry: 'box', position: {x: offset, y: y, z: halfW + 0.02}, scale: {x: 0.15, y: 0.4, z: 0.04}, color: winColor, name: `Win_Z_F${floor}_C${col}` });
+      o.push({ geometry: 'box', position: {x: offset, y: y, z: -halfW - 0.02}, scale: {x: 0.15, y: 0.4, z: 0.04}, color: winColor, name: `Win_negZ_F${floor}_C${col}` });
+      o.push({ geometry: 'box', position: {x: halfW + 0.02, y: y, z: offset}, scale: {x: 0.04, y: 0.4, z: 0.15}, color: winColor, name: `Win_X_F${floor}_C${col}` });
+      o.push({ geometry: 'box', position: {x: -halfW - 0.02, y: y, z: offset}, scale: {x: 0.04, y: 0.4, z: 0.15}, color: winColor, name: `Win_negX_F${floor}_C${col}` });
+    }
+  }
+  return o;
+}
+
+function generateMarinaTowerHotel() {
+  const o = [];
+  const towerPositions = [
+    {x: -3.5, z: -0.5},
+    {x: 0, z: 0.8},
+    {x: 3.5, z: -0.5}
+  ];
+  towerPositions.forEach((pos, tIdx) => {
+    o.push({ geometry: 'box', position: {x: pos.x, y: 6.5, z: pos.z}, scale: {x: 2.2, y: 13.0, z: 2.2}, color: '#334155', name: `TowerBase_${tIdx}` });
+  });
+  for (let t = 0; t < 3; t++) {
+    const pos = towerPositions[t];
+    for (let f = 0; f < 12; f++) {
+      const y = 1.0 + f * 1.0;
+      o.push({ geometry: 'box', position: {x: pos.x, y: y - 0.1, z: pos.z + 1.25}, scale: {x: 2.2, y: 0.08, z: 0.4}, color: '#f8fafc', name: `BalconyFloor_T${t}_F${f}` });
+      o.push({ geometry: 'box', position: {x: pos.x, y: y + 0.15, z: pos.z + 1.45}, scale: {x: 2.2, y: 0.4, z: 0.05}, color: '#38bdf8', name: `BalconyGlass_T${t}_F${f}` });
+      o.push({ geometry: 'box', position: {x: pos.x - 1.15, y: y + 0.15, z: pos.z + 1.25}, scale: {x: 0.05, y: 0.4, z: 0.4}, color: '#f8fafc', name: `BalconySideL_T${t}_F${f}` });
+      o.push({ geometry: 'box', position: {x: pos.x + 1.15, y: y + 0.15, z: pos.z + 1.25}, scale: {x: 0.05, y: 0.4, z: 0.4}, color: '#f8fafc', name: `BalconySideR_T${t}_F${f}` });
+      o.push({ geometry: 'box', position: {x: pos.x - 0.5, y: y + 0.4, z: pos.z + 1.08}, scale: {x: 0.8, y: 0.8, z: 0.02}, color: '#0284c7', name: `WindowL_T${t}_F${f}` });
+      o.push({ geometry: 'box', position: {x: pos.x + 0.5, y: y + 0.4, z: pos.z + 1.08}, scale: {x: 0.8, y: 0.8, z: 0.02}, color: '#0284c7', name: `WindowR_T${t}_F${f}` });
+      o.push({ geometry: 'box', position: {x: pos.x - 0.5, y: y + 0.4, z: pos.z - 1.08}, scale: {x: 0.8, y: 0.8, z: 0.02}, color: '#0284c7', name: `WindowBL_T${t}_F${f}` });
+      o.push({ geometry: 'box', position: {x: pos.x + 0.5, y: y + 0.4, z: pos.z - 1.08}, scale: {x: 0.8, y: 0.8, z: 0.02}, color: '#0284c7', name: `WindowBR_T${t}_F${f}` });
+      o.push({ geometry: 'cylinder', position: {x: pos.x - 1.12, y: y, z: pos.z - 1.12}, scale: {x: 0.1, y: 1.0, z: 0.1}, color: '#64748b', name: `PillarBL_T${t}_F${f}` });
+      o.push({ geometry: 'cylinder', position: {x: pos.x + 1.12, y: y, z: pos.z - 1.12}, scale: {x: 0.1, y: 1.0, z: 0.1}, color: '#64748b', name: `PillarBR_T${t}_F${f}` });
+    }
+  }
+  o.push({ geometry: 'box', position: {x: 0, y: 13.1, z: 0.1}, scale: {x: 9.8, y: 0.2, z: 3.5}, color: '#10b981', name: 'SkyParkDeck' });
+  for (let i = 0; i < 6; i++) {
+    const xOffset = -3.5 + i * 1.4;
+    o.push({ geometry: 'cylinder', position: {x: xOffset, y: 13.4, z: 0.1}, scale: {x: 0.15, y: 0.4, z: 0.15}, color: '#78350f', name: `RoofTreeTrunk_${i}` });
+    o.push({ geometry: 'sphere', position: {x: xOffset, y: 13.7, z: 0.1}, scale: {x: 0.55, y: 0.55, z: 0.55}, color: '#047857', name: `RoofTreeLeaves_${i}` });
+  }
+  return o;
+}
+
+function generateHelixTradeCenter() {
+  const o = [];
+  o.push({ geometry: 'cylinder', position: {x: 0, y: 9.0, z: 0}, scale: {x: 1.8, y: 18.0, z: 1.8}, color: '#0f172a', name: 'Helix_Central_Core' });
+  for (let level = 0; level < 35; level++) {
+    const y = 0.3 + level * 0.5;
+    const baseAngle = (level * Math.PI) / 8;
+    const radius = 2.0;
+    for (let b = 0; b < 10; b++) {
+      const angle = baseAngle + (b * Math.PI * 2) / 10;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      const blockColor = b % 2 === 0 ? '#0ea5e9' : '#0369a1';
+      o.push({
+        geometry: 'box',
+        position: {x, y, z},
+        scale: {x: 0.5, y: 0.35, z: 0.5},
+        rotation: {x: 0.1, y: -angle, z: 0},
+        color: blockColor,
+        name: `HelixBlock_L${level}_B${b}`
+      });
+    }
+  }
+  return o;
+}
+
+function generateCyberPlazaMall() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 0.1, z: 0}, scale: {x: 12, y: 0.2, z: 12}, color: '#1e293b', name: 'Floor_0' });
+  o.push({ geometry: 'box', position: {x: 0, y: 4.0, z: 0}, scale: {x: 12, y: 0.2, z: 12}, color: '#1e293b', name: 'Floor_1' });
+  o.push({ geometry: 'box', position: {x: 0, y: 8.0, z: 0}, scale: {x: 12, y: 0.2, z: 12}, color: '#1e293b', name: 'Floor_2' });
+  const columns = [
+    {x: -5.5, z: -5.5}, {x: 5.5, z: -5.5}, {x: -5.5, z: 5.5}, {x: 5.5, z: 5.5},
+    {x: -5.5, z: 0}, {x: 5.5, z: 0}, {x: 0, z: -5.5}, {x: 0, z: 5.5}
+  ];
+  columns.forEach((col, idx) => {
+    o.push({ geometry: 'cylinder', position: {x: col.x, y: 6.0, z: col.z}, scale: {x: 0.4, y: 12.0, z: 0.4}, color: '#475569', name: `MallColumn_${idx}` });
+  });
+  for (let lvl = 0; lvl < 3; lvl++) {
+    const y = lvl * 4.0 + 1.8;
+    for (let s = 0; s < 8; s++) {
+      const angle = (s * Math.PI * 2) / 8;
+      const rx = Math.cos(angle) * 4.2;
+      const rz = Math.sin(angle) * 4.2;
+      o.push({ geometry: 'box', position: {x: rx, y: y, z: rz}, scale: {x: 1.8, y: 2.8, z: 1.8}, color: '#334155', name: `Shop_L${lvl}_S${s}` });
+      o.push({ geometry: 'box', position: {x: rx * 0.9, y: y, z: rz * 0.9}, scale: {x: 1.2, y: 2.2, z: 0.1}, rotation: {x: 0, y: -angle, z: 0}, color: '#38bdf8', name: `ShopGlass_L${lvl}_S${s}` });
+    }
+  }
+  for (let esc = 0; esc < 2; esc++) {
+    const startY = esc * 4.0 + 0.2;
+    const startX = esc === 0 ? -2.0 : 2.0;
+    for (let step = 0; step < 25; step++) {
+      const sy = startY + (step * 3.8) / 25;
+      const sz = -2.5 + (step * 5.0) / 25;
+      o.push({ geometry: 'box', position: {x: startX, y: sy, z: sz}, scale: {x: 0.8, y: 0.1, z: 0.2}, color: '#94a3b8', name: `EscStep_E${esc}_S${step}` });
+      o.push({ geometry: 'box', position: {x: startX + 0.42, y: sy + 0.35, z: sz}, scale: {x: 0.04, y: 0.7, z: 0.2}, color: '#00f2ff', name: `EscRail_E${esc}_S${step}` });
+    }
+  }
+  for (let s = 0; s < 12; s++) {
+    const baseAngle = (s * Math.PI * 2) / 12;
+    for (let p = 0; p < 10; p++) {
+      const radius = 1.0 + p * 0.35;
+      const sx = Math.cos(baseAngle) * radius;
+      const sz = Math.sin(baseAngle) * radius;
+      const sy = 12.2 + (5 - p) * 0.15;
+      o.push({ geometry: 'box', position: {x: sx, y: sy, z: sz}, scale: {x: 0.2, y: 0.1, z: 0.3}, rotation: {x: 0.2, y: -baseAngle, z: 0}, color: '#06b6d4', name: `SkylightFrame_S${s}_P${p}` });
+    }
+  }
+  for (let n = 0; n < 24; n++) {
+    const angle = (n * Math.PI * 2) / 24;
+    const sx = Math.cos(angle) * 3.2;
+    const sz = Math.sin(angle) * 3.2;
+    o.push({ geometry: 'box', position: {x: sx, y: 7.8, z: sz}, scale: {x: 0.4, y: 0.3, z: 0.1}, rotation: {x: 0, y: -angle, z: 0}, color: '#f43f5e', name: `NeonSign_${n}` });
+  }
+  return o;
+}
+
+function generateShibuyaNeonTower() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 9.0, z: 0}, scale: {x: 4.5, y: 18.0, z: 4.5}, color: '#090d16', name: 'TowerCore' });
+  for (let s = 0; s < 15; s++) {
+    const y = 0.6 + s * 1.2;
+    o.push({ geometry: 'box', position: {x: -2.3, y, z: -2.3}, scale: {x: 0.15, y: 1.2, z: 0.15}, color: '#334155', name: `Girder_C1_S${s}` });
+    o.push({ geometry: 'box', position: {x: 2.3, y, z: -2.3}, scale: {x: 0.15, y: 1.2, z: 0.15}, color: '#334155', name: `Girder_C2_S${s}` });
+    o.push({ geometry: 'box', position: {x: -2.3, y, z: 2.3}, scale: {x: 0.15, y: 1.2, z: 0.15}, color: '#334155', name: `Girder_C3_S${s}` });
+    o.push({ geometry: 'box', position: {x: 2.3, y, z: 2.3}, scale: {x: 0.15, y: 1.2, z: 0.15}, color: '#334155', name: `Girder_C4_S${s}` });
+    o.push({ geometry: 'box', position: {x: 0, y, z: -2.3}, scale: {x: 4.5, y: 0.08, z: 0.08}, rotation: {x: 0, y: 0, z: 0.3}, color: '#475569', name: `Brace_F_S${s}` });
+    o.push({ geometry: 'box', position: {x: 0, y, z: 2.3}, scale: {x: 4.5, y: 0.08, z: 0.08}, rotation: {x: 0, y: 0, z: -0.3}, color: '#475569', name: `Brace_B_S${s}` });
+    o.push({ geometry: 'box', position: {x: -2.3, y, z: 0}, scale: {x: 0.08, y: 0.08, z: 4.5}, rotation: {x: 0.3, y: 0, z: 0}, color: '#475569', name: `Brace_L_S${s}` });
+    o.push({ geometry: 'box', position: {x: 2.3, y, z: 0}, scale: {x: 0.08, y: 0.08, z: 4.5}, rotation: {x: -0.3, y: 0, z: 0}, color: '#475569', name: `Brace_R_S${s}` });
+  }
+  const billboardColors = ['#ff0055', '#00ffaa', '#ffaa00', '#00aaff', '#cc00ff'];
+  for (let b = 0; b < 10; b++) {
+    const y = 3.0 + b * 1.4;
+    const angle = (b * Math.PI) / 2.5;
+    const bx = Math.cos(angle) * 2.32;
+    const bz = Math.sin(angle) * 2.32;
+    o.push({
+      geometry: 'box',
+      position: {x: bx, y, z: bz},
+      scale: {x: 1.4, y: 1.0, z: 0.08},
+      rotation: {x: 0, y: -angle, z: 0},
+      color: billboardColors[b % billboardColors.length],
+      name: `AdScreen_${b}`
+    });
+    o.push({
+      geometry: 'box',
+      position: {x: bx * 0.98, y, z: bz * 0.98},
+      scale: {x: 1.5, y: 1.1, z: 0.1},
+      rotation: {x: 0, y: -angle, z: 0},
+      color: '#000000',
+      name: `AdBack_${b}`
+    });
+  }
+  const neonColors = ['#ff00ff', '#00ffff', '#ffff00', '#ff3300'];
+  for (let c = 0; c < 4; c++) {
+    const cx = c === 0 || c === 1 ? -2.4 : 2.4;
+    const cz = c === 0 || c === 2 ? -2.4 : 2.4;
+    const color = neonColors[c];
+    for (let seg = 0; seg < 40; seg++) {
+      const sy = 0.3 + seg * 0.45;
+      o.push({
+        geometry: 'cylinder',
+        position: {x: cx, y: sy, z: cz},
+        scale: {x: 0.06, y: 0.5, z: 0.06},
+        color,
+        name: `NeonTube_C${c}_S${seg}`
+      });
+    }
+  }
+  for (let a = 0; a < 6; a++) {
+    o.push({ geometry: 'cylinder', position: {x: -1.0 + a * 0.4, y: 19.0, z: 0}, scale: {x: 0.05, y: 2.0, z: 0.05}, color: '#ffffff', name: `Antenna_${a}` });
+    o.push({ geometry: 'sphere', position: {x: -1.0 + a * 0.4, y: 20.0, z: 0}, scale: {x: 0.15, y: 0.15, z: 0.15}, color: '#ff0000', name: `Beacon_${a}` });
+  }
+  return o;
+}
+
+function generateGrandCityHall() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 3.5, z: 0}, scale: {x: 10, y: 7.0, z: 6}, color: '#e2e8f0', name: 'MainHall' });
+  for (let s = 0; s < 8; s++) {
+    const sy = 0.1 + s * 0.15;
+    const sz = 3.2 + s * 0.2;
+    o.push({ geometry: 'box', position: {x: 0, y: sy, z: sz}, scale: {x: 8.0 - s * 0.2, y: 0.15, z: 1.0}, color: '#cbd5e1', name: `Stair_${s}` });
+  }
+  for (let col = 0; col < 20; col++) {
+    const x = -4.5 + (col * 9.0) / 19;
+    o.push({ geometry: 'cylinder', position: {x, y: 3.5, z: 3.1}, scale: {x: 0.18, y: 6.8, z: 0.18}, color: '#f1f5f9', name: `Col_R1_${col}` });
+    o.push({ geometry: 'cylinder', position: {x, y: 3.5, z: 2.8}, scale: {x: 0.18, y: 6.8, z: 0.18}, color: '#f1f5f9', name: `Col_R2_${col}` });
+  }
+  o.push({ geometry: 'box', position: {x: 0, y: 7.1, z: 2.95}, scale: {x: 9.8, y: 0.4, z: 0.6}, color: '#cbd5e1', name: 'Entablature' });
+  o.push({ geometry: 'box', position: {x: 0, y: 7.8, z: 0}, scale: {x: 6, y: 1.6, z: 6}, color: '#cbd5e1', name: 'DomeBase' });
+  for (let ring = 0; ring < 12; ring++) {
+    const rY = 8.6 + ring * 0.3;
+    const radius = 2.6 * Math.cos((ring * Math.PI) / 22);
+    for (let slice = 0; slice < 16; slice++) {
+      const angle = (slice * Math.PI * 2) / 16;
+      const rx = Math.cos(angle) * radius;
+      const rz = Math.sin(angle) * radius;
+      o.push({
+        geometry: 'sphere',
+        position: {x: rx, y: rY, z: rz},
+        scale: {x: 0.6, y: 0.5, z: 0.6},
+        color: '#64748b',
+        name: `DomeRing_R${ring}_S${slice}`
+      });
+    }
+  }
+  o.push({ geometry: 'cylinder', position: {x: 0, y: 12.0, z: 0}, scale: {x: 0.3, y: 1.5, z: 0.3}, color: '#cbd5e1', name: 'DomeLantern' });
+  o.push({ geometry: 'cylinder', position: {x: 0, y: 13.0, z: 0}, scale: {x: 0.05, y: 1.0, z: 0.05}, color: '#ffd700', name: 'SpireGolden' });
+  o.push({ geometry: 'cylinder', position: {x: 0, y: 5.5, z: 3.12}, scale: {x: 1.0, y: 0.1, z: 1.0}, rotation: {x: Math.PI/2, y: 0, z: 0}, color: '#ffffff', name: 'ClockFace' });
+  o.push({ geometry: 'box', position: {x: 0, y: 5.7, z: 3.16}, scale: {x: 0.05, y: 0.4, z: 0.05}, color: '#000000', name: 'ClockHandHour' });
+  o.push({ geometry: 'box', position: {x: 0.2, y: 5.5, z: 3.16}, scale: {x: 0.5, y: 0.05, z: 0.05}, color: '#000000', name: 'ClockHandMin' });
+  for (let f = 0; f < 2; f++) {
+    const y = 2.0 + f * 3.0;
+    for (let w = 0; w < 6; w++) {
+      const zOffset = -2.5 + w * 1.0;
+      o.push({ geometry: 'box', position: {x: -5.02, y, z: zOffset}, scale: {x: 0.04, y: 1.2, z: 0.5}, color: '#475569', name: `SideWinL_F${f}_W${w}` });
+      o.push({ geometry: 'box', position: {x: 5.02, y, z: zOffset}, scale: {x: 0.04, y: 1.2, z: 0.5}, color: '#475569', name: `SideWinR_F${f}_W${w}` });
+    }
+  }
+  for (let b = 0; b < 50; b++) {
+    const bx = -4.9 + (b * 9.8) / 49;
+    o.push({ geometry: 'cylinder', position: {x: bx, y: 7.2, z: -2.9}, scale: {x: 0.06, y: 0.4, z: 0.06}, color: '#e2e8f0', name: `Baluster_${b}` });
+  }
+  return o;
+}
+
+function generateSymphonyConcertHall() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 0.15, z: 0}, scale: {x: 12, y: 0.3, z: 10}, color: '#1e293b', name: 'PlazaBase' });
+  for (let s = 0; s < 12; s++) {
+    const sy = 0.2 + s * 0.1;
+    const sz = 5.0 + s * 0.15;
+    o.push({ geometry: 'box', position: {x: 0, y: sy, z: sz}, scale: {x: 10 - s * 0.4, y: 0.1, z: 0.8}, color: '#475569', name: `PlazaStep_${s}` });
+  }
+  const shellPositions = [
+    {x: -3.5, y: 2.0, z: -2.0, sc: 1.5, rot: 0.2},
+    {x: -1.5, y: 3.5, z: -1.5, sc: 2.2, rot: 0.1},
+    {x: 1.5, y: 3.5, z: -1.5, sc: 2.2, rot: -0.1},
+    {x: 3.5, y: 2.0, z: -2.0, sc: 1.5, rot: -0.2},
+    {x: -2.5, y: 5.0, z: 0.5, sc: 2.8, rot: 0.3},
+    {x: 0, y: 6.5, z: 1.0, sc: 3.5, rot: 0.0},
+    {x: 2.5, y: 5.0, z: 0.5, sc: 2.8, rot: -0.3},
+    {x: 0, y: 7.5, z: -1.0, sc: 4.0, rot: 0.0}
+  ];
+  shellPositions.forEach((pos, idx) => {
+    for (let slice = 0; slice < 25; slice++) {
+      const radius = pos.sc * (1.0 - (slice * 0.02));
+      const angle = (slice * Math.PI) / 24 - Math.PI / 4;
+      const ox = pos.x + Math.cos(angle) * radius;
+      const oz = pos.z + Math.sin(angle) * radius;
+      const oy = pos.y + (slice * 0.12);
+      o.push({
+        geometry: 'box',
+        position: {x: ox, y: oy, z: oz},
+        scale: {x: 0.3, y: 0.5, z: 0.8},
+        rotation: {x: 0.1, y: pos.rot - angle, z: 0.2},
+        color: '#f8fafc',
+        name: `Shell_${idx}_Slice_${slice}`
+      });
+    }
+  });
+  for (let w = 0; w < 90; w++) {
+    const wx = -4.5 + (w * 9.0) / 89;
+    const wy = 1.0 + Math.sin((w / 89) * Math.PI) * 2.0;
+    o.push({
+      geometry: 'box',
+      position: {x: wx, y: wy, z: 3.8},
+      scale: {x: 0.08, y: wy * 2.0, z: 0.08},
+      color: '#38bdf8',
+      name: `GlassCol_${w}`
+    });
+  }
+  return o;
+}
+
+function generateImperialMuseumOfArt() {
+  const o = [];
+  const pavs = [
+    {x: -4.5, y: 2.5, z: -1.0, sx: 2.8, sy: 5.0, sz: 4.5},
+    {x: 0.0, y: 3.0, z: -2.0, sx: 3.8, sy: 6.0, sz: 5.0},
+    {x: 4.5, y: 2.5, z: -1.0, sx: 2.8, sy: 5.0, sz: 4.5}
+  ];
+  pavs.forEach((p, idx) => {
+    o.push({ geometry: 'box', position: {x: p.x, y: p.y, z: p.z}, scale: {x: p.sx, y: p.sy, z: p.sz}, color: '#f1f5f9', name: `Pavilion_${idx}` });
+    for (let c = 0; c < 12; c++) {
+      const cx = (p.x - p.sx/2 + 0.2) + (c * (p.sx - 0.4)) / 11;
+      o.push({ geometry: 'cylinder', position: {x: cx, y: p.y, z: p.z + p.sz/2 + 0.15}, scale: {x: 0.12, y: p.sy - 0.2, z: 0.12}, color: '#cbd5e1', name: `PavCol_${idx}_C${c}` });
+    }
+  });
+  for (let lyr = 0; lyr < 12; lyr++) {
+    const py = 0.2 + lyr * 0.35;
+    const size = 3.6 * (1.0 - lyr / 12);
+    for (let tile = 0; tile < 16; tile++) {
+      const angle = (tile * Math.PI * 2) / 16;
+      const tx = Math.cos(angle) * size;
+      const tz = Math.sin(angle) * size + 2.0;
+      o.push({
+        geometry: 'box',
+        position: {x: tx, y: py, z: tz},
+        scale: {x: 0.25, y: 0.08, z: 0.25},
+        rotation: {x: 0.4, y: -angle, z: 0},
+        color: '#06b6d4',
+        name: `PyramidGlass_L${lyr}_T${tile}`
+      });
+    }
+  }
+  const planters = [
+    {x: -4.0, z: 3.5}, {x: -2.0, z: 3.5}, {x: 2.0, z: 3.5}, {x: 4.0, z: 3.5}
+  ];
+  planters.forEach((planter, idx) => {
+    o.push({ geometry: 'box', position: {x: planter.x, y: 0.15, z: planter.z}, scale: {x: 1.2, y: 0.3, z: 1.2}, color: '#475569', name: `Planter_${idx}` });
+    for (let f = 0; f < 20; f++) {
+      const fx = planter.x - 0.4 + (f % 5) * 0.2;
+      const fz = planter.z - 0.4 + Math.floor(f / 5) * 0.2;
+      const color = f % 2 === 0 ? '#ef4444' : '#10b981';
+      o.push({ geometry: 'sphere', position: {x: fx, y: 0.35, z: fz}, scale: {x: 0.12, y: 0.12, z: 0.12}, color, name: `Planter_${idx}_Flower_${f}` });
+    }
+  });
+  return o;
+}
+
+function generateMetropolitanLibrary() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 5.0, z: 0}, scale: {x: 9, y: 10.0, z: 7}, color: '#0f172a', name: 'LibraryCore' });
+  for (let r = 0; r < 10; r++) {
+    const y = 0.5 + r * 0.95;
+    for (let c = 0; c < 20; c++) {
+      const x = -4.2 + (c * 8.4) / 19;
+      o.push({
+        geometry: 'box',
+        position: {x, y, z: 3.52},
+        scale: {x: 0.35, y: 0.08, z: 0.25},
+        rotation: {x: 0.5, y: 0, z: 0},
+        color: '#f59e0b',
+        name: `LouverF_R${r}_C${c}`
+      });
+      o.push({
+        geometry: 'box',
+        position: {x, y, z: -3.52},
+        scale: {x: 0.35, y: 0.08, z: 0.25},
+        rotation: {x: -0.5, y: 0, z: 0},
+        color: '#f59e0b',
+        name: `LouverB_R${r}_C${c}`
+      });
+    }
+  }
+  o.push({ geometry: 'box', position: {x: -1.2, y: 2.0, z: 3.6}, scale: {x: 0.3, y: 4.0, z: 0.4}, color: '#e2e8f0', name: 'ArchL' });
+  o.push({ geometry: 'box', position: {x: 1.2, y: 2.0, z: 3.6}, scale: {x: 0.3, y: 4.0, z: 0.4}, color: '#e2e8f0', name: 'ArchR' });
+  o.push({ geometry: 'box', position: {x: 0, y: 4.15, z: 3.6}, scale: {x: 2.7, y: 0.3, z: 0.4}, color: '#e2e8f0', name: 'ArchTop' });
+  return o;
+}
+
+function generateJusticeCourtyard() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 4.0, z: -3.5}, scale: {x: 10.0, y: 8.0, z: 2.0}, color: '#e2e8f0', name: 'CourtHouse' });
+  for (let p = 0; p < 40; p++) {
+    let px = 0, pz = 0;
+    if (p < 15) {
+      px = -4.8;
+      pz = -3.0 + p * 0.55;
+    } else if (p < 30) {
+      px = 4.8;
+      pz = -3.0 + (p - 15) * 0.55;
+    } else {
+      px = -4.8 + (p - 30) * 0.96;
+      pz = 5.0;
+    }
+    o.push({ geometry: 'cylinder', position: {x: px, y: 1.0, z: pz}, scale: {x: 0.15, y: 2.0, z: 0.15}, color: '#cbd5e1', name: `FencePillar_${p}` });
+  }
+  o.push({ geometry: 'box', position: {x: 0, y: 0.2, z: 0}, scale: {x: 1.2, y: 0.4, z: 1.2}, color: '#94a3b8', name: 'ObeliskBase' });
+  o.push({ geometry: 'cylinder', position: {x: 0, y: 3.0, z: 0}, scale: {x: 0.35, y: 5.2, z: 0.35}, color: '#cbd5e1', name: 'ObeliskShaft' });
+  o.push({ geometry: 'cone', position: {x: 0, y: 5.8, z: 0}, scale: {x: 0.35, y: 0.5, z: 0.35}, color: '#f59e0b', name: 'ObeliskCap' });
+  const fountainCenters = [{x: -2.5, z: 1.0}, {x: 2.5, z: 1.0}];
+  fountainCenters.forEach((fc, fIdx) => {
+    o.push({ geometry: 'cylinder', position: {x: fc.x, y: 0.25, z: fc.z}, scale: {x: 1.0, y: 0.5, z: 1.0}, color: '#475569', name: `FountainBasin_${fIdx}` });
+    for (let j = 0; j < 130; j++) {
+      const angle = (j * Math.PI * 2) / 25;
+      const dist = 0.1 + (Math.floor(j / 25) * 0.2);
+      const jx = fc.x + Math.cos(angle) * dist;
+      const jz = fc.z + Math.sin(angle) * dist;
+      const jy = 0.5 + Math.sin((j % 25) / 25 * Math.PI) * 0.8;
+      o.push({
+        geometry: 'sphere',
+        position: {x: jx, y: jy, z: jz},
+        scale: {x: 0.04, y: 0.04, z: 0.04},
+        color: '#60a5fa',
+        name: `WaterJet_${fIdx}_J${j}`
+      });
+    }
+  });
+  for (let b = 0; b < 8; b++) {
+    const angle = (b * Math.PI * 2) / 8;
+    const bx = Math.cos(angle) * 3.5;
+    const bz = Math.sin(angle) * 3.5;
+    o.push({
+      geometry: 'box',
+      position: {x: bx, y: 0.35, z: bz},
+      scale: {x: 0.8, y: 0.1, z: 0.3},
+      rotation: {x: 0, y: -angle, z: 0},
+      color: '#78350f',
+      name: `Bench_${b}`
+    });
+  }
+  return o;
+}
+
+function generateEdenBioDome() {
+  const o = [];
+  o.push({ geometry: 'cylinder', position: {x: 0, y: 0.1, z: 0}, scale: {x: 8.0, y: 0.2, z: 8.0}, color: '#065f46', name: 'DomeFloor' });
+  for (let slice = 0; slice < 12; slice++) {
+    const baseAngle = (slice * Math.PI * 2) / 12;
+    for (let seg = 0; seg < 15; seg++) {
+      const vRatio = seg / 15;
+      const angleHeight = vRatio * Math.PI / 2;
+      const radius = 3.9 * Math.cos(angleHeight);
+      const y = 0.2 + 3.9 * Math.sin(angleHeight);
+      const x = Math.cos(baseAngle) * radius;
+      const z = Math.sin(baseAngle) * radius;
+      o.push({
+        geometry: 'box',
+        position: {x, y, z},
+        scale: {x: 0.1, y: 0.45, z: 0.1},
+        rotation: {x: angleHeight, y: -baseAngle, z: 0},
+        color: '#f8fafc',
+        name: `Lattice_S${slice}_G${seg}`
+      });
+      o.push({
+        geometry: 'box',
+        position: {x: x * 1.01, y, z: z * 1.01},
+        scale: {x: 0.4, y: 0.4, z: 0.02},
+        rotation: {x: angleHeight, y: -baseAngle, z: 0},
+        color: '#34d399',
+        name: `Glass_S${slice}_G${seg}`
+      });
+    }
+  }
+  for (let t = 0; t < 12; t++) {
+    const angle = (t * Math.PI * 2) / 12;
+    const rad = 1.5 + (t % 2) * 0.8;
+    const tx = Math.cos(angle) * rad;
+    const tz = Math.sin(angle) * rad;
+    o.push({ geometry: 'cylinder', position: {x: tx, y: 0.5, z: tz}, scale: {x: 0.1, y: 0.8, z: 0.1}, color: '#78350f', name: `InnerTreeTrunk_${t}` });
+    o.push({ geometry: 'sphere', position: {x: tx, y: 0.9, z: tz}, scale: {x: 0.5, y: 0.5, z: 0.5}, color: '#047857', name: `InnerTreeLeaves_${t}` });
+  }
+  return o;
+}
+
+function generateVerticalForestTower() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 7.5, z: 0}, scale: {x: 4, y: 15.0, z: 4}, color: '#475569', name: 'ForestTowerCore' });
+  for (let f = 0; f < 15; f++) {
+    const y = 0.5 + f * 1.0;
+    for (let side = 0; side < 8; side++) {
+      const angle = (side * Math.PI * 2) / 8;
+      const bx = Math.cos(angle) * 2.05;
+      const bz = Math.sin(angle) * 2.05;
+      o.push({
+        geometry: 'box',
+        position: {x: bx, y: y - 0.1, z: bz},
+        scale: {x: 1.0, y: 0.08, z: 1.0},
+        rotation: {x: 0, y: -angle, z: 0},
+        color: '#e2e8f0',
+        name: `Balcony_F${f}_S${side}`
+      });
+      o.push({
+        geometry: 'box',
+        position: {x: bx * 0.95, y: y + 0.4, z: bz * 0.95},
+        scale: {x: 0.8, y: 0.8, z: 0.05},
+        rotation: {x: 0, y: -angle, z: 0},
+        color: '#0ea5e9',
+        name: `Window_F${f}_S${side}`
+      });
+      o.push({
+        geometry: 'box',
+        position: {x: bx * 1.1, y: y + 0.1, z: bz * 1.1},
+        scale: {x: 0.7, y: 0.25, z: 0.2},
+        rotation: {x: 0, y: -angle, z: 0},
+        color: '#78350f',
+        name: `Planter_F${f}_S${side}`
+      });
+      o.push({
+        geometry: 'sphere',
+        position: {x: bx * 1.1, y: y + 0.35, z: bz * 1.1},
+        scale: {x: 0.45, y: 0.45, z: 0.45},
+        color: '#16a34a',
+        name: `Plant_F${f}_S${side}`
+      });
+    }
+  }
+  return o;
+}
+
+function generateSolariaOasisPlaza() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 0.1, z: 0}, scale: {x: 10, y: 0.2, z: 10}, color: '#0284c7', name: 'OasisBase' });
+  for (let s = 0; s < 16; s++) {
+    const angle = (s * Math.PI * 2) / 16;
+    for (let slat = 0; slat < 10; slat++) {
+      const radius = 2.0 + slat * 0.28;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      o.push({
+        geometry: 'box',
+        position: {x, y: 1.8, z},
+        scale: {x: 0.08, y: 0.08, z: 0.25},
+        rotation: {x: 0, y: -angle, z: 0},
+        color: '#e2e8f0',
+        name: `PergolaSlats_S${s}_L${slat}`
+      });
+    }
+    const px = Math.cos(angle) * 4.5;
+    const pz = Math.sin(angle) * 4.5;
+    o.push({ geometry: 'cylinder', position: {x: px, y: 0.9, z: pz}, scale: {x: 0.1, y: 1.8, z: 0.1}, color: '#cbd5e1', name: `PergolaPillar_${s}` });
+  }
+  for (let sc = 0; sc < 32; sc++) {
+    const angle = (sc * Math.PI * 2) / 24;
+    const px = Math.cos(angle) * 3.5;
+    const pz = Math.sin(angle) * 3.5;
+    o.push({ geometry: 'cylinder', position: {x: px, y: 0.5, z: pz}, scale: {x: 0.06, y: 1.0, z: 0.06}, color: '#94a3b8', name: `SolarPole_${sc}` });
+    o.push({
+      geometry: 'box',
+      position: {x: px, y: 1.05, z: pz},
+      scale: {x: 0.5, y: 0.04, z: 0.5},
+      rotation: {x: 0.4, y: -angle, z: 0},
+      color: '#1e40af',
+      name: `SolarPanel_${sc}`
+    });
+    o.push({
+      geometry: 'box',
+      position: {x: px * 1.02, y: 1.06, z: pz * 1.02},
+      scale: {x: 0.54, y: 0.02, z: 0.54},
+      rotation: {x: 0.4, y: -angle, z: 0},
+      color: '#f59e0b',
+      name: `SolarBorder_${sc}`
+    });
+  }
+  o.push({ geometry: 'cylinder', position: {x: 0, y: 0.8, z: 0}, scale: {x: 0.5, y: 1.6, z: 0.5}, color: '#cbd5e1', name: 'SculptureCore' });
+  for (let w = 0; w < 40; w++) {
+    const angle = (w * Math.PI * 2) / 20;
+    const r = 0.2 + (w % 2) * 0.15;
+    const wx = Math.cos(angle) * r;
+    const wz = Math.sin(angle) * r;
+    const wy = 1.0 + (w / 40) * 0.6;
+    o.push({ geometry: 'sphere', position: {x: wx, y: wy, z: wz}, scale: {x: 0.08, y: 0.08, z: 0.08}, color: '#38bdf8', name: `FountainWater_${w}` });
+  }
+  return o;
+}
+
+function generateSuspendedSkyGardens() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 0.2, z: 0}, scale: {x: 10, y: 0.3, z: 8}, color: '#7c2d12', name: 'Deck_Level0' });
+  o.push({ geometry: 'box', position: {x: -1.0, y: 2.2, z: -0.5}, scale: {x: 7.5, y: 0.3, z: 6.5}, color: '#9a3412', name: 'Deck_Level1' });
+  o.push({ geometry: 'box', position: {x: -2.0, y: 4.2, z: -1.0}, scale: {x: 5.0, y: 0.3, z: 5.0}, color: '#b45309', name: 'Deck_Level2' });
+  const columns = [
+    {x: -4.0, z: -3.0}, {x: 4.0, z: -3.0}, {x: -4.0, z: 3.0}, {x: 4.0, z: 3.0},
+    {x: -2.5, z: 0}, {x: 2.5, z: 0}, {x: 0, z: -2.0}, {x: 0, z: 2.0}
+  ];
+  columns.forEach((col, idx) => {
+    o.push({ geometry: 'cylinder', position: {x: col.x, y: 2.1, z: col.z}, scale: {x: 0.25, y: 4.2, z: 0.25}, color: '#78350f', name: `TreeTrunk_${idx}` });
+  });
+  for (let p = 0; p < 120; p++) {
+    const angle = (p * Math.PI * 2) / 30;
+    const radius = 1.0 + (p % 4) * 0.8;
+    const x = -1.5 + Math.cos(angle) * radius;
+    const z = -0.5 + Math.sin(angle) * radius;
+    const y = 1.0 + (p / 120) * 4.0;
+    const color = p % 3 === 0 ? '#15803d' : (p % 3 === 1 ? '#166534' : '#14532d');
+    o.push({ geometry: 'sphere', position: {x, y, z}, scale: {x: 0.3, y: 0.3, z: 0.3}, color, name: `HangingPlant_${p}` });
+  }
+  for (let w = 0; w < 180; w++) {
+    const wx = 1.0 + (w % 8) * 0.15;
+    const wz = -0.5 + Math.floor(w / 8) % 5 * 0.15;
+    const wy = 0.3 + (w / 180) * 3.8;
+    o.push({ geometry: 'sphere', position: {x: wx, y: wy, z: wz}, scale: {x: 0.05, y: 0.05, z: 0.05}, color: '#38bdf8', name: `WaterDrop_${w}` });
+  }
+  return o;
+}
+
+function generateRenewableEnergyEcoPark() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 0.1, z: 0}, scale: {x: 10.0, y: 0.2, z: 10.0}, color: '#047857', name: 'EcoParkBase' });
+  const turbines = [{x: -3.5, z: -3.5}, {x: 3.5, z: -3.5}, {x: 0, z: 3.5}];
+  turbines.forEach((t, idx) => {
+    o.push({ geometry: 'cylinder', position: {x: t.x, y: 4.0, z: t.z}, scale: {x: 0.2, y: 8.0, z: 0.2}, color: '#f8fafc', name: `TurbinePole_${idx}` });
+    o.push({ geometry: 'sphere', position: {x: t.x, y: 8.0, z: t.z}, scale: {x: 0.45, y: 0.45, z: 0.45}, color: '#cbd5e1', name: `TurbineHub_${idx}` });
+    for (let blade = 0; blade < 3; blade++) {
+      const baseAngle = (blade * Math.PI * 2) / 3;
+      for (let seg = 0; seg < 5; seg++) {
+        const dist = 0.4 + seg * 0.4;
+        const bx = t.x + Math.cos(baseAngle) * dist;
+        const by = 8.0 + Math.sin(baseAngle) * dist;
+        o.push({
+          geometry: 'box',
+          position: {x: bx, y: by, z: t.z + 0.1},
+          scale: {x: 0.25, y: 0.08, z: 0.05},
+          rotation: {x: 0, y: 0, z: baseAngle},
+          color: '#ffffff',
+          name: `TurbineBlade_${idx}_B${blade}_S${seg}`
+        });
+      }
+    }
+  });
+  for (let r = 0; r < 12; r++) {
+    const z = -2.0 + r * 0.45;
+    for (let c = 0; c < 12; c++) {
+      const x = -2.5 + c * 0.45;
+      if (Math.abs(x) < 0.6 && Math.abs(z) < 0.6) continue;
+      o.push({ geometry: 'box', position: {x, y: 0.35, z}, scale: {x: 0.32, y: 0.03, z: 0.32}, rotation: {x: 0.3, y: 0, z: 0}, color: '#1d4ed8', name: `SolarField_R${r}_C${c}` });
+      o.push({ geometry: 'cylinder', position: {x, y: 0.18, z: z - 0.08}, scale: {x: 0.03, y: 0.3, z: 0.03}, color: '#475569', name: `SolarBracket_R${r}_C${c}` });
+    }
+  }
+  for (let b = 0; b < 6; b++) {
+    o.push({ geometry: 'box', position: {x: -2.0 + b * 0.8, y: 0.4, z: 4.2}, scale: {x: 0.6, y: 0.6, z: 0.6}, color: '#059669', name: `BatteryUnit_${b}` });
+  }
+  return o;
+}
+
+function generatePetrochemicalRefinery() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 0.15, z: 0}, scale: {x: 12, y: 0.3, z: 10}, color: '#1e293b', name: 'RefineryPlatform' });
+  for (let c = 0; c < 15; c++) {
+    const x = -4.5 + (c * 9.0) / 14;
+    const h = 5.0 + Math.sin(c * 1.5) * 3.0;
+    o.push({ geometry: 'cylinder', position: {x, y: h/2, z: -2.0}, scale: {x: 0.7, y: h, z: 0.7}, color: '#64748b', name: `DistillCol_${c}` });
+    o.push({ geometry: 'cylinder', position: {x, y: h + 0.5, z: -2.0}, scale: {x: 0.1, y: 1.0, z: 0.1}, color: '#f97316', name: `FlareStack_${c}` });
+  }
+  const tanks = [{x: -3.5, z: 2.5}, {x: -1.2, z: 2.5}, {x: 1.2, z: 2.5}, {x: 3.5, z: 2.5}];
+  tanks.forEach((t, idx) => {
+    o.push({ geometry: 'sphere', position: {x: t.x, y: 1.5, z: t.z}, scale: {x: 1.8, y: 1.8, z: 1.8}, color: '#cbd5e1', name: `RefineryTank_${idx}` });
+    o.push({ geometry: 'cylinder', position: {x: t.x, y: 0.3, z: t.z}, scale: {x: 0.8, y: 0.6, z: 0.8}, color: '#475569', name: `TankBase_${idx}` });
+  });
+  for (let p = 0; p < 280; p++) {
+    const px = -4.5 + (p % 15) * 0.65;
+    const py = 0.5 + Math.floor(p / 15) * 0.25;
+    const pz = -2.0 + (p % 3 === 0 ? 1.5 : (p % 3 === 1 ? 3.0 : 0));
+    const isVertical = p % 2 === 0;
+    o.push({
+      geometry: 'cylinder',
+      position: {x: px, y: py, z: pz},
+      scale: isVertical ? {x: 0.08, y: 0.6, z: 0.08} : {x: 0.6, y: 0.08, z: 0.08},
+      rotation: isVertical ? {x: 0, y: 0, z: 0} : {x: 0, y: 0, z: Math.PI/2},
+      color: p % 4 === 0 ? '#94a3b8' : (p % 4 === 1 ? '#ef4444' : '#f59e0b'),
+      name: `RefineryPipe_${p}`
+    });
+  }
+  return o;
+}
+
+function generateTeslaMegaFactory() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 2.5, z: 0}, scale: {x: 11, y: 5.0, z: 7}, color: '#f1f5f9', name: 'FactoryMain' });
+  for (let r = 0; r < 12; r++) {
+    const sz = -3.0 + (r * 6.0) / 11;
+    for (let c = 0; c < 12; c++) {
+      const sx = -5.0 + (c * 10.0) / 11;
+      o.push({ geometry: 'box', position: {x: sx, y: 5.05, z: sz}, scale: {x: 0.7, y: 0.04, z: 0.4}, color: '#1e3a8a', name: `RoofSolar_${r}_${c}` });
+    }
+  }
+  for (let d = 0; d < 10; d++) {
+    const dz = -3.0 + (d * 6.0) / 9;
+    o.push({ geometry: 'box', position: {x: 5.52, y: 1.0, z: dz}, scale: {x: 0.04, y: 1.8, z: 0.5}, color: '#475569', name: `DockFrame_${d}` });
+    o.push({ geometry: 'box', position: {x: 5.51, y: 1.0, z: dz}, scale: {x: 0.02, y: 1.7, z: 0.45}, color: '#cbd5e1', name: `DockDoor_${d}` });
+  }
+  for (let c = 0; c < 100; c++) {
+    const cx = -4.5 + c * 0.09;
+    o.push({ geometry: 'cylinder', position: {x: cx, y: 0.45, z: 4.0}, scale: {x: 0.06, y: 0.6, z: 0.06}, rotation: {x: Math.PI/2, y: 0, z: 0}, color: '#475569', name: `ConveyorRoller_${c}` });
+  }
+  for (let v = 0; v < 40; v++) {
+    const vx = -4.8 + (v * 9.6) / 39;
+    o.push({ geometry: 'cylinder', position: {x: vx, y: 5.6, z: -3.2}, scale: {x: 0.08, y: 1.2, z: 0.08}, color: '#94a3b8', name: `VentTube_${v}` });
+    o.push({ geometry: 'sphere', position: {x: vx, y: 6.2, z: -3.2}, scale: {x: 0.12, y: 0.12, z: 0.12}, color: '#ef4444', name: `VentCap_${v}` });
+  }
+  return o;
+}
+
+function generateGeothermalPowerPlant() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 0.15, z: 0}, scale: {x: 10, y: 0.3, z: 10}, color: '#334155', name: 'PowerPlantPlat' });
+  const towers = [{x: -3.0, z: -2.5}, {x: 3.0, z: -2.5}, {x: 0, z: 2.8}];
+  towers.forEach((t, tIdx) => {
+    for (let s = 0; s < 35; s++) {
+      const y = 0.3 + s * 0.18;
+      const radius = 1.0 - Math.sin((s / 35) * Math.PI) * 0.35;
+      o.push({
+        geometry: 'cylinder',
+        position: {x: t.x, y, z: t.z},
+        scale: {x: radius, y: 0.18, z: radius},
+        color: '#cbd5e1',
+        name: `CoolTower_${tIdx}_R${s}`
+      });
+    }
+  });
+  for (let p = 0; p < 10; p++) {
+    const px = -4.0 + p * 0.88;
+    const pz = 0.5;
+    o.push({ geometry: 'cylinder', position: {x: px, y: 2.0, z: pz}, scale: {x: 0.1, y: 4.0, z: 0.1}, color: '#475569', name: `GridPole_${p}` });
+    o.push({ geometry: 'box', position: {x: px, y: 3.5, z: pz}, scale: {x: 1.0, y: 0.1, z: 0.1}, color: '#475569', name: `GridArm_${p}` });
+    for (let ins = 0; ins < 10; ins++) {
+      const iy = 3.4 - ins * 0.08;
+      o.push({ geometry: 'cone', position: {x: px - 0.4, y: iy, z: pz}, scale: {x: 0.05, y: 0.08, z: 0.05}, color: '#60a5fa', name: `InsL_${p}_I${ins}` });
+      o.push({ geometry: 'cone', position: {x: px + 0.4, y: iy, z: pz}, scale: {x: 0.05, y: 0.08, z: 0.05}, color: '#60a5fa', name: `InsR_${p}_I${ins}` });
+    }
+  }
+  return o;
+}
+
+function generateHeavyCargoRailYard() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 0.15, z: 0}, scale: {x: 12, y: 0.3, z: 10}, color: '#1e293b', name: 'RailYardFloor' });
+  for (let track = 0; track < 3; track++) {
+    const tz = -3.5 + track * 1.5;
+    o.push({ geometry: 'box', position: {x: 0, y: 0.32, z: tz - 0.3}, scale: {x: 11.8, y: 0.04, z: 0.04}, color: '#94a3b8', name: `RailLine_${track}_L` });
+    o.push({ geometry: 'box', position: {x: 0, y: 0.32, z: tz + 0.3}, scale: {x: 11.8, y: 0.04, z: 0.04}, color: '#94a3b8', name: `RailLine_${track}_R` });
+    for (let tie = 0; tie < 35; tie++) {
+      const tx = -5.5 + tie * 0.32;
+      o.push({ geometry: 'box', position: {x: tx, y: 0.22, z: tz}, scale: {x: 0.08, y: 0.1, z: 0.8}, color: '#78350f', name: `RailTie_${track}_T${tie}` });
+    }
+  }
+  const containerColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
+  for (let s = 0; s < 15; s++) {
+    const sx = -4.5 + (s % 5) * 2.2;
+    const sz = 1.8 + Math.floor(s / 5) * 1.2;
+    for (let c = 0; c < 15; c++) {
+      const cy = 0.5 + c * 0.3;
+      o.push({
+        geometry: 'box',
+        position: {x: sx, y: cy, z: sz},
+        scale: {x: 1.8, y: 0.28, z: 0.8},
+        color: containerColors[(s + c) % containerColors.length],
+        name: `Container_S${s}_C${c}`
+      });
+    }
+  }
+  o.push({ geometry: 'box', position: {x: -3.0, y: 2.0, z: -1.0}, scale: {x: 0.3, y: 4.0, z: 0.3}, color: '#f59e0b', name: 'GantryLegL' });
+  o.push({ geometry: 'box', position: {x: 3.0, y: 2.0, z: -1.0}, scale: {x: 0.3, y: 4.0, z: 0.3}, color: '#f59e0b', name: 'GantryLegR' });
+  o.push({ geometry: 'box', position: {x: 0, y: 4.15, z: -1.0}, scale: {x: 6.3, y: 0.3, z: 0.3}, color: '#f59e0b', name: 'GantryBeam' });
+  return o;
+}
+
+function generateSteelSmeltingFoundry() {
+  const o = [];
+  o.push({ geometry: 'box', position: {x: 0, y: 0.15, z: 0}, scale: {x: 12, y: 0.3, z: 10}, color: '#334155', name: 'FoundryDeck' });
+  const furnaces = [{x: -4.0, z: -2.0}, {x: 0.0, z: -2.0}, {x: 4.0, z: -2.0}];
+  furnaces.forEach((f, idx) => {
+    o.push({ geometry: 'cylinder', position: {x: f.x, y: 3.0, z: f.z}, scale: {x: 1.6, y: 6.0, z: 1.6}, color: '#475569', name: `FurnaceBody_${idx}` });
+    o.push({ geometry: 'cone', position: {x: f.x, y: 6.5, z: f.z}, scale: {x: 1.2, y: 1.0, z: 1.2}, color: '#334155', name: `FurnaceTop_${idx}` });
+  });
+  for (let c = 0; c < 160; c++) {
+    const fIdx = c % 3;
+    const startX = furnaces[fIdx].x;
+    const ratio = Math.floor(c / 3) / 53;
+    const cx = startX + (c % 2 === 0 ? 0.3 : -0.3) * ratio;
+    const cz = -1.2 + ratio * 4.5;
+    const cy = 0.35 + Math.sin(ratio * Math.PI) * 0.15;
+    o.push({
+      geometry: 'box',
+      position: {x: cx, y: cy, z: cz},
+      scale: {x: 0.15, y: 0.08, z: 0.15},
+      color: c % 2 === 0 ? '#ff5500' : '#ffaa00',
+      name: `MoltenFlow_${c}`
+    });
+  }
+  const chimneys = [{x: -4.5, z: 3.5}, {x: 4.5, z: 3.5}];
+  chimneys.forEach((ch, cIdx) => {
+    o.push({ geometry: 'cylinder', position: {x: ch.x, y: 4.5, z: ch.z}, scale: {x: 0.6, y: 9.0, z: 0.6}, color: '#1e293b', name: `FoundryChimney_${cIdx}` });
+    for (let r = 0; r < 70; r++) {
+      const ry = 0.5 + r * 0.16;
+      o.push({
+        geometry: 'box',
+        position: {x: ch.x, y: ry, z: ch.z + 0.32},
+        scale: {x: 0.35, y: 0.04, z: 0.04},
+        color: '#f59e0b',
+        name: `ChimneyLadder_${cIdx}_R${r}`
+      });
+    }
+  });
+  return o;
+}
+
 // Prebuilt building templates — collections of primitives
 export const TEMPLATES = [
+  {
+    id: 'empire_financial_center',
+    name: 'Empire Financial Center',
+    icon: '🏙️',
+    category: 'commercial',
+    width: 12.0,
+    height: 12.0,
+    objects: generateEmpireFinancialCenter(),
+  },
+  {
+    id: 'marina_tower_hotel',
+    name: 'Marina Tower Hotel',
+    icon: '🏢',
+    category: 'commercial',
+    width: 12.0,
+    height: 12.0,
+    objects: generateMarinaTowerHotel(),
+  },
+  {
+    id: 'helix_trade_center',
+    name: 'Helix Trade Center',
+    icon: '🧬',
+    category: 'commercial',
+    width: 12.0,
+    height: 12.0,
+    objects: generateHelixTradeCenter(),
+  },
+  {
+    id: 'cyber_plaza_mall',
+    name: 'Cyber Plaza Mall',
+    icon: '🛍️',
+    category: 'commercial',
+    width: 12.0,
+    height: 12.0,
+    objects: generateCyberPlazaMall(),
+  },
+  {
+    id: 'shibuya_neon_tower',
+    name: 'Shibuya Neon Tower',
+    icon: '🗼',
+    category: 'commercial',
+    width: 12.0,
+    height: 12.0,
+    objects: generateShibuyaNeonTower(),
+  },
+  {
+    id: 'grand_city_hall',
+    name: 'Grand City Hall',
+    icon: '🏛️',
+    category: 'civic',
+    width: 12.0,
+    height: 12.0,
+    objects: generateGrandCityHall(),
+  },
+  {
+    id: 'symphony_concert_hall',
+    name: 'Symphony Concert Hall',
+    icon: '🎵',
+    category: 'civic',
+    width: 12.0,
+    height: 12.0,
+    objects: generateSymphonyConcertHall(),
+  },
+  {
+    id: 'imperial_museum_of_art',
+    name: 'Imperial Museum of Art',
+    icon: '🎨',
+    category: 'civic',
+    width: 12.0,
+    height: 12.0,
+    objects: generateImperialMuseumOfArt(),
+  },
+  {
+    id: 'metropolitan_library',
+    name: 'Metropolitan Library',
+    icon: '📚',
+    category: 'civic',
+    width: 12.0,
+    height: 12.0,
+    objects: generateMetropolitanLibrary(),
+  },
+  {
+    id: 'justice_courtyard',
+    name: 'Justice Courtyard',
+    icon: '⚖️',
+    category: 'civic',
+    width: 12.0,
+    height: 12.0,
+    objects: generateJusticeCourtyard(),
+  },
+  {
+    id: 'eden_bio_dome',
+    name: 'Eden Bio-Dome',
+    icon: '🔮',
+    category: 'green',
+    width: 12.0,
+    height: 12.0,
+    objects: generateEdenBioDome(),
+  },
+  {
+    id: 'vertical_forest_tower',
+    name: 'Vertical Forest Tower',
+    icon: '🌲',
+    category: 'green',
+    width: 12.0,
+    height: 12.0,
+    objects: generateVerticalForestTower(),
+  },
+  {
+    id: 'solaria_oasis_plaza',
+    name: 'Solaria Oasis Plaza',
+    icon: '☀️',
+    category: 'green',
+    width: 12.0,
+    height: 12.0,
+    objects: generateSolariaOasisPlaza(),
+  },
+  {
+    id: 'suspended_sky_gardens',
+    name: 'Suspended Sky-Gardens',
+    icon: '🌱',
+    category: 'green',
+    width: 12.0,
+    height: 12.0,
+    objects: generateSuspendedSkyGardens(),
+  },
+  {
+    id: 'renewable_energy_eco_park',
+    name: 'Renewable Energy Eco-Park',
+    icon: '🔋',
+    category: 'green',
+    width: 12.0,
+    height: 12.0,
+    objects: generateRenewableEnergyEcoPark(),
+  },
+  {
+    id: 'petrochemical_refinery',
+    name: 'Petrochemical Refinery',
+    icon: '🏭',
+    category: 'industrial',
+    width: 12.0,
+    height: 12.0,
+    objects: generatePetrochemicalRefinery(),
+  },
+  {
+    id: 'tesla_mega_factory',
+    name: 'Tesla Mega-Factory',
+    icon: '⚡',
+    category: 'industrial',
+    width: 12.0,
+    height: 12.0,
+    objects: generateTeslaMegaFactory(),
+  },
+  {
+    id: 'geothermal_power_plant',
+    name: 'Geothermal Power Plant',
+    icon: '🌋',
+    category: 'industrial',
+    width: 12.0,
+    height: 12.0,
+    objects: generateGeothermalPowerPlant(),
+  },
+  {
+    id: 'heavy_cargo_rail_yard',
+    name: 'Heavy Cargo Rail Yard',
+    icon: '🚂',
+    category: 'industrial',
+    width: 12.0,
+    height: 12.0,
+    objects: generateHeavyCargoRailYard(),
+  },
+  {
+    id: 'steel_smelting_foundry',
+    name: 'Steel Smelting Foundry',
+    icon: '🔥',
+    category: 'industrial',
+    width: 12.0,
+    height: 12.0,
+    objects: generateSteelSmeltingFoundry(),
+  },
   {
     id: 'metro_station',
     name: 'Elevated Metro Station',

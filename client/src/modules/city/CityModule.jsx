@@ -604,6 +604,7 @@ export default function CityModule() {
   const [zoom, setZoom] = useState(1.0);
   const intersections = useMemo(() => findIntersections(city?.roads || []), [city?.roads]);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [complexityFilter, setComplexityFilter] = useState('all');
   const [showObjectsPanel, setShowObjectsPanel] = useState(false);
   const [zoneView, setZoneView] = useState(false);
   const [metroView, setMetroView] = useState(false);
@@ -3884,15 +3885,54 @@ const draw = useCallback(() => {
             );
           })}
 
+          {/* Complexity Filter Buttons on the Left of templates */}
+          {['residential', 'commercial', 'industrial', 'civic', 'green'].includes(activeCategory) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingRight: 8, borderRight: '1px solid rgba(255,255,255,0.15)', marginRight: 4 }}>
+              <button
+                className={`glass-button ${complexityFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setComplexityFilter('all')}
+                style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
+              >
+                All
+              </button>
+              <button
+                className={`glass-button ${complexityFilter === 'simple' ? 'active' : ''}`}
+                onClick={() => setComplexityFilter('simple')}
+                style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
+              >
+                Simple
+              </button>
+              <button
+                className={`glass-button ${complexityFilter === 'complex' ? 'active' : ''}`}
+                onClick={() => setComplexityFilter('complex')}
+                style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
+              >
+                Complex
+              </button>
+            </div>
+          )}
+
           {/* Preset templates for residential, commercial, industrial, civic, green */}
           {['residential', 'commercial', 'industrial', 'civic', 'green'].includes(activeCategory) &&
             TEMPLATES.filter(t => {
+              let matchesCategory = false;
               if (activeCategory === 'green') {
-                return t.category === 'green' || [
+                matchesCategory = t.category === 'green' || [
                   'tree_oak', 'tree_pine', 'tree_birch', 'tree_maple', 'tree_cherry', 'tree_palm', 'tree_baobab', 'tree_cypress', 'tree_willow'
                 ].includes(t.id);
+              } else {
+                matchesCategory = t.category === activeCategory;
               }
-              return t.category === activeCategory;
+              if (!matchesCategory) return false;
+
+              const objCount = t.objects ? t.objects.length : 0;
+              if (complexityFilter === 'simple') {
+                return objCount < 100;
+              }
+              if (complexityFilter === 'complex') {
+                return objCount >= 100;
+              }
+              return true;
             }).map(t => {
               const isAct = pendingPlacementAsset?.name === t.name;
               return (
@@ -4120,6 +4160,7 @@ const draw = useCallback(() => {
                   onClick={() => {
                     const nextCat = activeCategory === cat.id ? null : cat.id;
                     setActiveCategory(nextCat);
+                    setComplexityFilter('all');
                     if (nextCat === 'metro_tracks') {
                       setActiveRoadType('railway');
                       useStore.setState({ cityTool: 'road', pendingPlacementAsset: null });
@@ -4172,6 +4213,7 @@ const draw = useCallback(() => {
                   className={`glass-button ${isAct ? 'active' : ''}`}
                   onClick={() => {
                     setActiveCategory(activeCategory === cat.id ? null : cat.id);
+                    setComplexityFilter('all');
                     useStore.setState({ pendingPlacementAsset: null });
                   }}
                   style={{
