@@ -78,7 +78,12 @@ function findIntersections(roads) {
   const roadCurves = roads.map(r => {
     if (r.points.length < 2) return null;
     const samples = getRoadSamples(r.id, r.points);
-    const radius = r.roadType === 'highway' ? 2.2 : r.roadType === 'multilane' ? 1.5 : r.roadType === 'dirt' ? 0.75 : 0.9;
+    const radius = r.roadType === 'highway' ? 2.2 
+                 : r.roadType === 'avenue' ? 2.0
+                 : r.roadType === 'multilane' ? 1.5 
+                 : r.roadType === 'cyberway' ? 1.1
+                 : r.roadType === 'dirt' ? 0.75 
+                 : 0.9;
     return { id: r.id, type: r.roadType || 'standard', radius, samples };
   }).filter(Boolean);
 
@@ -1207,7 +1212,12 @@ const draw = useCallback(() => {
       if (transitionProgress > 0.0) {
         ctx.save();
         ctx.globalAlpha = transitionProgress * opacity;
-        const roadW = (type === 'highway' ? 24 : type === 'multilane' ? 18 : type === 'dirt' ? 10 : 12) * zoom;
+        const roadW = (type === 'highway' ? 24 
+                    : type === 'avenue' ? 22
+                    : type === 'multilane' ? 18 
+                    : type === 'cyberway' ? 14
+                    : type === 'dirt' ? 10 
+                    : 12) * zoom;
         // 1. Outer border
         ctx.save();
         ctx.strokeStyle = isSelected ? 'rgba(239, 68, 68, 0.5)' : 'rgba(15, 23, 42, 0.12)';
@@ -1239,7 +1249,12 @@ const draw = useCallback(() => {
         if (isSelected) {
           ctx.save();
           ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-          ctx.lineWidth = (type === 'highway' ? 52 : type === 'multilane' ? 36 : type === 'dirt' ? 20 : 24) * zoom;
+          ctx.lineWidth = (type === 'highway' ? 52 
+                        : type === 'avenue' ? 48 
+                        : type === 'multilane' ? 36 
+                        : type === 'cyberway' ? 28 
+                        : type === 'dirt' ? 20 
+                        : 24) * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
@@ -1330,6 +1345,61 @@ const draw = useCallback(() => {
           ctx.setLineDash([1.5 * zoom, 4.5 * zoom]);
           drawCurvePoints(untrimmedScreenPoints);
           ctx.setLineDash([]);
+        } else if (type === 'avenue') {
+          // Main wide dark pavement
+          ctx.strokeStyle = `rgba(51, 65, 85, 1.0)`;
+          ctx.lineWidth = 38 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
+
+          // Green grass median strip
+          ctx.strokeStyle = `#22c55e`;
+          ctx.lineWidth = 5 * zoom;
+          ctx.lineCap = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
+
+          // Dashed lane dividers (two lanes on each side)
+          ctx.strokeStyle = `rgba(255, 255, 255, 0.45)`;
+          ctx.lineWidth = 1.5 * zoom;
+          ctx.setLineDash([5 * zoom, 8 * zoom]);
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 9 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -9 * zoom));
+          ctx.setLineDash([]);
+
+          // Solid white shoulders
+          ctx.strokeStyle = `rgba(255, 255, 255, 0.6)`;
+          ctx.lineWidth = 1.5 * zoom;
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 18 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -18 * zoom));
+        } else if (type === 'cyberway') {
+          // Dark pavement
+          ctx.strokeStyle = `#0f172a`;
+          ctx.lineWidth = 20 * zoom;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          drawCurvePoints(untrimmedScreenPoints);
+
+          // Glowing neon cyan edges
+          ctx.save();
+          ctx.strokeStyle = `#00ffff`;
+          ctx.lineWidth = 2 * zoom;
+          ctx.shadowColor = `#00ffff`;
+          ctx.shadowBlur = 8 * zoom;
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 9.5 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -9.5 * zoom));
+          ctx.restore();
+
+          // Dashed center line
+          ctx.save();
+          ctx.strokeStyle = `#00ffff`;
+          ctx.lineWidth = 1.5 * zoom;
+          ctx.shadowColor = `#00ffff`;
+          ctx.shadowBlur = 4 * zoom;
+          ctx.setLineDash([4 * zoom, 6 * zoom]);
+          drawCurvePoints(untrimmedScreenPoints);
+          ctx.setLineDash([]);
+          ctx.restore();
         } else if (type === 'railway') {
           // 1. Viaduct shadow or intense neon cyan glow underlay
           ctx.save();
@@ -1431,8 +1501,10 @@ const draw = useCallback(() => {
 
     // Render placed curvy roads sorted by priority so higher-priority roads overlay lower-priority ones
     const getRoadPriority = (rType) => {
-      if (rType === 'highway') return 4;
-      if (rType === 'multilane') return 3;
+      if (rType === 'highway') return 6;
+      if (rType === 'avenue') return 5;
+      if (rType === 'multilane') return 4;
+      if (rType === 'cyberway') return 3;
       if (rType === 'brick') return 2;
       if (rType === 'standard') return 1;
       return 0; // dirt
@@ -3866,6 +3938,10 @@ const draw = useCallback(() => {
             { id: 'standard', name: 'Standard Road', icon: '🛣️', desc: '2 lanes' },
             { id: 'multilane', name: 'Multi-lane Road', icon: '🛣️', desc: '4 lanes' },
             { id: 'highway', name: 'Highway', icon: '🛣️', desc: '4 lanes + Median' },
+            { id: 'dirt', name: 'Dirt Road', icon: '🟫', desc: 'Brown trail' },
+            { id: 'brick', name: 'Brick Road', icon: '🧱', desc: 'Red pavement' },
+            { id: 'avenue', name: 'Avenue', icon: '🌳', desc: '4 lanes + Median' },
+            { id: 'cyberway', name: 'Cyberway', icon: '🌐', desc: 'Neon cyan glow' },
           ].map(r => {
             const isAct = cityTool === 'road' && activeRoadType === r.id;
             return (
@@ -4388,6 +4464,13 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
     const yellowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.8 });
     const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
     const concreteMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 });
+    const greenGrassMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.95 });
+    const cyanGlowMat = new THREE.MeshStandardMaterial({
+      color: 0x00ffff,
+      emissive: 0x00ffff,
+      emissiveIntensity: 1.5,
+      roughness: 0.2
+    });
  
     // Render curvy roads
     (city.roads || []).forEach(road => {
@@ -4399,6 +4482,8 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
       else if (type === 'highway') radius = 2.2;
       else if (type === 'dirt') radius = 0.75;
       else if (type === 'brick') radius = 0.9;
+      else if (type === 'avenue') radius = 2.0;
+      else if (type === 'cyberway') radius = 1.1;
       else if (type === 'railway') radius = 1.2;
 
       const roadIndex = (city.roads || []).findIndex(r => r.id === road.id);
@@ -4411,12 +4496,14 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         else if (type === 'standard') yOffset = 0.012;
         else if (type === 'multilane') yOffset = 0.013;
         else if (type === 'highway') yOffset = 0.014;
+        else if (type === 'avenue') yOffset = 0.015;
+        else if (type === 'cyberway') yOffset = 0.016;
         yOffset += roadIndex * 0.0001;
       }
 
       const points3d = road.points.map(pt => new THREE.Vector3(pt.x * cellS, yOffset, pt.z * cellS));
       const curve = new THREE.CatmullRomCurve3(points3d);
- 
+  
       const isRoadSel = road.id === selectedRoadId;
       let currentRoadMat;
       if (isRoadSel) {
@@ -4452,6 +4539,12 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             color: metroView ? 0x1e293b : 0xe2e8f0,
             roughness: 0.5,
             metalness: 0.15
+          });
+        } else if (type === 'cyberway') {
+          currentRoadMat = new THREE.MeshStandardMaterial({
+            color: 0x0f172a,
+            roughness: 0.9,
+            metalness: 0.1
           });
         } else {
           currentRoadMat = new THREE.MeshStandardMaterial({
@@ -4774,6 +4867,8 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
       const whiteTransforms = [];
       const yellowTransforms = [];
       const concreteTransforms = [];
+      const greenGrassTransforms = [];
+      const cyanGlowTransforms = [];
 
       if (type !== 'dirt' && type !== 'brick') {
         for (let i = 0; i <= numSteps; i++) {
@@ -4807,6 +4902,10 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
               yellowTransforms.push(tObj);
             } else if (material === concreteMat) {
               concreteTransforms.push(tObj);
+            } else if (material === greenGrassMat) {
+              greenGrassTransforms.push(tObj);
+            } else if (material === cyanGlowMat) {
+              cyanGlowTransforms.push(tObj);
             } else {
               whiteTransforms.push(tObj);
             }
@@ -4839,6 +4938,28 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             // Solid white outer shoulders
             addMarking(1.9, 0.04, 0.015, 0.42, whiteMat);
             addMarking(-1.9, 0.04, 0.015, 0.42, whiteMat);
+          } else if (type === 'avenue') {
+            // green grass center median strip
+            addMarking(0, 0.4, 0.02, 0.42, greenGrassMat);
+
+            // double white line shoulders
+            addMarking(0.24, 0.04, 0.015, 0.42, whiteMat);
+            addMarking(-0.24, 0.04, 0.015, 0.42, whiteMat);
+
+            // dashed white lanes
+            if (i % 3 === 0) {
+              addMarking(1.1, 0.04, 0.015, 0.42, whiteMat);
+              addMarking(-1.1, 0.04, 0.015, 0.42, whiteMat);
+            }
+          } else if (type === 'cyberway') {
+            // neon cyan glowing borders at the edges
+            addMarking(1.1, 0.06, 0.02, 0.42, cyanGlowMat);
+            addMarking(-1.1, 0.06, 0.02, 0.42, cyanGlowMat);
+
+            // blue/cyan dash markers in center
+            if (i % 3 === 0) {
+              addMarking(0, 0.04, 0.018, 0.35, cyanGlowMat);
+            }
           } else {
             // Standard center dashes
             if (i % 2 === 0) {
@@ -4885,6 +5006,36 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         inst.receiveShadow = true;
         const dummy = new THREE.Object3D();
         concreteTransforms.forEach((t, idx) => {
+          dummy.position.copy(t.position);
+          dummy.rotation.y = t.rotationY;
+          dummy.scale.copy(t.scale);
+          dummy.updateMatrix();
+          inst.setMatrixAt(idx, dummy.matrix);
+        });
+        inst.instanceMatrix.needsUpdate = true;
+        markingsGroup.add(inst);
+      }
+
+      if (greenGrassTransforms.length > 0) {
+        const inst = new THREE.InstancedMesh(baseGeo, greenGrassMat, greenGrassTransforms.length);
+        inst.receiveShadow = true;
+        const dummy = new THREE.Object3D();
+        greenGrassTransforms.forEach((t, idx) => {
+          dummy.position.copy(t.position);
+          dummy.rotation.y = t.rotationY;
+          dummy.scale.copy(t.scale);
+          dummy.updateMatrix();
+          inst.setMatrixAt(idx, dummy.matrix);
+        });
+        inst.instanceMatrix.needsUpdate = true;
+        markingsGroup.add(inst);
+      }
+
+      if (cyanGlowTransforms.length > 0) {
+        const inst = new THREE.InstancedMesh(baseGeo, cyanGlowMat, cyanGlowTransforms.length);
+        inst.receiveShadow = true;
+        const dummy = new THREE.Object3D();
+        cyanGlowTransforms.forEach((t, idx) => {
           dummy.position.copy(t.position);
           dummy.rotation.y = t.rotationY;
           dummy.scale.copy(t.scale);
@@ -6136,6 +6287,12 @@ const mount = mountRef.current;
           } else if (rType === 'brick') {
             miniCtx.strokeStyle = '#a63a3a';
             miniCtx.lineWidth = 8;
+          } else if (rType === 'avenue') {
+            miniCtx.strokeStyle = '#334155';
+            miniCtx.lineWidth = 16;
+          } else if (rType === 'cyberway') {
+            miniCtx.strokeStyle = '#0f172a';
+            miniCtx.lineWidth = 10;
           } else {
             miniCtx.strokeStyle = '#334155';
             miniCtx.lineWidth = (rType === 'highway' ? 18 : rType === 'multilane' ? 12 : 8);
@@ -6153,6 +6310,17 @@ const mount = mountRef.current;
             miniCtx.strokeStyle = '#cbd5e1';
             miniCtx.lineWidth = 1.5;
             drawCurve(segmentScreenPoints);
+          } else if (rType === 'avenue') {
+            // Green center median line on minimap
+            miniCtx.strokeStyle = '#22c55e';
+            miniCtx.lineWidth = 2.0;
+            drawCurve(segmentScreenPoints);
+          } else if (rType === 'cyberway') {
+            // Neon cyan glowing edges
+            miniCtx.strokeStyle = '#00ffff';
+            miniCtx.lineWidth = 1.0;
+            drawCurve(segmentScreenPoints.map(seg => getOffsetPoints(seg, 4.5)));
+            drawCurve(segmentScreenPoints.map(seg => getOffsetPoints(seg, -4.5)));
           } else if (rType === 'standard') {
             miniCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
             miniCtx.lineWidth = 0.8;
@@ -6163,8 +6331,10 @@ const mount = mountRef.current;
         };
 
         const getRoadPriority = (type) => {
-          if (type === 'highway') return 4;
-          if (type === 'multilane') return 3;
+          if (type === 'highway') return 6;
+          if (type === 'avenue') return 5;
+          if (type === 'multilane') return 4;
+          if (type === 'cyberway') return 3;
           if (type === 'brick') return 2;
           if (type === 'standard') return 1;
           return 0; // dirt

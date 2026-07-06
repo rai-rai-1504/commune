@@ -529618,11 +529618,11 @@
     }
   ],
   "stats": {
-    "population": 187200,
+    "population": 187520,
     "happiness": 95,
-    "treasury": 13117514,
+    "treasury": 14244103,
     "traffic": "high"
   },
-  "simulationTick": 59707,
+  "simulationTick": 61916,
   "zones": []
 }
