@@ -4245,29 +4245,7 @@ const draw = useCallback(() => {
         </div>
       )}
 
-      {/* ── Bottom-Left: Floating Legend ── */}
-      {!streetView && (
-        <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
-          position:'absolute',
-          bottom: 24,
-          left: 16,
-          padding:'8px 12px',
-          zIndex: 100,
-          borderRadius: 12,
-          border: zoneView ? '1px solid rgba(255, 255, 255, 0.6)' : undefined
-        }}>
-          {Object.entries(ZONE_META).filter(([k])=>k!=='empty').map(([type,meta]) => (
-            <div key={type} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3, fontSize:10 }}>
-              <div style={{ width:8, height:8, borderRadius:2, background:meta.color, flexShrink:0 }} />
-              <span style={{ color: zoneView ? '#475569' : 'rgba(255,255,255,0.8)' }}>{meta.label}</span>
-            </div>
-          ))}
-          <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:3, fontSize:10 }}>
-            <div style={{ width:8, height:8, borderRadius:2, background: zoneView ? '#ffffff' : '#1e2a38', border: zoneView ? '1px solid rgba(15,23,42,0.12)' : '1px solid #445566', flexShrink:0 }} />
-            <span style={{ color: zoneView ? '#475569' : 'rgba(255,255,255,0.8)' }}>Road</span>
-          </div>
-        </div>
-      )}
+
 
     </div>
   );
