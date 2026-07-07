@@ -5285,8 +5285,11 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             (oScl.y !== undefined ? oScl.y : 1) * scaleFactor,
             (oScl.z !== undefined ? oScl.z : 1) * scaleFactor
           );
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
+          
+          // Performance Optimization: small detailed components do not need shadow map draw calls
+          const isLarge = ((oScl.x || 1) * (oScl.y || 1) * (oScl.z || 1)) >= 1.5;
+          mesh.castShadow = isLarge;
+          mesh.receiveShadow = isLarge;
           detailedGroup.add(mesh);
         });
 
@@ -5380,7 +5383,12 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         lowDetailMesh.receiveShadow = true;
         lowDetailMesh.userData = { isLowDetail: true, assetId: asset.id };
         lowDetailMesh.raycast = () => {}; // prevent raycasting from hitting this low-detail bounding box
-        lod.addLevel(lowDetailMesh, 75); // Swap to low detail at 75 units distance
+        
+        lod.addLevel(lowDetailMesh, 35); // Swap to low detail at 35 units distance
+        
+        // Level 2: Complete Culling - hide completely beyond 150 units
+        const culledGroup = new THREE.Group();
+        lod.addLevel(culledGroup, 150);
 
         buildingMainObject = lod;
       } else {
