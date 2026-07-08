@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SUBTRACTION, ADDITION, Evaluator, Brush } from 'three-bvh-csg';
 import { useStore, PRESET_PALETTES, randomizeObjectsColor } from '../../store/useStore';
 import { TEMPLATES } from '../../components/AssetLibrary';
@@ -609,6 +610,45 @@ function drawWaypointPin(ctx, x, y, size, color) {
   ctx.restore();
 }
 
+function getAssetPreRenderedCanvas(asset, cacheMap) {
+  const hash = `${asset.color || ''}_${asset.objects?.length || 0}_${(asset.objects || []).map(o => o.color || '').join(',')}_${asset.scaleMultiplier || 1.0}`;
+  const cached = cacheMap.get(asset.id);
+  if (cached && cached.hash === hash) {
+    return cached.canvas;
+  }
+
+  const canvas = document.createElement('canvas');
+  const wCells = asset.width || 2;
+  const hCells = asset.height || 2;
+  const cacheCellResolution = 10 * (asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0);
+  const margin = cacheCellResolution * 2; 
+  canvas.width = Math.ceil(wCells * cacheCellResolution + margin * 2);
+  canvas.height = Math.ceil(hCells * cacheCellResolution + margin * 2);
+  
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  
+  const objScale = cacheCellResolution / 3.4;
+  const baseColor = asset.color || '#4ECDC4';
+
+  if (asset.objects && asset.objects.length > 0) {
+    asset.objects.forEach(obj => {
+      ctx.save();
+      const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
+      const oz = (obj.position?.z !== undefined ? obj.position.z : 0) * objScale;
+      ctx.translate(ox, oz);
+      ctx.rotate(-(obj.rotation?.y || 0));
+      drawObject2D(ctx, obj, objScale, baseColor);
+      ctx.restore();
+    });
+  }
+  ctx.restore();
+
+  cacheMap.set(asset.id, { canvas, hash });
+  return canvas;
+}
+
 export default function CityModule() {
   const {
     city, cityTool,
@@ -639,6 +679,7 @@ export default function CityModule() {
   const [assetContextMenu, setAssetContextMenu] = useState(null); // { x, y, asset }
   const [waypoint, setWaypoint] = useState(null);
   const [isSettingWaypoint, setIsSettingWaypoint] = useState(false);
+  const canvasCacheRef = useRef(new Map());
 
   const getInitialClampedCoords = (mx, my, type, isRandomizerOpen) => {
     const isAsset = type === 'asset';
@@ -1898,18 +1939,14 @@ const draw = useCallback(() => {
         const baseColor = (metroView && asset.isMetroStation) ? '#00f2ff' : (asset.color || '#4ECDC4');
 
         if (drawDetailed && asset.objects && asset.objects.length > 0) {
-          const objScale = (cellSize / 3.4) * scaleFactor;
-          asset.objects.forEach(obj => {
-            ctx.save();
-            const ox = (obj.position?.x !== undefined ? obj.position.x : 0) * objScale;
-            const oz = (obj.position?.z !== undefined ? obj.position.z : 0) * objScale;
-            ctx.translate(ox, oz);
-            ctx.rotate(-(obj.rotation?.y || 0));
-
-            const finalObj = { ...obj, color: (metroView && asset.isMetroStation) ? '#00f2ff' : obj.color };
-            drawObject2D(ctx, finalObj, objScale, baseColor);
-            ctx.restore();
-          });
+          const cachedCanvas = getAssetPreRenderedCanvas(asset, canvasCacheRef.current);
+          const cacheCellResolution = 10 * scaleFactor;
+          const margin = cacheCellResolution * 2;
+          const wCells = asset.width || 2;
+          const hCells = asset.height || 2;
+          const cw = (wCells * cacheCellResolution + margin * 2) * zoom;
+          const ch = (hCells * cacheCellResolution + margin * 2) * zoom;
+          ctx.drawImage(cachedCanvas, -cw / 2, -ch / 2, cw, ch);
         } else {
           ctx.fillStyle = baseColor;
           ctx.globalAlpha = 0.82 * assetAlpha;
@@ -5295,8 +5332,11 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         lod.rotation.y = asset.rotation || 0;
         lod.userData = { assetId: asset.id };
 
-        // Level 0: Detailed model (Group of meshes)
+        // Level 0: Detailed model (Group of meshes - optimized via geometry merging)
         const detailedGroup = new THREE.Group();
+        const geometriesToMerge = [];
+        const materialsToUse = [];
+
         objectsToRender.forEach(obj => {
           let meshGeom;
           let materials;
@@ -5370,31 +5410,57 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
               materials.emissiveIntensity = 0.28;
             }
           }
-          
-          const mesh = new THREE.Mesh(meshGeom, materials);
+
           const oPos = obj.position || { x: 0, y: 0, z: 0 };
           const oRot = obj.rotation || { x: 0, y: 0, z: 0 };
           const oScl = obj.scale || { x: 1, y: 1, z: 1 };
 
-          mesh.position.set(
+          const dummyObj = new THREE.Object3D();
+          dummyObj.position.set(
             (oPos.x !== undefined ? oPos.x : 0) * scaleFactor,
             (oPos.y !== undefined ? oPos.y : 0) * scaleFactor,
             (oPos.z !== undefined ? oPos.z : 0) * scaleFactor
           );
-          mesh.rotation.set(
+          dummyObj.rotation.set(
             oRot.x !== undefined ? oRot.x : 0,
             oRot.y !== undefined ? oRot.y : 0,
             oRot.z !== undefined ? oRot.z : 0
           );
-          mesh.scale.set(
+          dummyObj.scale.set(
             (oScl.x !== undefined ? oScl.x : 1) * scaleFactor,
             (oScl.y !== undefined ? oScl.y : 1) * scaleFactor,
             (oScl.z !== undefined ? oScl.z : 1) * scaleFactor
           );
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          detailedGroup.add(mesh);
+          dummyObj.updateMatrix();
+
+          const clonedGeom = meshGeom.clone().applyMatrix4(dummyObj.matrix);
+          
+          if (Array.isArray(materials)) {
+            materials = materials[0] || getCachedMaterial(obj.color, isSel);
+          }
+
+          geometriesToMerge.push(clonedGeom);
+          materialsToUse.push(materials);
         });
+
+        if (geometriesToMerge.length > 0) {
+          try {
+            const mergedGeom = mergeGeometries(geometriesToMerge, true);
+            const mergedMesh = new THREE.Mesh(mergedGeom, materialsToUse);
+            mergedMesh.castShadow = true;
+            mergedMesh.receiveShadow = true;
+            detailedGroup.add(mergedMesh);
+          } catch (err) {
+            console.error("[StreetView] Failed to merge asset geometries:", err);
+            objectsToRender.forEach((obj, idx) => {
+              const mesh = new THREE.Mesh(geometriesToMerge[idx], materialsToUse[idx]);
+              mesh.castShadow = true;
+              mesh.receiveShadow = true;
+              detailedGroup.add(mesh);
+            });
+          }
+          geometriesToMerge.forEach(g => g.dispose());
+        }
 
         const isStation = asset.isMetroStation || asset.name === 'Elevated Metro Station' || asset.name === 'Metro Station';
         if (isStation) {
