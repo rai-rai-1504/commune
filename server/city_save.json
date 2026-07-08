@@ -3065,8 +3065,8 @@
           "name": "Turbine_Blade3"
         }
       ],
-      "col": 28.969270814477674,
-      "row": -0.2668358409737107,
+      "col": 27.406466101594567,
+      "row": 0.19209614935785463,
       "rotation": -3.0011461980929064,
       "color": "#d8dee9",
       "placedBy": "asasa",
@@ -497818,9 +497818,9 @@
   "stats": {
     "population": 165520,
     "happiness": 95,
-    "treasury": 19079158,
+    "treasury": 19272573,
     "traffic": "high"
   },
-  "simulationTick": 71483,
+  "simulationTick": 71866,
   "zones": []
 }

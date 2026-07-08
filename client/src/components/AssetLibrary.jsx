@@ -2097,7 +2097,6 @@ function generateHeavyCargoRailYard() {
   o.push({ geometry: 'box', position: {x: 0, y: 4.15, z: -1.0}, scale: {x: 6.3, y: 0.3, z: 0.3}, color: '#f59e0b', name: 'GantryBeam' });
   return o;
 }
-
 function generateSteelSmeltingFoundry() {
   const o = [];
   o.push({ geometry: 'box', position: {x: 0, y: 0.15, z: 0}, scale: {x: 12, y: 0.3, z: 10}, color: '#334155', name: 'FoundryDeck' });
@@ -2137,6 +2136,1040 @@ function generateSteelSmeltingFoundry() {
   });
   return o;
 }
+
+function makeGiantGoldenOak() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#5c4033', name = 'GoldenOak') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Thick gnarled trunk (20 segments/subsections)
+  for (let i = 0; i < 20; i++) {
+    const angle = (i / 20) * Math.PI * 2;
+    const rad = 0.5 + Math.sin(i * 0.8) * 0.1;
+    add('cylinder', Math.cos(angle) * 0.15, 0.1 + i * 0.15, Math.sin(angle) * 0.15, rad, 0.25, rad, 0.05 * Math.sin(i), angle * 0.2, 0.05 * Math.cos(i), '#5c4033', `Trunk_${i}`);
+  }
+  // 8 sprawling roots
+  for (let r = 0; r < 8; r++) {
+    const rAngle = (r / 8) * Math.PI * 2;
+    for (let j = 0; j < 8; j++) {
+      const dist = 0.5 + j * 0.35;
+      const rx = Math.cos(rAngle) * dist;
+      const rz = Math.sin(rAngle) * dist;
+      const ry = 0.12 - j * 0.02;
+      add('box', rx, ry, rz, 0.5 - j * 0.05, 0.2 - j * 0.02, 0.5 - j * 0.05, 0.1, rAngle, -0.1, '#5c4033', `Root_${r}_${j}`);
+    }
+  }
+  // Gnarled branches (around 120 blocks)
+  const branches = [
+    { startY: 1.5, angle: 0, pitch: 0.6, len: 14, scale: 0.25 },
+    { startY: 1.8, angle: Math.PI / 4, pitch: 0.5, len: 12, scale: 0.22 },
+    { startY: 2.1, angle: Math.PI / 2, pitch: 0.7, len: 15, scale: 0.2 },
+    { startY: 2.4, angle: Math.PI * 0.75, pitch: 0.4, len: 13, scale: 0.2 },
+    { startY: 2.6, angle: Math.PI, pitch: 0.6, len: 14, scale: 0.18 },
+    { startY: 2.8, angle: Math.PI * 1.25, pitch: 0.5, len: 12, scale: 0.18 },
+    { startY: 3.0, angle: Math.PI * 1.5, pitch: 0.7, len: 15, scale: 0.16 },
+    { startY: 3.2, angle: Math.PI * 1.75, pitch: 0.4, len: 13, scale: 0.16 },
+  ];
+  branches.forEach((br, bIdx) => {
+    let cx = 0, cy = br.startY, cz = 0;
+    for (let k = 0; k < br.len; k++) {
+      const step = 0.25;
+      cx += Math.cos(br.angle) * step * Math.cos(br.pitch);
+      cz += Math.sin(br.angle) * step * Math.cos(br.pitch);
+      cy += step * Math.sin(br.pitch) + Math.sin(k * 1.2) * 0.08;
+      const sz = br.scale * (1.0 - k / br.len);
+      add('cylinder', cx, cy, cz, sz, step * 1.2, sz, br.pitch, -br.angle, Math.sin(k * 0.5) * 0.3, '#5c4033', `Branch_${bIdx}_${k}`);
+    }
+  });
+  // 12 glowing golden canopy spheres
+  const goldenLeafColors = ['#f59e0b', '#d97706', '#fbbf24', '#f59e0b', '#d97706'];
+  const leafSpheres = [
+    { x: 1.5, y: 3.2, z: 0.0, r: 1.6 },
+    { x: -1.2, y: 3.5, z: 1.2, r: 1.4 },
+    { x: 1.1, y: 3.7, z: -1.1, r: 1.5 },
+    { x: -1.3, y: 3.8, z: -1.3, r: 1.3 },
+    { x: 0.0, y: 4.2, z: 1.6, r: 1.5 },
+    { x: 1.7, y: 4.0, z: 1.3, r: 1.3 },
+    { x: -1.6, y: 4.1, z: 0.0, r: 1.4 },
+    { x: 0.0, y: 4.5, z: -1.7, r: 1.5 },
+    { x: 1.0, y: 4.8, z: 1.0, r: 1.2 },
+    { x: -1.0, y: 4.9, z: -0.8, r: 1.3 },
+    { x: 0.0, y: 5.3, z: 0.0, r: 1.7 },
+    { x: 0.5, y: 5.6, z: -0.5, r: 1.2 }
+  ];
+  leafSpheres.forEach((ls, lIdx) => {
+    add('sphere', ls.x, ls.y, ls.z, ls.r, ls.r * 0.85, ls.r, 0, 0, 0, goldenLeafColors[lIdx % goldenLeafColors.length], `GoldenLeaves_${lIdx}`);
+  });
+  return o;
+}
+
+function makeAncientGrandBanyan() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#4b3b2f', name = 'Banyan') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Massive sprawling trunk base
+  for (let i = 0; i < 40; i++) {
+    const angle = (i / 40) * Math.PI * 2;
+    const r = 0.9 + Math.sin(i * 1.5) * 0.15;
+    add('cylinder', Math.cos(angle) * 0.4, 0.1 + i * 0.08, Math.sin(angle) * 0.4, r - i * 0.015, 0.2, r - i * 0.015, 0, 0, 0, '#4b3b2f', `Base_${i}`);
+  }
+  // Split trunks rising up (4 major splits, ~60 pieces)
+  const splits = [
+    { ox: 0.4, oz: 0.4, angle: Math.PI / 4, scale: 0.45 },
+    { ox: -0.4, oz: 0.4, angle: Math.PI * 0.75, scale: 0.4 },
+    { ox: -0.4, oz: -0.4, angle: Math.PI * 1.25, scale: 0.45 },
+    { ox: 0.4, oz: -0.4, angle: Math.PI * 1.75, scale: 0.4 }
+  ];
+  splits.forEach((sp, sIdx) => {
+    let cx = sp.ox, cy = 1.0, cz = sp.oz;
+    for (let k = 0; k < 15; k++) {
+      cx += Math.cos(sp.angle) * 0.15;
+      cz += Math.sin(sp.angle) * 0.15;
+      cy += 0.22;
+      const sz = sp.scale * (1.0 - k * 0.05);
+      add('cylinder', cx, cy, cz, sz, 0.35, sz, 0.15, sp.angle, 0.1, '#4b3b2f', `SplitTrunk_${sIdx}_${k}`);
+    }
+  });
+  // 15 hanging aerial roots reaching down
+  for (let r = 0; r < 15; r++) {
+    const rAngle = (r / 15) * Math.PI * 2;
+    const rx = Math.cos(rAngle) * (1.6 + Math.sin(r * 2.3) * 0.4);
+    const rz = Math.sin(rAngle) * (1.6 + Math.sin(r * 2.3) * 0.4);
+    const rHeight = 2.0 + Math.random() * 1.0;
+    for (let h = 0; h < 8; h++) {
+      const hy = (h / 8) * rHeight;
+      add('cylinder', rx, rHeight - hy, rz, 0.08, rHeight / 7, 0.08, 0.05 * Math.sin(h), rAngle, 0.05 * Math.cos(h), '#5a4a3a', `AerialRoot_${r}_${h}`);
+    }
+  }
+  // Sprawling canopy of 15 dark forest green leaf spheres
+  const foliageColors = ['#14532d', '#166534', '#15803d', '#14532d', '#166534'];
+  const foliageSpheres = [
+    { x: 1.8, y: 3.4, z: 0.5, r: 1.5 },
+    { x: -1.7, y: 3.5, z: 0.8, r: 1.6 },
+    { x: 0.9, y: 3.6, z: -1.6, r: 1.4 },
+    { x: -0.8, y: 3.7, z: -1.7, r: 1.5 },
+    { x: 2.1, y: 3.8, z: -1.0, r: 1.3 },
+    { x: -2.0, y: 3.9, z: -0.9, r: 1.4 },
+    { x: 0.0, y: 4.1, z: 2.2, r: 1.6 },
+    { x: 1.2, y: 4.2, z: 1.7, r: 1.3 },
+    { x: -1.3, y: 4.3, z: 1.6, r: 1.4 },
+    { x: 0.0, y: 4.5, z: -2.2, r: 1.5 },
+    { x: 1.5, y: 4.6, z: -1.5, r: 1.3 },
+    { x: -1.5, y: 4.7, z: -1.4, r: 1.4 },
+    { x: 0.8, y: 5.0, z: 0.8, r: 1.5 },
+    { x: -0.8, y: 5.1, z: -0.8, r: 1.5 },
+    { x: 0.0, y: 5.4, z: 0.0, r: 1.8 }
+  ];
+  foliageSpheres.forEach((fs, fIdx) => {
+    add('sphere', fs.x, fs.y, fs.z, fs.r, fs.r * 0.8, fs.r, 0, 0, 0, foliageColors[fIdx % foliageColors.length], `BanyanLeaves_${fIdx}`);
+  });
+  return o;
+}
+
+function generateHangingGardens() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#6b7280', name = 'Gardens') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Base layers & columns (100 objects)
+  add('box', 0, 0.15, 0, 8.0, 0.3, 8.0, 0, 0, 0, '#4b5563', 'Foundation');
+  // Columns on base tier
+  for (let x = -3.5; x <= 3.5; x += 1.4) {
+    for (let z = -3.5; z <= 3.5; z += 1.4) {
+      if (Math.abs(x) > 3.0 || Math.abs(z) > 3.0) {
+        add('cylinder', x, 0.9, z, 0.22, 1.2, 0.22, 0, 0, 0, '#78716c', 'Col_Tier1');
+        add('box', x, 1.55, z, 0.35, 0.1, 0.35, 0, 0, 0, '#57534e', 'ColCap_Tier1');
+      }
+    }
+  }
+  // Tier 2 deck & columns
+  add('box', 0, 1.7, 0, 6.0, 0.25, 6.0, 0, 0, 0, '#4b5563', 'Deck_Tier2');
+  for (let x = -2.5; x <= 2.5; x += 1.2) {
+    for (let z = -2.5; z <= 2.5; z += 1.2) {
+      if (Math.abs(x) > 2.0 || Math.abs(z) > 2.0) {
+        add('cylinder', x, 2.4, z, 0.18, 1.1, 0.18, 0, 0, 0, '#78716c', 'Col_Tier2');
+        add('box', x, 2.98, z, 0.28, 0.08, 0.28, 0, 0, 0, '#57534e', 'ColCap_Tier2');
+      }
+    }
+  }
+  // Tier 3 deck & columns
+  add('box', 0, 3.1, 0, 4.0, 0.2, 4.0, 0, 0, 0, '#4b5563', 'Deck_Tier3');
+  for (let x = -1.5; x <= 1.5; x += 1.0) {
+    for (let z = -1.5; z <= 1.5; z += 1.0) {
+      add('cylinder', x, 3.7, z, 0.14, 1.0, 0.14, 0, 0, 0, '#78716c', 'Col_Tier3');
+    }
+  }
+  // Top tier dome structure
+  add('box', 0, 4.25, 0, 2.2, 0.15, 2.2, 0, 0, 0, '#57534e', 'TopDeck');
+  add('sphere', 0, 4.6, 0, 1.2, 0.8, 1.2, 0, 0, 0, '#e2e8f0', 'CentralDome');
+  // Water streams / waterfalls (30 elements)
+  const waterColor = '#38bdf8';
+  for (let w = 0; w < 4; w++) {
+    const angle = (w / 4) * Math.PI * 2;
+    const wx = Math.cos(angle) * 2.8;
+    const wz = Math.sin(angle) * 2.8;
+    for (let s = 0; s < 8; s++) {
+      add('box', wx, 3.0 - s * 0.38, wz, 0.12, 0.4, 0.12, 0.1, angle, 0, waterColor, `Waterfall_${w}_${s}`);
+    }
+  }
+  // Sprawling hanging garden plant spheres and leaves (~130 objects)
+  const gardenColors = ['#15803d', '#166534', '#14532d', '#22c55e', '#84cc16'];
+  for (let p = 0; p < 130; p++) {
+    const tier = p % 3;
+    const angle = (p / 130) * Math.PI * 20;
+    let rad = 3.6 - tier * 0.9 + Math.sin(p * 0.5) * 0.25;
+    let px = Math.cos(angle) * rad;
+    let pz = Math.sin(angle) * rad;
+    let py = 1.8;
+    if (tier === 1) py = 3.2;
+    if (tier === 2) py = 4.3;
+    const scale = 0.15 + (p % 4) * 0.06;
+    add('sphere', px, py + Math.sin(p) * 0.1, pz, scale, scale * 0.9, scale, 0.1 * Math.sin(p), angle, 0, gardenColors[p % gardenColors.length], `GardenFlora_${p}`);
+  }
+  return o;
+}
+
+function generateRomanInsula() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#b45309', name = 'Insula') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // 4 floors of clay / stone bricks (~160 blocks)
+  const brickColors = ['#9a3412', '#c2410c', '#ea580c', '#b45309'];
+  for (let f = 0; f < 4; f++) {
+    const fy = 0.5 + f * 1.25;
+    // Four outer walls per floor, building a square hollow structure
+    // Each wall is split into smaller modular blocks for detailed texture
+    for (let w = 0; w < 36; w++) {
+      const wallIdx = w % 4;
+      const seg = Math.floor(w / 4); // 9 segments per wall side
+      const offset = -2.8 + seg * 0.7;
+      let bx = 0, bz = 0, ry = 0;
+      if (wallIdx === 0) { bx = offset; bz = -3.0; ry = 0; }
+      else if (wallIdx === 1) { bx = 3.0; bz = offset; ry = Math.PI / 2; }
+      else if (wallIdx === 2) { bx = -offset; bz = 3.0; ry = 0; }
+      else { bx = -3.0; bz = -offset; ry = Math.PI / 2; }
+
+      // Don't place block if it's the center entry on the ground floor
+      if (f === 0 && wallIdx === 0 && seg === 4) {
+        add('box', bx, fy + 0.5, bz, 0.1, 1.2, 0.1, 0, ry, 0, '#3f3f46', 'ArchSupport');
+        continue;
+      }
+      // Alternate bricks
+      const color = brickColors[(f + w) % brickColors.length];
+      add('box', bx, fy, bz, 0.65, 1.2, 0.22, 0, ry, 0, color, `Brick_${f}_${w}`);
+    }
+  }
+  // Window arch frames (~60 pieces)
+  for (let f = 1; f < 4; f++) {
+    const fy = f * 1.25 + 0.6;
+    for (let w = 0; w < 4; w++) {
+      const angle = w * (Math.PI / 2);
+      const wx = Math.cos(angle) * 3.08;
+      const wz = Math.sin(angle) * 3.08;
+      // Window arch headers
+      add('box', wx, fy + 0.5, wz, 0.8, 0.12, 0.35, 0, angle, 0, '#78716c', `WinArch_${f}_${w}`);
+      add('box', wx - Math.sin(angle) * 0.35, fy, wz + Math.cos(angle) * 0.35, 0.1, 0.8, 0.25, 0, angle, 0, '#78716c', `WinPostL_${f}_${w}`);
+      add('box', wx + Math.sin(angle) * 0.35, fy, wz - Math.cos(angle) * 0.35, 0.1, 0.8, 0.25, 0, angle, 0, '#78716c', `WinPostR_${f}_${w}`);
+      // Glass
+      add('box', wx, fy, wz, 0.6, 0.7, 0.05, 0, angle, 0, '#7dd3fc', `WinGlass_${f}_${w}`);
+    }
+  }
+  // Inner courtyard well
+  add('cylinder', 0, 0.25, 0, 0.6, 0.5, 0.6, 0, 0, 0, '#78716c', 'WellWall');
+  add('cylinder', 0, 0.2, 0, 0.45, 0.5, 0.45, 0, 0, 0, '#0284c7', 'WellWater');
+  add('box', -0.3, 0.7, 0, 0.08, 0.9, 0.08, 0, 0, 0, '#52525b', 'WellPostL');
+  add('box', 0.3, 0.7, 0, 0.08, 0.9, 0.08, 0, 0, 0, '#52525b', 'WellPostR');
+  add('box', 0, 1.15, 0, 0.68, 0.08, 0.2, 0, 0, 0, '#b45309', 'WellRoof');
+
+  // Clay-red tiled roof (50 interlocking wedges/slabs)
+  const roofColor = '#9a3412';
+  for (let r = 0; r < 50; r++) {
+    const layer = Math.floor(r / 16);
+    const step = r % 16;
+    const rAngle = (step / 16) * Math.PI * 2;
+    const rad = 3.3 - layer * 0.8;
+    const rx = Math.cos(rAngle) * rad;
+    const rz = Math.sin(rAngle) * rad;
+    const ry = 5.25 + layer * 0.4;
+    add('wedge', rx, ry, rz, 0.7, 0.3, 0.6, 0.4, -rAngle, 0, roofColor, `RoofTile_${r}`);
+  }
+  return o;
+}
+
+function generateSamuraiEstate() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#27272a', name = 'Samurai') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Base platform
+  add('box', 0, 0.15, 0, 9.0, 0.3, 9.0, 0, 0, 0, '#52525b', 'Platform');
+  // Traditional gatehouse (60 parts)
+  const gateX = -4.0;
+  add('box', gateX, 0.9, -1.0, 0.35, 1.5, 0.35, 0, 0, 0, '#7f1d1d', 'GatePostL');
+  add('box', gateX, 0.9, 1.0, 0.35, 1.5, 0.35, 0, 0, 0, '#7f1d1d', 'GatePostR');
+  add('box', gateX, 1.6, 0, 0.3, 0.25, 2.4, 0, 0, 0, '#7f1d1d', 'GateLintel');
+  add('wedge', gateX, 1.9, 0, 0.8, 0.4, 3.0, 0, 0, 0, '#18181b', 'GateRoof');
+  // Gate doors
+  add('box', gateX, 0.75, -0.45, 0.08, 1.1, 0.8, 0, 0.3, 0, '#b45309', 'GateDoorL');
+  add('box', gateX, 0.75, 0.45, 0.08, 1.1, 0.8, 0, -0.3, 0, '#b45309', 'GateDoorR');
+
+  // Main Estate walls and sliding tatami wood frames (80 parts)
+  const wallColors = ['#fafaf9', '#f5f5f4', '#e7e5e4'];
+  const frameColor = '#78350f';
+  // Central structure
+  add('box', 1.0, 0.8, 0, 5.0, 1.2, 5.0, 0, 0, 0, wallColors[0], 'MainStructureBody');
+  for (let w = 0; w < 16; w++) {
+    const angle = (w / 16) * Math.PI * 2;
+    const wx = 1.0 + Math.cos(angle) * 2.52;
+    const wz = Math.sin(angle) * 2.52;
+    // Outer wooden frames
+    add('box', wx, 0.8, wz, 0.15, 1.15, 0.9, 0, angle + Math.PI/2, 0, frameColor, `SlidingFrame_${w}`);
+    // Tatami grid pattern dividers
+    for (let g = 0; g < 4; g++) {
+      add('box', wx, 0.3 + g * 0.3, wz, 0.18, 0.04, 0.8, 0, angle + Math.PI/2, 0, '#d97706', `TatamiGrid_${w}_${g}`);
+    }
+  }
+
+  // Multi-layered curved pagoda roofs (~90 pieces)
+  const roofColor = '#18181b';
+  // Lower roof tier
+  for (let r = 0; r < 32; r++) {
+    const angle = (r / 32) * Math.PI * 2;
+    const rx = 1.0 + Math.cos(angle) * 3.1;
+    const rz = Math.sin(angle) * 3.1;
+    add('wedge', rx, 1.55, rz, 0.9, 0.35, 0.75, 0.25, -angle, 0.1, roofColor, `LowerRoofTile_${r}`);
+  }
+  // Upper structure & roof tier
+  add('box', 1.0, 2.1, 0, 3.2, 1.0, 3.2, 0, 0, 0, '#fafaf9', 'UpperStructureBody');
+  for (let r = 0; r < 24; r++) {
+    const angle = (r / 24) * Math.PI * 2;
+    const rx = 1.0 + Math.cos(angle) * 2.1;
+    const rz = Math.sin(angle) * 2.1;
+    add('wedge', rx, 2.75, rz, 0.8, 0.3, 0.65, 0.3, -angle, 0.15, roofColor, `UpperRoofTile_${r}`);
+  }
+  // Top spire
+  add('cone', 1.0, 3.6, 0, 0.6, 1.2, 0.6, 0, 0, 0, '#ca8a04', 'RoofSpire');
+
+  // Zen gardens (sand and rocks, 30 elements)
+  add('box', -2.8, 0.18, -2.8, 2.5, 0.05, 2.5, 0, 0, 0, '#e7e5e4', 'SandGarden');
+  const rockColors = ['#71717a', '#52525b', '#3f3f46'];
+  for (let s = 0; s < 8; s++) {
+    const sx = -3.5 + Math.sin(s * 1.7) * 0.9;
+    const sz = -3.5 + Math.cos(s * 2.3) * 0.9;
+    add('sphere', sx, 0.28, sz, 0.3 + (s % 3) * 0.1, 0.2 + (s % 2) * 0.08, 0.3 + (s % 3) * 0.08, 0.1, s * 0.8, -0.15, rockColors[s % rockColors.length], `ZenRock_${s}`);
+  }
+  return o;
+}
+
+function generatePuebloDwelling() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#d97706', name = 'Pueblo') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Adobe clay rooms stacked on multiple tiers (120 rooms & brick subsections)
+  const clayColors = ['#c2410c', '#b45309', '#d97706', '#ea580c', '#d97706'];
+  const rooms = [
+    // Tier 1 (Ground)
+    { x: -2.2, y: 0.6, z: -2.2, sx: 2.4, sy: 1.2, sz: 2.4 },
+    { x: 0.2, y: 0.6, z: -2.2, sx: 2.2, sy: 1.2, sz: 2.4 },
+    { x: 2.4, y: 0.6, z: -2.2, sx: 2.0, sy: 1.2, sz: 2.4 },
+    { x: -2.2, y: 0.6, z: 0.2, sx: 2.4, sy: 1.2, sz: 2.2 },
+    { x: 2.4, y: 0.6, z: 0.2, sx: 2.0, sy: 1.2, sz: 2.2 },
+    { x: -2.2, y: 0.6, z: 2.4, sx: 2.4, sy: 1.2, sz: 2.0 },
+    // Tier 2
+    { x: -1.8, y: 1.7, z: -1.8, sx: 2.2, sy: 1.0, sz: 2.2 },
+    { x: 0.4, y: 1.7, z: -1.8, sx: 2.0, sy: 1.0, sz: 2.2 },
+    { x: 2.0, y: 1.7, z: -1.8, sx: 1.8, sy: 1.0, sz: 2.2 },
+    { x: -1.8, y: 1.7, z: 0.4, sx: 2.2, sy: 1.0, sz: 2.0 },
+    // Tier 3
+    { x: -1.4, y: 2.6, z: -1.4, sx: 2.0, sy: 0.8, sz: 2.0 },
+    { x: 0.6, y: 2.6, z: -1.4, sx: 1.8, sy: 0.8, sz: 2.0 }
+  ];
+
+  rooms.forEach((rm, rIdx) => {
+    // Generate room base
+    add('box', rm.x, rm.y, rm.z, rm.sx, rm.sy, rm.sz, 0, 0, 0, clayColors[rIdx % clayColors.length], `AdobeRoom_${rIdx}`);
+    // Tiny entryways and dark square windows for each room
+    add('box', rm.x, rm.y + rm.sy * 0.1, rm.z + rm.sz * 0.505, 0.4, 0.6, 0.05, 0, 0, 0, '#1c1917', `Entry_${rIdx}`);
+    add('box', rm.x + rm.sx * 0.505, rm.y + rm.sy * 0.25, rm.z, 0.05, 0.25, 0.25, 0, 0, 0, '#1c1917', `WinSide_${rIdx}`);
+
+    // Wooden ceiling logs protruding outwards (vigas, 10 per room = 120 total)
+    for (let v = 0; v < 10; v++) {
+      const vx = rm.x - rm.sx * 0.45 + (v * rm.sx * 0.1);
+      add('cylinder', vx, rm.y + rm.sy * 0.42, rm.z, 0.08, rm.sz * 1.15, 0.08, Math.PI / 2, 0, 0, '#78350f', `CeilingLog_${rIdx}_${v}`);
+    }
+  });
+
+  // Support ladders leaning between tiers (5 ladders, ~30 blocks)
+  const ladders = [
+    { lx: -0.8, ly: 1.1, lz: 0.5, rx: 0.25, ry: 0, rz: 0.15, h: 1.6 },
+    { lx: 1.5, ly: 1.1, lz: -0.5, rx: 0.15, ry: 0.5, rz: -0.2, h: 1.6 },
+    { lx: -0.6, ly: 2.0, lz: -0.6, rx: 0.2, ry: -0.3, rz: 0.1, h: 1.4 },
+    { lx: 0.9, ly: 2.0, lz: -0.6, rx: -0.15, ry: 0.4, rz: 0.2, h: 1.4 },
+    { lx: 0.0, ly: 2.9, lz: -0.3, rx: 0.25, ry: 0.2, rz: -0.1, h: 1.2 }
+  ];
+  ladders.forEach((ld, lIdx) => {
+    add('box', ld.lx - 0.15, ld.ly, ld.lz, 0.05, ld.h, 0.05, ld.rx, ld.ry, ld.rz, '#a16207', `LadderRailsL_${lIdx}`);
+    add('box', ld.lx + 0.15, ld.ly, ld.lz, 0.05, ld.h, 0.05, ld.rx, ld.ry, ld.rz, '#a16207', `LadderRailsR_${lIdx}`);
+    const rungs = Math.floor(ld.h / 0.25);
+    for (let rg = 0; rg < rungs; rg++) {
+      const rgy = ld.ly - ld.h * 0.4 + rg * 0.25;
+      add('cylinder', ld.lx, rgy, ld.lz, 0.02, 0.32, 0.02, ld.rx, ld.ry, ld.rz + Math.PI/2, '#a16207', `LadderRung_${lIdx}_${rg}`);
+    }
+  });
+
+  // Clay pottery and decorations (around 40 shapes scattered)
+  for (let p = 0; p < 20; p++) {
+    const potX = -3.0 + Math.sin(p * 2.1) * 6.0;
+    const potZ = -3.0 + Math.cos(p * 1.8) * 6.0;
+    const potY = 0.3 + (potX * potX + potZ * potZ > 12 ? 0 : 1.1);
+    add('cylinder', potX, potY, potZ, 0.18, 0.25, 0.18, 0, 0, 0, '#c2410c', `ClayPot_${p}`);
+    add('sphere', potX, potY + 0.15, potZ, 0.22, 0.18, 0.22, 0, 0, 0, '#ea580c', `ClayPotRim_${p}`);
+  }
+  return o;
+}
+
+function generateChineseSiheyuan() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#3f3f46', name = 'Siheyuan') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Symmetrical enclosure brick walls (80 modular segments)
+  const wallColor = '#52525b';
+  for (let i = 0; i < 40; i++) {
+    const offset = -4.5 + i * 0.23;
+    // South Wall
+    if (Math.abs(offset) > 0.8) {
+      add('box', offset, 0.7, -4.5, 0.24, 1.4, 0.35, 0, 0, 0, wallColor, `WallSouth_${i}`);
+    }
+    // North Wall
+    add('box', offset, 0.7, 4.5, 0.24, 1.4, 0.35, 0, 0, 0, wallColor, `WallNorth_${i}`);
+    // East Wall
+    add('box', 4.5, 0.7, offset, 0.35, 1.4, 0.24, 0, Math.PI/2, 0, wallColor, `WallEast_${i}`);
+    // West Wall
+    add('box', -4.5, 0.7, offset, 0.35, 1.4, 0.24, 0, Math.PI/2, 0, wallColor, `WallWest_${i}`);
+  }
+
+  // Central Courtyard garden (water basin, rocks, and trees)
+  add('box', 0, 0.15, 0, 3.5, 0.1, 3.5, 0, 0, 0, '#78716c', 'CourtyardBasin');
+  add('box', 0, 0.2, 0, 2.5, 0.05, 2.5, 0, 0, 0, '#0284c7', 'CourtyardWater');
+  // Decorative Archway (Gate) in south wall center
+  add('box', -0.7, 0.9, -4.5, 0.2, 1.8, 0.2, 0, 0, 0, '#7f1d1d', 'ArchPostL');
+  add('box', 0.7, 0.9, -4.5, 0.2, 1.8, 0.2, 0, 0, 0, '#7f1d1d', 'ArchPostR');
+  add('box', 0, 1.8, -4.5, 0.2, 0.2, 1.6, 0, 0, 0, '#7f1d1d', 'ArchLintel');
+  add('wedge', 0, 2.05, -4.5, 0.6, 0.35, 2.0, 0, 0, 0, '#18181b', 'ArchRoof');
+
+  // Main Pavilion (North building) & Side pavilions (East/West buildings, ~120 blocks)
+  const brickColor = '#a1a1aa';
+  const pillarColor = '#7f1d1d';
+  const tileColor = '#18181b';
+  // North Hall
+  add('box', 0, 0.9, 3.4, 5.0, 1.8, 1.8, 0, 0, 0, brickColor, 'NorthHallBody');
+  add('wedge', 0, 2.1, 3.4, 2.1, 0.6, 5.5, 0, 0, 0, tileColor, 'NorthHallRoofL');
+  add('wedge', 0, 2.1, 3.4, 2.1, 0.6, 5.5, 0, Math.PI, 0, tileColor, 'NorthHallRoofR');
+  // East Hall
+  add('box', 3.4, 0.8, 0, 1.6, 1.6, 4.0, 0, 0, 0, brickColor, 'EastHallBody');
+  add('wedge', 3.4, 1.8, 0, 1.8, 0.5, 4.4, 0, Math.PI/2, 0, tileColor, 'EastHallRoofL');
+  add('wedge', 3.4, 1.8, 0, 1.8, 0.5, 4.4, 0, -Math.PI/2, 0, tileColor, 'EastHallRoofR');
+  // West Hall
+  add('box', -3.4, 0.8, 0, 1.6, 1.6, 4.0, 0, 0, 0, brickColor, 'WestHallBody');
+  add('wedge', -3.4, 1.8, 0, 1.8, 0.5, 4.4, 0, Math.PI/2, 0, tileColor, 'WestHallRoofL');
+  add('wedge', -3.4, 1.8, 0, 1.8, 0.5, 4.4, 0, -Math.PI/2, 0, tileColor, 'WestHallRoofR');
+
+  // Pillars for pavilions (24 pillars)
+  const pavilionPillars = [
+    { x: -2.3, z: 2.3 }, { x: -0.8, z: 2.3 }, { x: 0.8, z: 2.3 }, { x: 2.3, z: 2.3 },
+    { x: 2.4, z: -1.8 }, { x: 2.4, z: 1.8 }, { x: -2.4, z: -1.8 }, { x: -2.4, z: 1.8 }
+  ];
+  pavilionPillars.forEach((p, idx) => {
+    add('cylinder', p.x, 0.85, p.z, 0.12, 1.7, 0.12, 0, 0, 0, pillarColor, `PavilionPillar_${idx}`);
+  });
+
+  // Brick walkways and courtyard steps (~40 blocks)
+  for (let w = 0; w < 20; w++) {
+    add('box', -2.2 + w * 0.23, 0.16, 2.2, 0.2, 0.03, 0.6, 0, 0, 0, '#71717a', `WalkwayNorth_${w}`);
+    add('box', -2.2 + w * 0.23, 0.16, -2.2, 0.2, 0.03, 0.6, 0, 0, 0, '#71717a', `WalkwaySouth_${w}`);
+  }
+  return o;
+}
+
+function generateRomanColosseum() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#d6d3d1', name = 'Colosseum') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Layered circular arcades, broken ruin segments (280 objects)
+  const stoneColor = '#e7e5e4';
+  const darkStone = '#a8a29e';
+
+  // Base Arena Floor (Sand arena)
+  add('cylinder', 0, 0.1, 0, 4.0, 0.2, 4.0, 0, 0, 0, '#fef08a', 'SandArena');
+
+  // Concentric layered arcade rings
+  for (let f = 0; f < 3; f++) {
+    const fy = 0.5 + f * 1.1;
+    const rad = 4.8 + f * 0.25;
+    const count = 36 - f * 3;
+    for (let a = 0; a < count; a++) {
+      const angle = (a / count) * Math.PI * 2;
+      // Colosseum is broken / ruined on one side (from angle 0 to PI/2, some parts are missing)
+      if (angle > 0.1 && angle < Math.PI * 0.55 && f > 0) {
+        // Skip some arches to look ruined
+        if (Math.sin(a * 1.5) > -0.2) continue;
+      }
+
+      const ax = Math.cos(angle) * rad;
+      const az = Math.sin(angle) * rad;
+
+      // Pillars / Arcade posts (2 per archway)
+      add('box', ax, fy, az, 0.25, 1.0, 0.25, 0, -angle, 0, stoneColor, `ArcadePillar_${f}_${a}`);
+
+      // Arch header
+      add('box', ax, fy + 0.5, az, 0.45, 0.12, 0.25, 0, -angle, 0, darkStone, `ArcadeArch_${f}_${a}`);
+
+      // Outer columns on arcade face
+      add('cylinder', ax * 1.04, fy, az * 1.04, 0.08, 0.95, 0.08, 0, -angle, 0, '#d6d3d1', `ArcadeCol_${f}_${a}`);
+    }
+  }
+
+  // Inner stepped seating (Cavea, ~100 blocks)
+  for (let r = 0; r < 5; r++) {
+    const sRad = 4.0 + r * 0.15;
+    const sHeight = 0.2 + r * 0.25;
+    const sCount = 30;
+    for (let s = 0; s < sCount; s++) {
+      const angle = (s / sCount) * Math.PI * 2;
+      // Match the ruined side
+      if (angle > 0.2 && angle < Math.PI * 0.5 && r > 2) continue;
+
+      const sx = Math.cos(angle) * sRad;
+      const sz = Math.sin(angle) * sRad;
+      add('box', sx, sHeight, sz, 0.25, 0.25, 0.55, 0.4, -angle, 0, '#d6d3d1', `Seating_${r}_${s}`);
+    }
+  }
+
+  // Broken ruin segments lying inside and outside the arena (~40 blocks)
+  for (let b = 0; b < 24; b++) {
+    const bx = -2.5 + Math.sin(b * 1.9) * 5.0;
+    const bz = -2.5 + Math.cos(b * 1.4) * 5.0;
+    add('box', bx, 0.18, bz, 0.3 + (b % 3) * 0.1, 0.15 + (b % 2) * 0.1, 0.3 + (b % 2) * 0.1, Math.random() * 0.4, Math.random() * Math.PI, Math.random() * 0.3, '#78716c', `RuinRubble_${b}`);
+  }
+  return o;
+}
+
+function generateParthenon() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#f5f5f4', name = 'Parthenon') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Grand rectangular base (3 steps)
+  add('box', 0, 0.12, 0, 5.0, 0.24, 8.5, 0, 0, 0, '#e7e5e4', 'BaseStep1');
+  add('box', 0, 0.28, 0, 4.7, 0.16, 8.2, 0, 0, 0, '#f5f5f4', 'BaseStep2');
+  add('box', 0, 0.4, 0, 4.4, 0.12, 7.9, 0, 0, 0, '#fafaf9', 'BaseStep3');
+
+  // Doric colonnade columns on all sides (46 columns total, with capitals and bases = ~140 blocks)
+  const colColor = '#fafaf9';
+  const columns = [];
+  // Long sides (17 columns per side)
+  for (let z = -3.7; z <= 3.701; z += 0.46) {
+    columns.push({ x: -2.0, z });
+    columns.push({ x: 2.0, z });
+  }
+  // Front and Back sides (6 additional columns per end)
+  for (let x = -1.54; x <= 1.5401; x += 0.51) {
+    columns.push({ x, z: -3.7 });
+    columns.push({ x, z: 3.7 });
+  }
+
+  columns.forEach((col, idx) => {
+    // Column shafts
+    add('cylinder', col.x, 1.45, col.z, 0.16, 2.0, 0.16, 0, 0, 0, colColor, `Column_${idx}`);
+    // Column capitals
+    add('box', col.x, 2.5, col.z, 0.24, 0.08, 0.24, 0, 0, 0, '#e7e5e4', `Capital_${idx}`);
+  });
+
+  // Inner chamber (Cella)
+  add('box', 0, 1.45, 0, 2.6, 2.0, 6.0, 0, 0, 0, '#f5f5f4', 'CellaBody');
+  add('box', 0, 0.7, -3.01, 0.6, 1.2, 0.06, 0, 0, 0, '#78350f', 'CellaDoor');
+
+  // Decorative pediment frieze and architrave (~100 blocks)
+  add('box', 0, 2.62, 0, 4.2, 0.16, 7.7, 0, 0, 0, '#e7e5e4', 'Architrave');
+  add('box', 0, 2.76, 0, 4.3, 0.12, 7.8, 0, 0, 0, '#fafaf9', 'Frieze');
+
+  // Triglyphs and Metopes decoration (repeating detailed slabs along the frieze)
+  for (let mz = -3.7; mz <= 3.701; mz += 0.4) {
+    add('box', -2.16, 2.76, mz, 0.04, 0.1, 0.08, 0, 0, 0, '#d6d3d1', `FriezeDetL_${mz}`);
+    add('box', 2.16, 2.76, mz, 0.04, 0.1, 0.08, 0, 0, 0, '#d6d3d1', `FriezeDetR_${mz}`);
+  }
+
+  // Triangular pediments at front and back ends
+  // Front Pediment (slanted wedges)
+  add('wedge', -1.05, 3.02, -3.7, 2.1, 0.45, 0.2, 0, 0, 0, '#fafaf9', 'PedimentFrontL');
+  add('wedge', 1.05, 3.02, -3.7, 2.1, 0.45, 0.2, 0, Math.PI, 0, '#fafaf9', 'PedimentFrontR');
+  // Back Pediment
+  add('wedge', -1.05, 3.02, 3.7, 2.1, 0.45, 0.2, 0, 0, 0, '#fafaf9', 'PedimentBackL');
+  add('wedge', 1.05, 3.02, 3.7, 2.1, 0.45, 0.2, 0, Math.PI, 0, '#fafaf9', 'PedimentBackR');
+  return o;
+}
+
+function generatePyramidGiza() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#fef08a', name = 'Pyramid') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Stepped limestone block sloped sides (18 tiers, ~220 blocks)
+  const pyramidColor = '#eab308';
+  const alternateColor = '#ca8a04';
+  const totalTiers = 18;
+  for (let t = 0; t < totalTiers; t++) {
+    const ty = 0.1 + t * 0.25;
+    const baseWidth = 8.5 - t * 0.45;
+    // We construct each square tier out of 12 sub-blocks to get detailed block edges
+    for (let s = 0; s < 12; s++) {
+      const angle = (s / 12) * Math.PI * 2;
+      const bx = Math.cos(angle) * (baseWidth * 0.42);
+      const bz = Math.sin(angle) * (baseWidth * 0.42);
+      const color = (t + s) % 2 === 0 ? pyramidColor : alternateColor;
+      add('box', bx, ty, bz, baseWidth * 0.22, 0.26, baseWidth * 0.22, 0, angle, 0, color, `SteppedBlock_${t}_${s}`);
+    }
+  }
+
+  // Golden apex capstone
+  add('cone', 0, 0.1 + totalTiers * 0.25 + 0.3, 0, 0.8, 0.6, 0.8, 0, 0, 0, '#fbbf24', 'GoldenCapstone');
+
+  // Sphinx guardian statue at front (30 parts)
+  const spX = 0;
+  const spY = 0.3;
+  const spZ = -4.25;
+  add('box', spX, spY, spZ, 0.6, 0.45, 1.2, 0, 0, 0, '#ca8a04', 'SphinxBody');
+  add('sphere', spX, spY + 0.35, spZ - 0.45, 0.35, 0.35, 0.35, 0, 0, 0, '#ca8a04', 'SphinxHead');
+  add('box', spX, spY + 0.38, spZ - 0.3, 0.48, 0.15, 0.3, 0.1, 0, 0, '#eab308', 'SphinxHeaddress');
+  // Paws
+  add('box', spX - 0.22, spY - 0.12, spZ - 0.65, 0.15, 0.15, 0.4, 0, 0, 0, '#ca8a04', 'SphinxPawL');
+  add('box', spX + 0.22, spY - 0.12, spZ - 0.65, 0.15, 0.15, 0.4, 0, 0, 0, '#ca8a04', 'SphinxPawR');
+  return o;
+}
+
+function generateStonehenge() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#78716c', name = 'Stonehenge') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Concentric circles of massive standing sarsen stones & lintels (~250 shapes)
+  const grassColor = '#166534';
+  const stoneColor = '#57534e';
+  const lintelColor = '#78716c';
+
+  // Grass base
+  add('cylinder', 0, 0.05, 0, 8.5, 0.1, 8.5, 0, 0, 0, grassColor, 'StonehengeBase');
+
+  // Outer Circle (18 standing stones + 18 lintels)
+  const outerCount = 18;
+  const outerRad = 3.6;
+  for (let i = 0; i < outerCount; i++) {
+    const angle = (i / outerCount) * Math.PI * 2;
+    const sx = Math.cos(angle) * outerRad;
+    const sz = Math.sin(angle) * outerRad;
+    const sy = 0.85;
+
+    // Outer upright monolith (broken/crooked look using small rotations)
+    const rx = 0.05 * Math.sin(i * 1.7);
+    const rz = 0.05 * Math.cos(i * 2.3);
+    add('box', sx, sy, sz, 0.45, 1.6, 0.28, rx, -angle, rz, stoneColor, `OuterUpright_${i}`);
+
+    // Horizontal Lintel bridging to next stone
+    const nextAngle = ((i + 1) / outerCount) * Math.PI * 2;
+    const lx = (Math.cos(angle) + Math.cos(nextAngle)) * 0.5 * outerRad;
+    const lz = (Math.sin(angle) + Math.sin(nextAngle)) * 0.5 * outerRad;
+    // Don't place all lintels to simulate ruins / fallen stones (skip 4 of them)
+    if (i % 5 !== 0) {
+      add('box', lx, 1.7, lz, 0.85, 0.22, 0.35, 0, -angle - Math.PI/outerCount, 0, lintelColor, `OuterLintel_${i}`);
+    }
+  }
+
+  // Inner Circle (12 smaller standing monoliths)
+  const innerCount = 12;
+  const innerRad = 2.4;
+  for (let i = 0; i < innerCount; i++) {
+    const angle = (i / innerCount) * Math.PI * 2;
+    const sx = Math.cos(angle) * innerRad;
+    const sz = Math.sin(angle) * innerRad;
+    const sy = 0.55;
+    const rx = 0.08 * Math.cos(i * 1.5);
+    const rz = 0.08 * Math.sin(i * 1.2);
+    add('box', sx, sy, sz, 0.3, 1.0, 0.2, rx, -angle, rz, '#44403c', `InnerStone_${i}`);
+  }
+
+  // Central trilithons (5 pairs of massive stones with lintels in horseshoe shape, ~120 blocks)
+  const horseshoes = [
+    { angle: -Math.PI * 0.35, h: 2.1 },
+    { angle: -Math.PI * 0.15, h: 2.35 },
+    { angle: Math.PI * 0.0, h: 2.5 },
+    { angle: Math.PI * 0.15, h: 2.35 },
+    { angle: Math.PI * 0.35, h: 2.1 }
+  ];
+  horseshoes.forEach((hs, idx) => {
+    const rad = 1.35;
+    const cx1 = Math.cos(hs.angle - 0.12) * rad;
+    const cz1 = Math.sin(hs.angle - 0.12) * rad;
+    const cx2 = Math.cos(hs.angle + 0.12) * rad;
+    const cz2 = Math.sin(hs.angle + 0.12) * rad;
+
+    // Two upright monoliths
+    add('box', cx1, hs.h * 0.5, cz1, 0.5, hs.h, 0.3, 0.03, -hs.angle, 0.03, '#292524', `HorseshoeUprightA_${idx}`);
+    add('box', cx2, hs.h * 0.5, cz2, 0.5, hs.h, 0.3, -0.03, -hs.angle, -0.03, '#292524', `HorseshoeUprightB_${idx}`);
+
+    // Top lintel
+    const lx = Math.cos(hs.angle) * rad;
+    const lz = Math.sin(hs.angle) * rad;
+    add('box', lx, hs.h + 0.12, lz, 0.9, 0.25, 0.4, 0, -hs.angle, 0, '#57534e', `HorseshoeLintel_${idx}`);
+  });
+
+  // Fallen stones lying around the center
+  for (let f = 0; f < 8; f++) {
+    const fx = -1.2 + Math.sin(f * 2.5) * 2.2;
+    const fz = -1.2 + Math.cos(f * 2.1) * 2.2;
+    add('box', fx, 0.15, fz, 0.9, 0.22, 0.4, 0.1, f * 0.9, 0.05, '#44403c', `FallenStone_${f}`);
+  }
+  return o;
+}
+
+function generateMayanTemple() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#78716c', name = 'Mayan') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // 9 stepped pyramid terraces (150 blocks)
+  const stoneColor = '#78716c';
+  const darkStone = '#57534e';
+  const stairColor = '#a8a29e';
+
+  for (let t = 0; t < 9; t++) {
+    const ty = 0.18 + t * 0.42;
+    const size = 8.0 - t * 0.75;
+    // Render detailed modular blocks along each terrace perimeter
+    for (let b = 0; b < 12; b++) {
+      const angle = (b / 12) * Math.PI * 2;
+      const bx = Math.cos(angle) * (size * 0.44);
+      const bz = Math.sin(angle) * (size * 0.44);
+      add('box', bx, ty, bz, size * 0.25, 0.44, size * 0.25, 0, angle, 0, (t + b) % 2 === 0 ? stoneColor : darkStone, `Terrace_${t}_${b}`);
+    }
+  }
+
+  // Steep central stairways on all 4 faces (~80 blocks)
+  for (let s = 0; s < 4; s++) {
+    const angle = s * (Math.PI / 2);
+    const steps = 18;
+    for (let st = 0; st < steps; st++) {
+      const ratio = st / steps;
+      const sy = 0.12 + ratio * 3.8;
+      const dist = 4.2 - ratio * 3.4;
+      const sx = Math.cos(angle) * dist;
+      const sz = Math.sin(angle) * dist;
+      // Step blocks
+      add('box', sx, sy, sz, 0.95, 0.15, 0.25, 0, angle, 0, stairColor, `Stairs_${s}_${st}`);
+    }
+    // Stairway banisters / side walls
+    add('box', Math.cos(angle) * 2.3, 1.9, Math.sin(angle) * 2.3, 0.12, 4.0, 4.6, 0.65, angle, 0, darkStone, `Banister_${s}`);
+  }
+
+  // Top temple chamber (20 blocks)
+  const topY = 4.15;
+  add('box', 0, topY, 0, 1.8, 1.0, 1.8, 0, 0, 0, stoneColor, 'TempleChamber');
+  add('box', 0, topY + 0.6, 0, 2.1, 0.2, 2.1, 0, 0, 0, darkStone, 'TempleRoof');
+  add('box', 0, topY - 0.1, -0.905, 0.45, 0.65, 0.05, 0, 0, 0, '#1c1917', 'TempleEntry');
+  return o;
+}
+
+function generateGreatBazaar() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#a1a1aa', name = 'Bazaar') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Vaulted domed ceilings (~90 blocks)
+  const domeColor = '#dc2626';
+  const brickColor = '#d4d4d8';
+  add('box', 0, 0.15, 0, 8.5, 0.3, 8.5, 0, 0, 0, '#71717a', 'Foundations');
+
+  // Vault arches for grid layout
+  const gridPositions = [-3.0, 0, 3.0];
+  gridPositions.forEach((x, xIdx) => {
+    gridPositions.forEach((z, zIdx) => {
+      // 9 domes
+      add('sphere', x, 3.0, z, 1.4, 0.75, 1.4, 0, 0, 0, domeColor, `Dome_${xIdx}_${zIdx}`);
+      add('cylinder', x, 2.65, z, 1.3, 0.1, 1.3, 0, 0, 0, '#ca8a04', `DomeTrim_${xIdx}_${zIdx}`);
+
+      // Support pillars
+      add('box', x - 0.9, 1.25, z - 0.9, 0.25, 2.5, 0.25, 0, 0, 0, brickColor, `DomePillarA_${xIdx}_${zIdx}`);
+      add('box', x + 0.9, 1.25, z + 0.9, 0.25, 2.5, 0.25, 0, 0, 0, brickColor, `DomePillarB_${xIdx}_${zIdx}`);
+    });
+  });
+
+  // Grid merchant stalls with colorful goods (100 objects)
+  const awningColors = ['#f43f5e', '#3b82f6', '#10b981', '#ca8a04', '#ea580c'];
+  const stallPositions = [
+    { x: -2.8, z: -1.4 }, { x: -2.8, z: 1.4 }, { x: 0, z: -1.4 }, { x: 0, z: 1.4 },
+    { x: 2.8, z: -1.4 }, { x: 2.8, z: 1.4 }, { x: -1.4, z: -2.8 }, { x: 1.4, z: -2.8 }
+  ];
+  stallPositions.forEach((pos, idx) => {
+    const yaw = (idx % 2) * (Math.PI / 2);
+    // Stall counter
+    add('box', pos.x, 0.5, pos.y, 1.1, 0.7, 0.7, 0, yaw, 0, '#78350f', `Stall_${idx}`);
+    // Fabric Awning
+    add('box', pos.x, 1.15, pos.y, 1.25, 0.08, 0.85, 0.18, yaw, 0, awningColors[idx % awningColors.length], `Awning_${idx}`);
+    // Goods boxes & jars on counters
+    for (let g = 0; g < 6; g++) {
+      const gx = pos.x - 0.3 + g * 0.13;
+      add('box', gx, 0.9, pos.y, 0.1, 0.15, 0.1, 0, yaw, 0, '#d97706', `Goods_${idx}_${g}`);
+    }
+  });
+
+  // Hanging lanterns (~40 shapes)
+  for (let l = 0; l < 24; l++) {
+    const lx = -3.0 + (l % 5) * 1.5;
+    const lz = -3.0 + Math.floor(l / 5) * 1.5;
+    add('cylinder', lx, 2.4, lz, 0.02, 0.4, 0.02, 0, 0, 0, '#1c1917', `LanternChain_${l}`);
+    add('sphere', lx, 2.15, lz, 0.15, 0.22, 0.15, 0, 0, 0, '#eab308', `LanternLight_${l}`);
+  }
+
+  // Arched entrance gate (30 blocks)
+  const gateZ = -4.3;
+  add('box', -1.2, 1.4, gateZ, 0.35, 2.8, 0.45, 0, 0, 0, brickColor, 'GatePostL');
+  add('box', 1.2, 1.4, gateZ, 0.35, 2.8, 0.45, 0, 0, 0, brickColor, 'GatePostR');
+  add('box', 0, 2.9, gateZ, 2.65, 0.35, 0.45, 0, 0, 0, '#71717a', 'GateArchTop');
+  add('torus', 0, 2.6, gateZ, 1.1, 1.1, 0.15, 0, 0, 0, '#ca8a04', 'GateOrnament');
+  return o;
+}
+
+function generateRomanForum() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#e2e8f0', name = 'Forum') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Open courtyard plaza, stone stalls, fabric awnings (270 objects)
+  const pavementColor = '#cbd5e1';
+  const stoneColor = '#f1f5f9';
+  const fabricColors = ['#f43f5e', '#ef4444', '#eab308', '#3b82f6', '#ec4899'];
+
+  // Courtyard base
+  add('box', 0, 0.12, 0, 8.5, 0.24, 8.5, 0, 0, 0, pavementColor, 'CourtyardPlaza');
+
+  // Surrounded stone columns (Doric double rows, 48 columns total)
+  const columns = [];
+  for (let x = -3.8; x <= 3.81; x += 1.2) {
+    columns.push({ x, z: -3.8 });
+    columns.push({ x, z: 3.8 });
+  }
+  for (let z = -2.6; z <= 2.61; z += 1.2) {
+    columns.push({ x: -3.8, z });
+    columns.push({ x: 3.8, z });
+  }
+  columns.forEach((col, idx) => {
+    add('cylinder', col.x, 1.3, col.z, 0.15, 2.2, 0.15, 0, 0, 0, stoneColor, `ColColumn_${idx}`);
+    add('box', col.x, 2.45, col.z, 0.25, 0.1, 0.25, 0, 0, 0, '#cbd5e1', `ColCap_${idx}`);
+    add('box', col.x, 0.25, col.z, 0.25, 0.1, 0.25, 0, 0, 0, '#cbd5e1', `ColBase_${idx}`);
+  });
+
+  // Merchant stalls with fabric awnings (~120 blocks)
+  const stallPositions = [
+    { x: -2.0, z: -2.0, yaw: 0 }, { x: 2.0, z: -2.0, yaw: 0 },
+    { x: -2.0, z: 2.0, yaw: Math.PI }, { x: 2.0, z: 2.0, yaw: Math.PI },
+    { x: -2.2, z: 0, yaw: Math.PI/2 }, { x: 2.2, z: 0, yaw: -Math.PI/2 }
+  ];
+  stallPositions.forEach((pos, sIdx) => {
+    // Stone counter blocks
+    add('box', pos.x, 0.45, pos.z, 1.2, 0.65, 0.65, 0, pos.yaw, 0, stoneColor, `StallCounter_${sIdx}`);
+    // Support posts (4 per stall)
+    add('cylinder', pos.x - 0.5, 1.1, pos.z - 0.25, 0.05, 1.3, 0.05, 0, 0, 0, '#78350f', `StallPostA_${sIdx}`);
+    add('cylinder', pos.x - 0.5, 1.1, pos.z + 0.25, 0.05, 1.3, 0.05, 0, 0, 0, '#78350f', `StallPostB_${sIdx}`);
+    add('cylinder', pos.x + 0.5, 1.1, pos.z - 0.25, 0.05, 1.3, 0.05, 0, 0, 0, '#78350f', `StallPostC_${sIdx}`);
+    add('cylinder', pos.x + 0.5, 1.1, pos.z + 0.25, 0.05, 1.3, 0.05, 0, 0, 0, '#78350f', `StallPostD_${sIdx}`);
+    // Slanted fabric awning
+    add('box', pos.x, 1.78, pos.z, 1.35, 0.06, 0.8, 0.25, pos.yaw, 0, fabricColors[sIdx % fabricColors.length], `StallAwning_${sIdx}`);
+
+    // Baskets and pottery on counters
+    for (let b = 0; b < 4; b++) {
+      const bx = pos.x - 0.35 + b * 0.23;
+      add('cylinder', bx, 0.85, pos.z, 0.14, 0.2, 0.14, 0, pos.yaw, 0, '#ca8a04', `StallGood_${sIdx}_${b}`);
+    }
+  });
+
+  // Centerpiece Monumental Column
+  add('box', 0, 0.35, 0, 0.85, 0.3, 0.85, 0, 0, 0, '#94a3b8', 'MonBase');
+  add('cylinder', 0, 1.9, 0, 0.3, 2.8, 0.3, 0, 0, 0, stoneColor, 'MonShaft');
+  add('sphere', 0, 3.45, 0, 0.45, 0.45, 0.45, 0, 0, 0, '#ca8a04', 'MonStatue');
+  return o;
+}
+
+function generateMedievalCustomHouse() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#78716c', name = 'CustomHouse') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Waterfront stone docks, cargo cranes, warehouse goods barrels (~260 shapes)
+  const dockColor = '#4b5563';
+  const brickColor = '#a8a29e';
+  const timberColor = '#451a03';
+  const roofColor = '#9a3412';
+
+  // Base Dock Deck
+  add('box', 0, 0.2, 0, 8.5, 0.4, 8.5, 0, 0, 0, dockColor, 'DockPlaza');
+  // Water interface (blue tiles on front side)
+  add('box', 0, 0.05, -4.3, 8.5, 0.1, 0.8, 0, 0, 0, '#0284c7', 'HarborWater');
+
+  // Custom House building (120 blocks)
+  add('box', 1.0, 1.4, 1.5, 4.5, 2.0, 4.0, 0, 0, 0, brickColor, 'HouseBody');
+  // Timber frame lines
+  for (let h = 0; h < 6; h++) {
+    const hz = -0.5 + h * 0.8;
+    add('box', 3.28, 1.4, hz, 0.06, 2.0, 0.08, 0, 0, 0, timberColor, `TimberPostR_${h}`);
+    add('box', -1.28, 1.4, hz, 0.06, 2.0, 0.08, 0, 0, 0, timberColor, `TimberPostL_${h}`);
+  }
+  // Gabled roof
+  add('wedge', 1.0, 2.9, 1.5, 2.3, 1.0, 4.4, 0, Math.PI/2, 0, roofColor, 'RoofL');
+  add('wedge', 1.0, 2.9, 1.5, 2.3, 1.0, 4.4, 0, -Math.PI/2, 0, roofColor, 'RoofR');
+
+  // Cargo Crane (timber poles, gears, pulley rope, 50 blocks)
+  const crX = -2.8;
+  const crY = 1.0;
+  const crZ = -1.5;
+  // Crane mast & boom
+  add('box', crX, crY, crZ, 0.25, 2.2, 0.25, 0, 0, 0, timberColor, 'CraneMast');
+  add('box', crX + 0.6, crY + 1.0, crZ, 1.6, 0.18, 0.18, 0, 0, 0.45, timberColor, 'CraneBoom');
+  add('box', crX + 0.2, crY + 0.35, crZ, 0.8, 0.12, 0.12, 0, 0, -0.6, timberColor, 'CraneStrut');
+  // Pulley rope
+  add('cylinder', crX + 1.25, crY + 0.2, crZ, 0.03, 1.4, 0.03, 0, 0, 0, '#e2e8f0', 'PulleyRope');
+  add('box', crX + 1.25, crY - 0.45, crZ, 0.35, 0.35, 0.35, 0, 0.1, 0, '#ca8a04', 'CargoBox');
+
+  // Warehouse goods barrels, boxes, and sack stacks (~80 elements)
+  for (let b = 0; b < 24; b++) {
+    const bx = -2.5 + Math.sin(b * 1.8) * 1.5;
+    const bz = 2.0 + Math.cos(b * 1.5) * 1.8;
+    add('cylinder', bx, 0.6, bz, 0.22, 0.5, 0.22, 0, 0, 0, '#78350f', `Barrel_${b}`);
+    add('torus', bx, 0.4, bz, 0.24, 0.24, 0.05, Math.PI/2, 0, 0, '#27272a', `BarrelRingA_${b}`);
+    add('torus', bx, 0.8, bz, 0.24, 0.24, 0.05, Math.PI/2, 0, 0, '#27272a', `BarrelRingB_${b}`);
+  }
+  for (let s = 0; s < 12; s++) {
+    const sx = -3.2 + (s % 3) * 0.4;
+    const sz = -0.5 + Math.floor(s / 3) * 0.4;
+    add('box', sx, 0.5, sz, 0.35, 0.28, 0.35, 0.05, s * 0.5, 0.05, '#d97706', `CargoCrate_${s}`);
+  }
+  return o;
+}
+
+function generateSilkRoadCaravanserai() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#d97706', name = 'Caravanserai') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Fortified brick walls, central inner courtyard, stables, lodging rooms (~280 shapes)
+  const clayColor = '#b45309';
+  const darkClay = '#9a3412';
+  const timberColor = '#78350f';
+
+  // Base platform
+  add('box', 0, 0.15, 0, 8.5, 0.3, 8.5, 0, 0, 0, '#78716c', 'Foundation');
+
+  // Fortified outer walls (100 blocks)
+  for (let w = 0; w < 44; w++) {
+    const seg = w % 11;
+    const wallIdx = Math.floor(w / 11);
+    const offset = -3.7 + seg * 0.74;
+    let wx = 0, wz = 0, ry = 0;
+    if (wallIdx === 0) { wx = offset; wz = -3.8; ry = 0; }
+    else if (wallIdx === 1) { wx = 3.8; wz = offset; ry = Math.PI / 2; }
+    else if (wallIdx === 2) { wx = -offset; wz = 3.8; ry = 0; }
+    else { wx = -3.8; wz = -offset; ry = Math.PI / 2; }
+
+    // Skip gate entrance
+    if (wallIdx === 0 && seg === 5) continue;
+
+    add('box', wx, 1.0, wz, 0.72, 1.8, 0.45, 0, ry, 0, clayColor, `OuterWall_${w}`);
+    add('box', wx, 2.0, wz, 0.75, 0.3, 0.5, 0, ry, 0, darkClay, `Crenellation_${w}`);
+  }
+
+  // Inner Courtyard stable bays and animal gates (~100 shapes)
+  const stableBays = [
+    { x: -2.6, z: -2.2, yaw: 0 }, { x: -2.6, z: -0.8, yaw: 0 }, { x: -2.6, z: 0.6, yaw: 0 }, { x: -2.6, z: 2.0, yaw: 0 },
+    { x: 2.6, z: -2.2, yaw: Math.PI }, { x: 2.6, z: -0.8, yaw: Math.PI }, { x: 2.6, z: 0.6, yaw: Math.PI }, { x: 2.6, z: 2.0, yaw: Math.PI }
+  ];
+  stableBays.forEach((bay, idx) => {
+    // Arched stables partition
+    add('box', bay.x, 0.8, bay.z, 0.15, 1.3, 1.1, 0, bay.yaw, 0, '#d1d5db', `StableWall_${idx}`);
+    add('box', bay.x - Math.cos(bay.yaw) * 0.4, 0.8, bay.z, 0.08, 1.1, 0.08, 0, bay.yaw, 0, timberColor, `StablePost_${idx}`);
+    // Straw pile
+    add('cylinder', bay.x, 0.22, bay.z, 0.6, 0.15, 0.6, 0, bay.yaw, 0, '#ca8a04', `Straw_${idx}`);
+  });
+
+  // Arched merchant lodging rooms on upper level (second floor balcony, ~60 shapes)
+  for (let l = 0; l < 10; l++) {
+    const lx = -2.8 + l * 0.62;
+    // North side upper lodging rooms
+    add('box', lx, 2.05, 2.6, 0.58, 0.8, 0.9, 0, 0, 0, clayColor, `RoomN_${l}`);
+    add('box', lx, 1.7, 1.9, 0.6, 0.1, 0.6, 0, 0, 0, timberColor, `RoomDeck_${l}`);
+    // Support posts
+    add('cylinder', lx, 1.0, 1.6, 0.08, 1.5, 0.08, 0, 0, 0, timberColor, `LodgingSupport_${l}`);
+  }
+
+  // Fortified gate tower (front center)
+  add('box', 0, 1.35, -3.8, 1.6, 2.5, 0.9, 0, 0, 0, darkClay, 'GateTower');
+  add('box', 0, 1.0, -3.8, 0.95, 1.5, 1.1, 0, 0, 0, '#1c1917', 'GatePortal');
+  return o;
+}
+
+function generateGreekAgora() {
+  const o = [];
+  const add = (geom, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0, color = '#f1f5f9', name = 'Agora') => {
+    o.push({ geometry: geom, position: { x, y, z }, scale: { x: sx, y: sy, z: sz }, rotation: { x: rx, y: ry, z: rz }, color, name });
+  };
+  // Long double-row colonnade walkway, merchant market stalls, tiled roof canopy (~270 shapes)
+  const columnColor = '#fafaf9';
+  const wallColor = '#e2e8f0';
+  const roofColor = '#9a3412';
+
+  // Base platform
+  add('box', 0, 0.15, 0, 8.5, 0.3, 8.5, 0, 0, 0, '#cbd5e1', 'Foundation');
+
+  // Double row of colonnade (40 columns total)
+  // Row 1 (Outer)
+  for (let z = -3.8; z <= 3.81; z += 0.44) {
+    add('cylinder', -2.2, 1.3, z, 0.12, 2.2, 0.12, 0, 0, 0, columnColor, `ColOuter_${z}`);
+    add('box', -2.2, 2.45, z, 0.22, 0.08, 0.22, 0, 0, 0, '#cbd5e1', `ColCapOut_${z}`);
+  }
+  // Row 2 (Inner)
+  for (let z = -3.8; z <= 3.81; z += 0.44) {
+    add('cylinder', -0.6, 1.3, z, 0.12, 2.2, 0.12, 0, 0, 0, columnColor, `ColInner_${z}`);
+    add('box', -0.6, 2.45, z, 0.22, 0.08, 0.22, 0, 0, 0, '#cbd5e1', `ColCapIn_${z}`);
+  }
+
+  // Back wall enclosing the walkways
+  add('box', 2.8, 1.3, 0, 0.45, 2.2, 8.0, 0, 0, 0, wallColor, 'BackWall');
+
+  // Multi-room merchant chambers along back wall (12 chambers, ~100 blocks)
+  for (let c = 0; c < 8; c++) {
+    const cz = -3.15 + c * 0.9;
+    // Room dividers
+    add('box', 1.3, 1.2, cz, 2.6, 2.0, 0.15, 0, 0, 0, '#cbd5e1', `ChamberWall_${c}`);
+    // Chamber doors/stalls
+    add('box', 0.8, 0.8, cz + 0.45, 0.05, 1.4, 0.65, 0, Math.PI/2, 0, '#78350f', `ChamberCounter_${c}`);
+    // Colorful fabric canopy over counter
+    add('box', 0.6, 1.65, cz + 0.45, 0.85, 0.06, 0.75, 0.22, Math.PI/2, 0, c % 2 === 0 ? '#ef4444' : '#eab308', `ChamberAwning_${c}`);
+
+    // Goods boxes on counters
+    for (let g = 0; g < 4; g++) {
+      const gx = cz + 0.25 + g * 0.13;
+      add('box', 0.8, 0.95, gx, 0.1, 0.12, 0.1, 0, 0, 0, '#d97706', `ChamberGoods_${c}_${g}`);
+    }
+  }
+
+  // Tiled roof canopy
+  add('wedge', 0.3, 2.9, 0, 3.1, 0.9, 8.4, 0, Math.PI/2, 0, roofColor, 'RoofL');
+  add('wedge', 0.3, 2.9, 0, 3.1, 0.9, 8.4, 0, -Math.PI/2, 0, roofColor, 'RoofR');
+  return o;
+}
+
 
 // Prebuilt building templates — collections of primitives
 export const TEMPLATES = [
@@ -2839,13 +3872,22 @@ export const TEMPLATES = [
     objects: makeHyperloop(),
   },
   {
-    id: 'tree_oak',
-    name: 'Oak Tree',
+    id: 'tree_goldenoak',
+    name: 'Giant Golden Oak',
     icon: '🌳',
     category: 'green',
-    width: 1.5,
-    height: 1.5,
-    objects: makeOakTree(),
+    width: 2.0,
+    height: 2.0,
+    objects: makeGiantGoldenOak(),
+  },
+  {
+    id: 'tree_banyan',
+    name: 'Ancient Grand Banyan',
+    icon: '🌳',
+    category: 'green',
+    width: 2.5,
+    height: 2.5,
+    objects: makeAncientGrandBanyan(),
   },
   {
     id: 'tree_pine',
@@ -2893,15 +3935,6 @@ export const TEMPLATES = [
     objects: makePalmTree(),
   },
   {
-    id: 'tree_baobab',
-    name: 'Baobab Tree',
-    icon: '🌳',
-    category: 'green',
-    width: 1.5,
-    height: 1.5,
-    objects: makeBaobabTree(),
-  },
-  {
     id: 'tree_cypress',
     name: 'Cypress Tree',
     icon: '🌲',
@@ -2918,6 +3951,156 @@ export const TEMPLATES = [
     width: 1.5,
     height: 1.5,
     objects: makeWillowTree(),
+  },
+  {
+    id: 'babylon_hanging_gardens',
+    name: 'Hanging Gardens of Babylon',
+    icon: '🏛️',
+    category: 'residential',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateHangingGardens(),
+  },
+  {
+    id: 'roman_insula_tenement',
+    name: 'Roman Insula Tenement',
+    icon: '🏢',
+    category: 'residential',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateRomanInsula(),
+  },
+  {
+    id: 'japanese_samurai_estate',
+    name: 'Japanese Samurai Estate',
+    icon: '🏯',
+    category: 'residential',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateSamuraiEstate(),
+  },
+  {
+    id: 'pueblo_cliff_dwelling',
+    name: 'Pueblo Cliff Dwelling',
+    icon: '🛖',
+    category: 'residential',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generatePuebloDwelling(),
+  },
+  {
+    id: 'chinese_siheyuan_courtyard',
+    name: 'Chinese Siheyuan Courtyard',
+    icon: '🏡',
+    category: 'residential',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateChineseSiheyuan(),
+  },
+  {
+    id: 'roman_colosseum',
+    name: 'Roman Colosseum',
+    icon: '🏛️',
+    category: 'civic',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateRomanColosseum(),
+  },
+  {
+    id: 'parthenon_temple',
+    name: 'Parthenon Temple',
+    icon: '🏛️',
+    category: 'civic',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateParthenon(),
+  },
+  {
+    id: 'great_pyramid_giza',
+    name: 'Great Pyramid of Giza',
+    icon: '🔺',
+    category: 'civic',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generatePyramidGiza(),
+  },
+  {
+    id: 'stonehenge_monolith_circle',
+    name: 'Stonehenge Monolith Circle',
+    icon: '🪨',
+    category: 'civic',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateStonehenge(),
+  },
+  {
+    id: 'mayan_temple_kukulkan',
+    name: 'Mayan Temple of Kukulkan',
+    icon: '🛕',
+    category: 'civic',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateMayanTemple(),
+  },
+  {
+    id: 'great_bazaar_istanbul',
+    name: 'Great Bazaar of Istanbul',
+    icon: '🛍️',
+    category: 'commercial',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateGreatBazaar(),
+  },
+  {
+    id: 'roman_forum_market',
+    name: 'Roman Forum Market',
+    icon: '🏛️',
+    category: 'commercial',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateRomanForum(),
+  },
+  {
+    id: 'medieval_port_custom_house',
+    name: 'Medieval Port Custom House',
+    icon: '⚓',
+    category: 'commercial',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateMedievalCustomHouse(),
+  },
+  {
+    id: 'silk_road_caravanserai',
+    name: 'Silk Road Caravanserai',
+    icon: '🏰',
+    category: 'commercial',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateSilkRoadCaravanserai(),
+  },
+  {
+    id: 'greek_agora_market_stoa',
+    name: 'Greek Agora Market Stoa',
+    icon: '🏛️',
+    category: 'commercial',
+    width: 6.0,
+    height: 6.0,
+    isHistorical: true,
+    objects: generateGreekAgora(),
   },
   {
     id: 'observatory',

@@ -4036,20 +4036,48 @@ const draw = useCallback(() => {
               >
                 All
               </button>
-              <button
-                className={`glass-button ${complexityFilter === 'simple' ? 'active' : ''}`}
-                onClick={() => setComplexityFilter('simple')}
-                style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
-              >
-                Simple
-              </button>
-              <button
-                className={`glass-button ${complexityFilter === 'complex' ? 'active' : ''}`}
-                onClick={() => setComplexityFilter('complex')}
-                style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
-              >
-                Complex
-              </button>
+              {activeCategory === 'green' ? (
+                <>
+                  <button
+                    className={`glass-button ${complexityFilter === 'trees' ? 'active' : ''}`}
+                    onClick={() => setComplexityFilter('trees')}
+                    style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
+                  >
+                    Trees
+                  </button>
+                  <button
+                    className={`glass-button ${complexityFilter === 'buildings' ? 'active' : ''}`}
+                    onClick={() => setComplexityFilter('buildings')}
+                    style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
+                  >
+                    Buildings
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className={`glass-button ${complexityFilter === 'simple' ? 'active' : ''}`}
+                    onClick={() => setComplexityFilter('simple')}
+                    style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
+                  >
+                    Simple
+                  </button>
+                  <button
+                    className={`glass-button ${complexityFilter === 'complex' ? 'active' : ''}`}
+                    onClick={() => setComplexityFilter('complex')}
+                    style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
+                  >
+                    Complex
+                  </button>
+                  <button
+                    className={`glass-button ${complexityFilter === 'historical' ? 'active' : ''}`}
+                    onClick={() => setComplexityFilter('historical')}
+                    style={{ fontSize: 9, padding: '4px 8px', height: 24, justifyContent: 'center', minWidth: 64 }}
+                  >
+                    Historical
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -4059,7 +4087,7 @@ const draw = useCallback(() => {
               let matchesCategory = false;
               if (activeCategory === 'green') {
                 matchesCategory = t.category === 'green' || [
-                  'tree_oak', 'tree_pine', 'tree_birch', 'tree_maple', 'tree_cherry', 'tree_palm', 'tree_baobab', 'tree_cypress', 'tree_willow'
+                  'tree_goldenoak', 'tree_banyan', 'tree_pine', 'tree_birch', 'tree_maple', 'tree_cherry', 'tree_palm', 'tree_cypress', 'tree_willow'
                 ].includes(t.id);
               } else {
                 matchesCategory = t.category === activeCategory;
@@ -4067,11 +4095,24 @@ const draw = useCallback(() => {
               if (!matchesCategory) return false;
 
               const objCount = t.objects ? t.objects.length : 0;
-              if (complexityFilter === 'simple') {
-                return objCount < 100;
-              }
-              if (complexityFilter === 'complex') {
-                return objCount >= 100;
+              if (activeCategory === 'green') {
+                const isTree = t.isTree === true || t.id.startsWith('tree_');
+                if (complexityFilter === 'trees') {
+                  return isTree;
+                }
+                if (complexityFilter === 'buildings') {
+                  return !isTree;
+                }
+              } else {
+                if (complexityFilter === 'simple') {
+                  return objCount < 100 && !t.isHistorical;
+                }
+                if (complexityFilter === 'complex') {
+                  return objCount >= 100 && !t.isHistorical;
+                }
+                if (complexityFilter === 'historical') {
+                  return !!t.isHistorical;
+                }
               }
               return true;
             }).map(t => {
