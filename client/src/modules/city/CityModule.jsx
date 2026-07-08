@@ -588,6 +588,27 @@ const getDefaultScaleFactor = (asset) => {
   return 1.0;
 };
 
+function drawWaypointPin(ctx, x, y, size, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = color;
+  
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.bezierCurveTo(-size * 0.8, -size * 0.6, -size, -size * 1.0, -size, -size * 1.5);
+  ctx.arc(0, -size * 1.5, size, Math.PI, 0, false);
+  ctx.bezierCurveTo(size, -size * 1.0, size * 0.8, -size * 0.6, 0, 0);
+  ctx.closePath();
+  ctx.arc(0, -size * 1.5, size * 0.35, 0, Math.PI * 2, true);
+  ctx.fill('evenodd');
+  
+  ctx.beginPath();
+  ctx.arc(0, size * 0.3, size * 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
+}
+
 export default function CityModule() {
   const {
     city, cityTool,
@@ -616,6 +637,8 @@ export default function CityModule() {
   const [selectedZoneId, setSelectedZoneId] = useState(null);
   const [zoneShape, setZoneShape] = useState('pencil');
   const [assetContextMenu, setAssetContextMenu] = useState(null); // { x, y, asset }
+  const [waypoint, setWaypoint] = useState(null);
+  const [isSettingWaypoint, setIsSettingWaypoint] = useState(false);
 
   const getInitialClampedCoords = (mx, my, type, isRandomizerOpen) => {
     const isAsset = type === 'asset';
@@ -1995,6 +2018,20 @@ const draw = useCallback(() => {
       ctx.setLineDash([]);
     }
 
+    // Placed Waypoint
+    if (waypoint) {
+      const wx = offset.x + waypoint.col * cellSize;
+      const wy = offset.y + waypoint.row * cellSize;
+      drawWaypointPin(ctx, wx, wy, 16 * zoom, '#ef4444');
+    }
+
+    // Hover preview Waypoint
+    if (isSettingWaypoint && hoveredFloat) {
+      const hx = offset.x + hoveredFloat.col * cellSize;
+      const hy = offset.y + hoveredFloat.row * cellSize;
+      drawWaypointPin(ctx, hx, hy, 16 * zoom, 'rgba(239, 68, 68, 0.6)');
+    }
+
     // ── Day/Night Cycle Rendering (2D Overlay & Streetlights) ──
     const hours = gameTime / 60;
     
@@ -2054,7 +2091,7 @@ const draw = useCallback(() => {
         ctx.restore();
       }
     }
-  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints, zoneShape, zoneView, metroView, selectedZoneId, gameTime, transitionProgress, getMetroPorts]);
+  }, [city, offset, cellSize, zoom, hoveredFloat, cityTool, selectedAssetId, selectedRoadId, selectedCell, pendingPlacementAsset, isPlacementValid, activeRoadPoints, getRoadAlignment, manualRotation, activeRoadType, marqueeStart, marqueeEnd, selectedAssetIds, intersections, activeZonePoints, zoneShape, zoneView, metroView, selectedZoneId, gameTime, transitionProgress, getMetroPorts, waypoint, isSettingWaypoint]);
 
   // Resize + redraw
   useEffect(() => {
@@ -2267,6 +2304,11 @@ const draw = useCallback(() => {
     }
 
     if (e.button === 0) {
+      if (isSettingWaypoint) {
+        setWaypoint({ col: floatCoords.col, row: floatCoords.row });
+        setIsSettingWaypoint(false);
+        return;
+      }
       if (pendingPlacementAsset) {
         if (isPlacementValid(floatCoords.col, floatCoords.row)) {
           const alignment = getRoadAlignment(floatCoords.col, floatCoords.row);
@@ -2667,6 +2709,7 @@ const draw = useCallback(() => {
           containerRef={containerRef}
           getInitialClampedCoords={getInitialClampedCoords}
           showColorRandomizer={showColorRandomizer}
+          waypoint={waypoint}
         />
       ) : (
         <canvas
@@ -3316,34 +3359,53 @@ const draw = useCallback(() => {
               { id: 'map', label: 'Map', iconName: 'map' },
               { id: 'street', label: 'Street', iconName: 'street' },
               { id: 'zone', label: 'Zone', iconName: 'zone' },
-              { id: 'metro', label: 'Metro', iconName: 'train' }
+              { id: 'metro', label: 'Metro', iconName: 'train' },
+              {
+                id: 'waypoint',
+                label: 'Waypoint',
+                iconElement: (
+                  <svg width="12" height="12" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
+                    <path d="M10 2.5C7.2 2.5 5 4.7 5 7.5C5 11.5 10 16 10 16C10 16 15 11.5 15 7.5C15 4.7 12.8 2.5 10 2.5ZM10 10C8.6 10 7.5 8.9 7.5 7.5C7.5 6.1 8.6 5 10 5C11.4 5 12.5 6.1 12.5 7.5C12.5 8.9 11.4 10 10 10Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd" />
+                    <circle cx="10" cy="18" r="1" fill="currentColor" />
+                  </svg>
+                )
+              }
             ].map(v => {
-              const isAct = v.id === 'street' ? streetView : (v.id === 'zone' ? zoneView : (v.id === 'metro' ? metroView : (!streetView && !zoneView && !metroView)));
+              const isAct = v.id === 'waypoint' ? isSettingWaypoint : (v.id === 'street' ? streetView : (v.id === 'zone' ? zoneView : (v.id === 'metro' ? metroView : (!streetView && !zoneView && !metroView && !isSettingWaypoint))));
               const activeTheme = zoneView || metroView;
               return (
                 <button
                   key={v.id}
                   className={activeTheme ? `clay-button ${isAct ? 'active' : ''}` : `glass-button ${isAct ? 'active' : ''}`}
                   onClick={() => {
-                    if (v.id === 'street') {
-                      setStreetView(true);
-                      setZoneView(false);
-                      setMetroView(false);
-                    } else if (v.id === 'zone') {
-                      setStreetView(false);
-                      setZoneView(true);
-                      setMetroView(false);
-                      setSelectedZoneId(null);
-                      useStore.setState({ cityTool: 'pencil' });
-                    } else if (v.id === 'metro') {
+                    if (v.id === 'waypoint') {
+                      setIsSettingWaypoint(!isSettingWaypoint);
                       setStreetView(false);
                       setZoneView(false);
-                      setMetroView(true);
-                      useStore.setState({ cityTool: 'select', pendingPlacementAsset: null });
+                      setMetroView(false);
+                      useStore.setState({ cityTool: 'select' });
                     } else {
-                      setStreetView(false);
-                      setZoneView(false);
-                      setMetroView(false);
+                      setIsSettingWaypoint(false);
+                      if (v.id === 'street') {
+                        setStreetView(true);
+                        setZoneView(false);
+                        setMetroView(false);
+                      } else if (v.id === 'zone') {
+                        setStreetView(false);
+                        setZoneView(true);
+                        setMetroView(false);
+                        setSelectedZoneId(null);
+                        useStore.setState({ cityTool: 'pencil' });
+                      } else if (v.id === 'metro') {
+                        setStreetView(false);
+                        setZoneView(false);
+                        setMetroView(true);
+                        useStore.setState({ cityTool: 'select', pendingPlacementAsset: null });
+                      } else {
+                        setStreetView(false);
+                        setZoneView(false);
+                        setMetroView(false);
+                      }
                     }
                   }}
                   style={{
@@ -3352,10 +3414,13 @@ const draw = useCallback(() => {
                     fontSize: 10,
                     fontWeight: 600,
                     height: 28,
-                    border: 'none'
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
                   }}
                 >
-                  <Icon name={v.iconName} size={12} />
+                  {v.iconElement ? v.iconElement : <Icon name={v.iconName} size={12} />}
                   <span>{v.label}</span>
                 </button>
               );
@@ -4328,7 +4393,7 @@ const draw = useCallback(() => {
 }
 
 // ── Street View: simple Three.js first-person walk ────────────────────────
-function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime, metroView, setAssetContextMenu, containerRef, getInitialClampedCoords, showColorRandomizer }) {
+function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime, metroView, setAssetContextMenu, containerRef, getInitialClampedCoords, showColorRandomizer, waypoint }) {
   const mountRef = useRef(null);
   const animRef = useRef(null);
   const keys = useRef({});
@@ -5285,11 +5350,8 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
             (oScl.y !== undefined ? oScl.y : 1) * scaleFactor,
             (oScl.z !== undefined ? oScl.z : 1) * scaleFactor
           );
-          
-          // Performance Optimization: small detailed components do not need shadow map draw calls
-          const isLarge = ((oScl.x || 1) * (oScl.y || 1) * (oScl.z || 1)) >= 1.5;
-          mesh.castShadow = isLarge;
-          mesh.receiveShadow = isLarge;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
           detailedGroup.add(mesh);
         });
 
@@ -5383,12 +5445,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
         lowDetailMesh.receiveShadow = true;
         lowDetailMesh.userData = { isLowDetail: true, assetId: asset.id };
         lowDetailMesh.raycast = () => {}; // prevent raycasting from hitting this low-detail bounding box
-        
-        lod.addLevel(lowDetailMesh, 35); // Swap to low detail at 35 units distance
-        
-        // Level 2: Complete Culling - hide completely beyond 150 units
-        const culledGroup = new THREE.Group();
-        lod.addLevel(culledGroup, 150);
+        lod.addLevel(lowDetailMesh, 75); // Swap to low detail at 75 units distance
 
         buildingMainObject = lod;
       } else {
@@ -5574,7 +5631,10 @@ const mount = mountRef.current;
     const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 1000);
     let startX = 0;
     let startZ = 0;
-    if (city.roads && city.roads.length > 0 && city.roads[0].points.length > 0) {
+    if (waypoint) {
+      startX = waypoint.col * 3.4;
+      startZ = waypoint.row * 3.4;
+    } else if (city.roads && city.roads.length > 0 && city.roads[0].points.length > 0) {
       startX = (city.roads[0].points[0].x || 0) * 3.4;
       startZ = (city.roads[0].points[0].z || 0) * 3.4;
     } else if (city.placedAssets && city.placedAssets.length > 0) {
