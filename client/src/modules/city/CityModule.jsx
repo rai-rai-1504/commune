@@ -621,7 +621,7 @@ function getAssetPreRenderedCanvas(asset, cacheMap) {
   const wCells = asset.width || 2;
   const hCells = asset.height || 2;
   const cacheCellResolution = 10 * (asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0);
-  const margin = cacheCellResolution * 2; 
+  const margin = 10 * (asset.scaleMultiplier !== undefined ? asset.scaleMultiplier : 1.0); 
   canvas.width = Math.ceil(wCells * cacheCellResolution + margin * 2);
   canvas.height = Math.ceil(hCells * cacheCellResolution + margin * 2);
   
@@ -629,7 +629,7 @@ function getAssetPreRenderedCanvas(asset, cacheMap) {
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height / 2);
   
-  const objScale = cacheCellResolution / 3.4;
+  const objScale = cacheCellResolution;
   const baseColor = asset.color || '#4ECDC4';
 
   if (asset.objects && asset.objects.length > 0) {
@@ -1940,12 +1940,8 @@ const draw = useCallback(() => {
 
         if (drawDetailed && asset.objects && asset.objects.length > 0) {
           const cachedCanvas = getAssetPreRenderedCanvas(asset, canvasCacheRef.current);
-          const cacheCellResolution = 10 * scaleFactor;
-          const margin = cacheCellResolution * 2;
-          const wCells = asset.width || 2;
-          const hCells = asset.height || 2;
-          const cw = (wCells * cacheCellResolution + margin * 2) * zoom;
-          const ch = (hCells * cacheCellResolution + margin * 2) * zoom;
+          const cw = cachedCanvas.width * zoom;
+          const ch = cachedCanvas.height * zoom;
           ctx.drawImage(cachedCanvas, -cw / 2, -ch / 2, cw, ch);
         } else {
           ctx.fillStyle = baseColor;
