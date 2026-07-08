@@ -4242,6 +4242,7 @@ const draw = useCallback(() => {
       )}
 
       {/* ── Colors & Size panels positioned dynamically above building choices ── */}
+      {/* ── Colors & Size panels positioned dynamically above building choices ── */}
       {!zoneView && (
         <div style={{
           position: 'absolute',
@@ -4250,183 +4251,189 @@ const draw = useCallback(() => {
           transform: 'translateX(-50%)',
           zIndex: 100,
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 6,
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: 12,
           transition: 'bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
-          {/* Main Size Customization Toggle */}
-          <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '4px 8px',
-            borderRadius: 20,
-            pointerEvents: 'auto',
-            fontSize: 10,
-            fontWeight: 600
-          }}>
-            <span style={{ color: 'rgba(255,255,255,0.7)', padding: '0 4px' }}>📐 Size</span>
-            <button
-              className={zoneView || metroView ? `clay-button ${sizeRandomizeMode === 'default' ? 'active' : ''}` : `glass-button ${sizeRandomizeMode === 'default' ? 'active' : ''}`}
-              onClick={() => setSizeRandomizeMode('default')}
-              style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
-            >
-              Default
-            </button>
-            <button
-              className={zoneView || metroView ? `clay-button ${sizeRandomizeMode === 'randomize' ? 'active' : ''}` : `glass-button ${sizeRandomizeMode === 'randomize' ? 'active' : ''}`}
-              onClick={() => setSizeRandomizeMode('randomize')}
-              style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
-            >
-              Randomize
-            </button>
-          </div>
-
-          {/* Size Dual Slider Controls */}
-          {sizeRandomizeMode === 'randomize' && (
-            <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              padding: '6px 12px',
-              borderRadius: 14,
-              pointerEvents: 'auto',
-              fontSize: 9,
-              width: 220
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'rgba(255,255,255,0.7)' }}>Min: <strong style={{ color: '#4ECDC4' }}>{sizeRandomizeMin.toFixed(1)}x</strong></span>
-                <input 
-                  type="range" 
-                  min="0.5" 
-                  max="5.0" 
-                  step="0.1" 
-                  value={sizeRandomizeMin}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setSizeRandomizeMin(val);
-                    if (val > sizeRandomizeMax) setSizeRandomizeMax(val);
-                  }}
-                  style={{ width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', outline: 'none' }}
-                />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'rgba(255,255,255,0.7)' }}>Max: <strong style={{ color: '#4ECDC4' }}>{sizeRandomizeMax.toFixed(1)}x</strong></span>
-                <input 
-                  type="range" 
-                  min="0.5" 
-                  max="5.0" 
-                  step="0.1" 
-                  value={sizeRandomizeMax}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setSizeRandomizeMax(val);
-                    if (val < sizeRandomizeMin) setSizeRandomizeMin(val);
-                  }}
-                  style={{ width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', outline: 'none' }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Main Color Customization Toggle */}
-          <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '4px 8px',
-            borderRadius: 20,
-            pointerEvents: 'auto',
-            fontSize: 10,
-            fontWeight: 600
-          }}>
-            <span style={{ color: 'rgba(255,255,255,0.7)', padding: '0 4px' }}>🎨 Colors</span>
-            <button
-              className={zoneView || metroView ? `clay-button ${!randomiseAssetColors ? 'active' : ''}` : `glass-button ${!randomiseAssetColors ? 'active' : ''}`}
-              onClick={() => { if (randomiseAssetColors) toggleRandomiseAssetColors(); }}
-              style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
-            >
-              Default
-            </button>
-            <button
-              className={zoneView || metroView ? `clay-button ${randomiseAssetColors ? 'active' : ''}` : `glass-button ${randomiseAssetColors ? 'active' : ''}`}
-              onClick={() => { if (!randomiseAssetColors) toggleRandomiseAssetColors(); }}
-              style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
-            >
-              Random
-            </button>
-          </div>
-
-          {/* Palette Preset Selectors */}
-          {randomiseAssetColors && (
+          {/* Size Controls Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            {/* Main Size Customization Toggle */}
             <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              padding: '3px 6px',
-              borderRadius: 14,
-              pointerEvents: 'auto'
+              padding: '4px 8px',
+              borderRadius: 20,
+              pointerEvents: 'auto',
+              fontSize: 10,
+              fontWeight: 600
             }}>
-              {PRESET_PALETTES.map(p => {
-                const isSel = p.id === activePaletteId;
-                return (
-                  <button
-                    key={p.id}
-                    className={zoneView || metroView ? `clay-button ${isSel ? 'active' : ''}` : `glass-button ${isSel ? 'active' : ''}`}
-                    onClick={() => selectActivePalette(p.id)}
-                    style={{
-                      borderRadius: 10,
-                      padding: '2px 8px',
-                      fontSize: 8,
-                      border: 'none',
-                      height: 18,
-                      fontWeight: isSel ? 700 : 500
-                    }}
-                  >
-                    {p.name}
-                  </button>
-                );
-              })}
+              <span style={{ color: 'rgba(255,255,255,0.7)', padding: '0 4px' }}>📐 Size</span>
+              <button
+                className={zoneView || metroView ? `clay-button ${sizeRandomizeMode === 'default' ? 'active' : ''}` : `glass-button ${sizeRandomizeMode === 'default' ? 'active' : ''}`}
+                onClick={() => setSizeRandomizeMode('default')}
+                style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
+              >
+                Default
+              </button>
+              <button
+                className={zoneView || metroView ? `clay-button ${sizeRandomizeMode === 'randomize' ? 'active' : ''}` : `glass-button ${sizeRandomizeMode === 'randomize' ? 'active' : ''}`}
+                onClick={() => setSizeRandomizeMode('randomize')}
+                style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
+              >
+                Randomize
+              </button>
             </div>
-          )}
 
-          {/* Color Pool Selector */}
-          {randomiseAssetColors && (
+            {/* Size Dual Slider Controls */}
+            {sizeRandomizeMode === 'randomize' && (
+              <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: 14,
+                pointerEvents: 'auto',
+                fontSize: 9,
+                width: 220
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.7)' }}>Min: <strong style={{ color: '#4ECDC4' }}>{sizeRandomizeMin.toFixed(1)}x</strong></span>
+                  <input 
+                    type="range" 
+                    min="0.5" 
+                    max="5.0" 
+                    step="0.1" 
+                    value={sizeRandomizeMin}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setSizeRandomizeMin(val);
+                      if (val > sizeRandomizeMax) setSizeRandomizeMax(val);
+                    }}
+                    style={{ width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', outline: 'none' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.7)' }}>Max: <strong style={{ color: '#4ECDC4' }}>{sizeRandomizeMax.toFixed(1)}x</strong></span>
+                  <input 
+                    type="range" 
+                    min="0.5" 
+                    max="5.0" 
+                    step="0.1" 
+                    value={sizeRandomizeMax}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setSizeRandomizeMax(val);
+                      if (val < sizeRandomizeMin) setSizeRandomizeMin(val);
+                    }}
+                    style={{ width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', outline: 'none' }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Colors Controls Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            {/* Main Color Customization Toggle */}
             <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
+              gap: 4,
+              padding: '4px 8px',
               borderRadius: 20,
-              pointerEvents: 'auto'
+              pointerEvents: 'auto',
+              fontSize: 10,
+              fontWeight: 600
             }}>
-              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginRight: 2 }}>Colors:</span>
-              {(PRESET_PALETTES.find(p => p.id === activePaletteId)?.colors || []).map(colorFamily => {
-                const isActive = randomColorPalette.includes(colorFamily.id);
-                return (
-                  <button
-                    key={colorFamily.id}
-                    onClick={() => toggleColorFamilyInPalette(colorFamily.id)}
-                    title={`Toggle ${colorFamily.label}`}
-                    style={{
-                      width: 14,
-                      height: 14,
-                      borderRadius: '50%',
-                      backgroundColor: colorFamily.color,
-                      border: isActive ? '2px solid #ffffff' : '2px solid transparent',
-                      boxShadow: isActive ? '0 0 3px rgba(255,255,255,0.8)' : 'none',
-                      cursor: 'pointer',
-                      opacity: isActive ? 1.0 : 0.35,
-                      transform: isActive ? 'scale(1.15)' : 'scale(1.0)',
-                      transition: 'all 0.15s ease',
-                      padding: 0
-                    }}
-                  />
-                );
-              })}
+              <span style={{ color: 'rgba(255,255,255,0.7)', padding: '0 4px' }}>🎨 Colors</span>
+              <button
+                className={zoneView || metroView ? `clay-button ${!randomiseAssetColors ? 'active' : ''}` : `glass-button ${!randomiseAssetColors ? 'active' : ''}`}
+                onClick={() => { if (randomiseAssetColors) toggleRandomiseAssetColors(); }}
+                style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
+              >
+                Default
+              </button>
+              <button
+                className={zoneView || metroView ? `clay-button ${randomiseAssetColors ? 'active' : ''}` : `glass-button ${randomiseAssetColors ? 'active' : ''}`}
+                onClick={() => { if (!randomiseAssetColors) toggleRandomiseAssetColors(); }}
+                style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
+              >
+                Random
+              </button>
             </div>
-          )}
+
+            {/* Palette Preset Selectors */}
+            {randomiseAssetColors && (
+              <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '3px 6px',
+                borderRadius: 14,
+                pointerEvents: 'auto'
+              }}>
+                {PRESET_PALETTES.map(p => {
+                  const isSel = p.id === activePaletteId;
+                  return (
+                    <button
+                      key={p.id}
+                      className={zoneView || metroView ? `clay-button ${isSel ? 'active' : ''}` : `glass-button ${isSel ? 'active' : ''}`}
+                      onClick={() => selectActivePalette(p.id)}
+                      style={{
+                        borderRadius: 10,
+                        padding: '2px 8px',
+                        fontSize: 8,
+                        border: 'none',
+                        height: 18,
+                        fontWeight: isSel ? 700 : 500
+                      }}
+                    >
+                      {p.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Color Pool Selector */}
+            {randomiseAssetColors && (
+              <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 20,
+                pointerEvents: 'auto'
+              }}>
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginRight: 2 }}>Colors:</span>
+                {(PRESET_PALETTES.find(p => p.id === activePaletteId)?.colors || []).map(colorFamily => {
+                  const isActive = randomColorPalette.includes(colorFamily.id);
+                  return (
+                    <button
+                      key={colorFamily.id}
+                      onClick={() => toggleColorFamilyInPalette(colorFamily.id)}
+                      title={`Toggle ${colorFamily.label}`}
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: '50%',
+                        backgroundColor: colorFamily.color,
+                        border: isActive ? '2px solid #ffffff' : '2px solid transparent',
+                        boxShadow: isActive ? '0 0 3px rgba(255,255,255,0.8)' : 'none',
+                        cursor: 'pointer',
+                        opacity: isActive ? 1.0 : 0.35,
+                        transform: isActive ? 'scale(1.15)' : 'scale(1.0)',
+                        transition: 'all 0.15s ease',
+                        padding: 0
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
