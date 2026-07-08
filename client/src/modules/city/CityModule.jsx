@@ -680,6 +680,9 @@ export default function CityModule() {
   const [waypoint, setWaypoint] = useState(null);
   const [isSettingWaypoint, setIsSettingWaypoint] = useState(false);
   const canvasCacheRef = useRef(new Map());
+  const [sizeRandomizeMode, setSizeRandomizeMode] = useState('default'); // 'default' | 'randomize'
+  const [sizeRandomizeMin, setSizeRandomizeMin] = useState(0.8);
+  const [sizeRandomizeMax, setSizeRandomizeMax] = useState(2.2);
 
   const getInitialClampedCoords = (mx, my, type, isRandomizerOpen) => {
     const isAsset = type === 'asset';
@@ -2346,7 +2349,12 @@ const draw = useCallback(() => {
         if (isPlacementValid(floatCoords.col, floatCoords.row)) {
           const alignment = getRoadAlignment(floatCoords.col, floatCoords.row);
           const rotation = alignment ? alignment.rotation : manualRotation;
-          placePendingAsset(floatCoords.col, floatCoords.row, rotation);
+          let scaleMultiplier = 1.0;
+          if (sizeRandomizeMode === 'randomize') {
+            scaleMultiplier = Math.random() * (sizeRandomizeMax - sizeRandomizeMin) + sizeRandomizeMin;
+            scaleMultiplier = Math.round(scaleMultiplier * 100) / 100;
+          }
+          placePendingAsset(floatCoords.col, floatCoords.row, rotation, scaleMultiplier);
         }
         return;
       }
@@ -4233,11 +4241,11 @@ const draw = useCallback(() => {
         </div>
       )}
 
-      {/* ── Colors panel positioned dynamically above building choices ── */}
+      {/* ── Colors & Size panels positioned dynamically above building choices ── */}
       {!zoneView && (
         <div style={{
           position: 'absolute',
-          bottom: activeCategory ? 220 : 74,
+          bottom: activeCategory ? 190 : 74,
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 100,
@@ -4247,6 +4255,81 @@ const draw = useCallback(() => {
           gap: 6,
           transition: 'bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
+          {/* Main Size Customization Toggle */}
+          <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '4px 8px',
+            borderRadius: 20,
+            pointerEvents: 'auto',
+            fontSize: 10,
+            fontWeight: 600
+          }}>
+            <span style={{ color: 'rgba(255,255,255,0.7)', padding: '0 4px' }}>📐 Size</span>
+            <button
+              className={zoneView || metroView ? `clay-button ${sizeRandomizeMode === 'default' ? 'active' : ''}` : `glass-button ${sizeRandomizeMode === 'default' ? 'active' : ''}`}
+              onClick={() => setSizeRandomizeMode('default')}
+              style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
+            >
+              Default
+            </button>
+            <button
+              className={zoneView || metroView ? `clay-button ${sizeRandomizeMode === 'randomize' ? 'active' : ''}` : `glass-button ${sizeRandomizeMode === 'randomize' ? 'active' : ''}`}
+              onClick={() => setSizeRandomizeMode('randomize')}
+              style={{ borderRadius: 12, padding: '2px 8px', fontSize: 9, border: 'none', height: 20 }}
+            >
+              Randomize
+            </button>
+          </div>
+
+          {/* Size Dual Slider Controls */}
+          {sizeRandomizeMode === 'randomize' && (
+            <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: 14,
+              pointerEvents: 'auto',
+              fontSize: 9,
+              width: 220
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'rgba(255,255,255,0.7)' }}>Min: <strong style={{ color: '#4ECDC4' }}>{sizeRandomizeMin.toFixed(1)}x</strong></span>
+                <input 
+                  type="range" 
+                  min="0.5" 
+                  max="5.0" 
+                  step="0.1" 
+                  value={sizeRandomizeMin}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setSizeRandomizeMin(val);
+                    if (val > sizeRandomizeMax) setSizeRandomizeMax(val);
+                  }}
+                  style={{ width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', outline: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'rgba(255,255,255,0.7)' }}>Max: <strong style={{ color: '#4ECDC4' }}>{sizeRandomizeMax.toFixed(1)}x</strong></span>
+                <input 
+                  type="range" 
+                  min="0.5" 
+                  max="5.0" 
+                  step="0.1" 
+                  value={sizeRandomizeMax}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setSizeRandomizeMax(val);
+                    if (val < sizeRandomizeMin) setSizeRandomizeMin(val);
+                  }}
+                  style={{ width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', outline: 'none' }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Main Color Customization Toggle */}
           <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
             display: 'flex',

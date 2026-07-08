@@ -1015,7 +1015,7 @@ export const useStore = create((set, get) => ({
     localStorage.setItem('commune_published_buildings', JSON.stringify(publishedBuildings));
   },
 
-  placePendingAsset(col, row, rotation = 0) {
+  placePendingAsset(col, row, rotation = 0, scaleMultiplier = 1.0) {
     const { pendingPlacementAsset, randomiseAssetColors } = get();
     if (!pendingPlacementAsset) return;
 
@@ -1039,6 +1039,7 @@ export const useStore = create((set, get) => ({
       col, row, color: assetColor,
       width: pendingPlacementAsset.width, height: pendingPlacementAsset.height,
       rotation,
+      scaleMultiplier
     });
     get().pushCityUndo({ type: 'REMOVE_ASSET', assetId: id });
     get().pushNotif(`Placed "${pendingPlacementAsset.name}" in the city!`);
