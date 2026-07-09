@@ -610,6 +610,114 @@ function drawWaypointPin(ctx, x, y, size, color) {
   ctx.restore();
 }
 
+const MiniRoadsMap = ({ roads }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (!roads || roads.length === 0) {
+      // Draw placeholder or simple empty grid
+      ctx.fillStyle = 'rgba(255,255,255,0.02)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No Roads Built', canvas.width / 2, canvas.height / 2 + 3);
+      return;
+    }
+
+    // Fill dark blueprint style background
+    ctx.fillStyle = 'rgba(10, 15, 30, 0.4)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Find bounding box of all points across all roads
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+
+    roads.forEach(road => {
+      if (road.points) {
+        road.points.forEach(pt => {
+          if (pt.x < minX) minX = pt.x;
+          if (pt.x > maxX) maxX = pt.x;
+          if (pt.z < minZ) minZ = pt.z;
+          if (pt.z > maxZ) maxZ = pt.z;
+        });
+      }
+    });
+
+    if (minX === Infinity) {
+      minX = 0; maxX = 100; minZ = 0; maxZ = 100;
+    }
+
+    const padding = 15;
+    const w = maxX - minX || 1;
+    const h = maxZ - minZ || 1;
+    const scaleX = (canvas.width - padding * 2) / w;
+    const scaleY = (canvas.height - padding * 2) / h;
+    const scale = Math.min(scaleX, scaleY);
+
+    const offsetX = (canvas.width - w * scale) / 2 - minX * scale;
+    const offsetY = (canvas.height - h * scale) / 2 - minZ * scale;
+
+    roads.forEach(road => {
+      if (!road.points || road.points.length < 2) return;
+      ctx.beginPath();
+      
+      let roadColor = '#4ECDC4'; 
+      if (road.roadType === 'highway' || road.roadType === 'avenue') {
+        roadColor = '#FFD166';
+      } else if (road.roadType === 'dirt') {
+        roadColor = '#8D5B4C';
+      } else if (road.roadType === 'cyberway') {
+        roadColor = '#00f2ff';
+      } else if (road.roadType === 'railway') {
+        roadColor = '#FF6B6B';
+      } else if (road.roadType === 'brick') {
+        roadColor = '#E76F51';
+      }
+
+      ctx.strokeStyle = roadColor;
+      ctx.lineWidth = Math.max(1.5, scale * 0.4); 
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      road.points.forEach((pt, index) => {
+        const cx = pt.x * scale + offsetX;
+        const cy = pt.z * scale + offsetY;
+        if (index === 0) {
+          ctx.moveTo(cx, cy);
+        } else {
+          ctx.lineTo(cx, cy);
+        }
+      });
+      ctx.stroke();
+    });
+  }, [roads]);
+
+  return (
+    <canvas 
+      ref={canvasRef} 
+      width={240} 
+      height={140} 
+      style={{ 
+        borderRadius: 12, 
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)',
+        display: 'block',
+        margin: '8px auto'
+      }} 
+    />
+  );
+};
+
 function getAssetPreRenderedCanvas(asset, cacheMap) {
   const hash = `${asset.color || ''}_${asset.objects?.length || 0}_${(asset.objects || []).map(o => o.color || '').join(',')}_${asset.scaleMultiplier || 1.0}`;
   const cached = cacheMap.get(asset.id);
@@ -661,21 +769,14 @@ export default function CityModule() {
     updateRoad, addZone, removeZone, updateZone,
     selectPendingAsset, randomiseAssetColors, toggleRandomiseAssetColors,
     randomColorPalette, toggleColorFamilyInPalette, activePaletteId, selectActivePalette,
-    savedCitiesList, loadCity, createCity, deleteCity, requestCitiesList
+    savedCitiesList, loadCity, createCity, deleteCity
   } = useStore();
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [showColorRandomizer, setShowColorRandomizer] = useState(false);
   const [showCitiesManager, setShowCitiesManager] = useState(false);
-  const [isMyCitiesLanding, setIsMyCitiesLanding] = useState(true);
   const [newCityName, setNewCityName] = useState('');
-  
-  useEffect(() => {
-    if (isMyCitiesLanding) {
-      requestCitiesList();
-    }
-  }, [isMyCitiesLanding, requestCitiesList]);
   const [offset, setOffset] = useState({ x: 16, y: 16 });
   const [zoom, setZoom] = useState(1.0);
   const intersections = useMemo(() => findIntersections(city?.roads || []), [city?.roads]);
@@ -2743,25 +2844,6 @@ const draw = useCallback(() => {
     };
   }
 
-  if (isMyCitiesLanding) {
-    return (
-      <MyCitiesDashboard
-        savedCitiesList={savedCitiesList}
-        loadCity={(name) => {
-          loadCity(name);
-          setIsMyCitiesLanding(false);
-        }}
-        createCity={(name) => {
-          createCity(name);
-          setIsMyCitiesLanding(false);
-        }}
-        deleteCity={deleteCity}
-        onClose={() => setIsMyCitiesLanding(false)}
-        zoneView={zoneView}
-      />
-    );
-  }
-
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
 
@@ -3223,31 +3305,12 @@ const draw = useCallback(() => {
         gap: 8,
         padding: '6px 14px',
         borderRadius: 20,
-        pointerEvents: 'auto',
+        pointerEvents: 'none',
         border: zoneView ? '1px solid rgba(255, 255, 255, 0.6)' : undefined
       }}>
         <Icon name="city" size={18} color={zoneView ? '#1e293b' : 'rgba(255,255,255,0.9)'} />
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', color: zoneView ? '#1e293b' : '#ffffff' }}>{city?.name || 'Loading…'}</div>
-          <button
-            onClick={() => setIsMyCitiesLanding(true)}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: '2px 0',
-              color: zoneView ? '#2563eb' : '#60a5fa',
-              fontSize: 9,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              textDecoration: 'underline',
-              outline: 'none'
-            }}
-          >
-            <Icon name="city" size={10} /> My Cities
-          </button>
           <div style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap', color: zoneView ? '#64748b' : 'rgba(255,255,255,0.8)' }}>{presence.length} player{presence.length!==1?'s':''} online</div>
           <div style={{ fontSize: 10, color: zoneView ? '#2563eb' : '#60a5fa', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap' }}>
             {formatGameTime(gameTime)}
@@ -3526,6 +3589,18 @@ const draw = useCallback(() => {
           >
             <Icon name="stats" size={13} />
             {zoneView ? 'Zones' : 'Objects'} ({zoneView ? (city?.zones || []).length : ((city?.placedAssets || []).length + (city?.roads || []).length)})
+          </button>
+
+          <button
+            className={zoneView ? `clay-button ${showCitiesManager ? 'active' : ''}` : `glass-button ${showCitiesManager ? 'active' : ''}`}
+            onClick={() => {
+              setShowCitiesManager(!showCitiesManager);
+              setShowObjectsPanel(false);
+            }}
+            style={{ height: 36, padding: '0 14px', fontWeight: 600, border: 'none', display:'flex', alignItems:'center', gap: 6 }}
+          >
+            <Icon name="city" size={13} />
+            MyCities
           </button>
         </div>
 
@@ -4002,142 +4077,296 @@ const draw = useCallback(() => {
         )}
 
         {/* Cities Manager Panel Overlay */}
+        {/* Cities Manager Landing Page Overlay */}
         {showCitiesManager && (
-          <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
-            width: 300,
-            maxHeight: '60vh',
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
             display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-            padding: 16,
-            borderRadius: 20,
-            pointerEvents: 'auto',
-            animation: 'fadeIn 0.25s ease'
+            background: 'rgba(7, 10, 22, 0.88)',
+            backdropFilter: 'blur(20px)',
+            color: '#fff',
+            padding: '40px 60px',
+            fontFamily: 'Inter, sans-serif',
+            overflowY: 'auto',
+            animation: 'fadeIn 0.25s ease',
+            pointerEvents: 'auto'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: zoneView ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.15)', paddingBottom: 8 }}>
-              <span style={{ fontWeight: 700, fontSize: 13, color: zoneView ? '#1e293b' : '#4ECDC4' }}>🏙️ Cities Manager</span>
-              <button onClick={() => setShowCitiesManager(false)} style={{ background: 'none', border: 'none', color: zoneView ? '#64748b' : '#ccc', cursor: 'pointer', fontSize: 14 }}>✕</button>
-            </div>
+            {/* Main Dashboard Layout */}
+            <div style={{
+              width: '100%',
+              maxWidth: 1200,
+              margin: 'auto',
+              display: 'flex',
+              flexDirection: 'row',
+              gap: 40,
+              flexWrap: 'wrap',
+              position: 'relative'
+            }}>
+              {/* Close Button */}
+              <button 
+                onClick={() => setShowCitiesManager(false)} 
+                style={{ 
+                  position: 'absolute', 
+                  top: -10, 
+                  right: -10, 
+                  background: 'rgba(255, 255, 255, 0.05)', 
+                  border: 'none', 
+                  color: '#fff', 
+                  cursor: 'pointer', 
+                  width: 32, 
+                  height: 32, 
+                  borderRadius: '50%',
+                  fontSize: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.2s',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+              >
+                ✕
+              </button>
 
-            {/* List of saved cities */}
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, paddingRight: 4 }}>
-              {savedCitiesList && savedCitiesList.length > 0 ? (
-                savedCitiesList.map(c => (
-                  <div key={c.name} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    background: c.isActive ? 'rgba(78, 205, 196, 0.15)' : 'rgba(255,255,255,0.03)',
-                    padding: '8px 12px',
-                    borderRadius: 12,
-                    border: c.isActive ? '1px solid #4ECDC4' : '1px solid rgba(255,255,255,0.1)'
+              {/* Left Column: Welcome & Creation Panel */}
+              <div style={{ 
+                flex: '1 1 320px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: 24,
+                borderRight: '1px solid rgba(255,255,255,0.08)',
+                paddingRight: 40
+              }}>
+                <div>
+                  <h1 style={{ 
+                    fontSize: 28, 
+                    fontWeight: 800, 
+                    margin: 0, 
+                    background: 'linear-gradient(135deg, #FFF 30%, #4ECDC4 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    letterSpacing: '-0.5px'
                   }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: c.isActive ? '#4ECDC4' : '#fff' }}>
-                        {c.name} {c.isActive && ' (Active)'}
-                      </span>
-                      <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)' }}>
-                        {(c.size / 1024).toFixed(1)} KB · {new Date(c.modifiedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {!c.isActive && (
-                        <>
-                          <button
-                            className="btn sm"
-                            onClick={() => loadCity(c.name)}
-                            style={{
-                              padding: '2px 8px',
-                              fontSize: 10,
-                              background: '#4ECDC4',
-                              color: '#fff',
-                              borderRadius: 8,
-                              border: 'none',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Load
-                          </button>
-                          {c.name !== 'default' && (
-                            <button
-                              className="btn sm danger"
-                              onClick={() => {
-                                if (window.confirm(`Are you sure you want to delete ${c.name}?`)) {
-                                  deleteCity(c.name);
-                                }
-                              }}
-                              style={{
-                                padding: '2px 8px',
-                                fontSize: 10,
-                                background: '#FF6B6B',
-                                color: '#fff',
-                                borderRadius: 8,
-                                border: 'none',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '12px 0' }}>
-                  No saved cities found.
+                    MyCities Dashboard
+                  </h1>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 8, lineHeight: 1.6 }}>
+                    Manage, load, and preview your custom city territories. Seamlessly design and switch between different city layouts.
+                  </p>
                 </div>
-              )}
-            </div>
 
-            {/* Create New City form */}
-            <div style={{ borderTop: zoneView ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.15)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: zoneView ? '#1e293b' : '#fff' }}>Create New City</span>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input
-                  type="text"
-                  placeholder="City name..."
-                  value={newCityName}
-                  onChange={e => setNewCityName(e.target.value)}
-                  style={{
-                    flex: 1,
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: 10,
-                    padding: '6px 10px',
-                    color: '#fff',
-                    fontSize: 11,
-                    outline: 'none'
-                  }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && newCityName.trim()) {
-                      createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
-                      setNewCityName('');
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    if (newCityName.trim()) {
-                      createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
-                      setNewCityName('');
-                    }
-                  }}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: 11,
-                    background: '#4ECDC4',
-                    color: '#fff',
-                    borderRadius: 10,
-                    border: 'none',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Create
-                </button>
+                {/* Create New Territory Form */}
+                <div className="glass-panel" style={{ 
+                  padding: 20, 
+                  borderRadius: 18, 
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                  background: 'rgba(255,255,255,0.02)'
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '1px', color: '#4ECDC4' }}>
+                    Initialize New Territory
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Enter city name..."
+                    value={newCityName}
+                    onChange={e => setNewCityName(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 10,
+                      padding: '10px 14px',
+                      color: '#fff',
+                      fontSize: 12,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={e => e.currentTarget.style.borderColor = '#4ECDC4'}
+                    onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newCityName.trim()) {
+                        createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
+                        setNewCityName('');
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (newCityName.trim()) {
+                        createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
+                        setNewCityName('');
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      fontSize: 12,
+                      background: 'linear-gradient(135deg, #4ECDC4 0%, #36B4A6 100%)',
+                      color: '#fff',
+                      borderRadius: 10,
+                      border: 'none',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(78,205,196,0.3)',
+                      transition: 'transform 0.15s, opacity 0.15s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    Build Territory
+                  </button>
+                </div>
               </div>
+
+              {/* Right Column: Territories List & Map Grid */}
+              <div style={{ flex: '3 3 500px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>
+                    SAVED TERRITORIES ({savedCitiesList?.length || 0})
+                  </span>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                  gap: 20,
+                  maxHeight: '70vh',
+                  overflowY: 'auto',
+                  paddingRight: 6
+                }}>
+                  {savedCitiesList && savedCitiesList.length > 0 ? (
+                    savedCitiesList.map(c => {
+                      const isActive = c.isActive;
+                      return (
+                        <div 
+                          key={c.name} 
+                          className="glass-panel"
+                          style={{
+                            borderRadius: 16,
+                            border: isActive ? '2px solid #4ECDC4' : '1px solid rgba(255,255,255,0.08)',
+                            padding: 16,
+                            background: isActive ? 'rgba(78, 205, 196, 0.05)' : 'rgba(255,255,255,0.01)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 8,
+                            position: 'relative',
+                            transition: 'border-color 0.25s, transform 0.25s'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontSize: 14, fontWeight: 800, color: isActive ? '#4ECDC4' : '#fff' }}>
+                                {c.name}
+                              </span>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+                                {(c.size / 1024).toFixed(1)} KB · {new Date(c.modifiedAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {isActive && (
+                              <span style={{ 
+                                fontSize: 9, 
+                                fontWeight: 700, 
+                                color: '#4ECDC4', 
+                                background: 'rgba(78, 205, 196, 0.15)', 
+                                padding: '2px 8px', 
+                                borderRadius: 10 
+                              }}>
+                                Active
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Mini Roads Preview */}
+                          <MiniRoadsMap roads={c.roads} />
+
+                          {/* Card Footer Actions */}
+                          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                            {!isActive ? (
+                              <>
+                                <button
+                                  className="btn sm"
+                                  onClick={() => {
+                                    loadCity(c.name);
+                                    setShowCitiesManager(false);
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: '6px 0',
+                                    fontSize: 11,
+                                    background: '#4ECDC4',
+                                    color: '#fff',
+                                    borderRadius: 8,
+                                    border: 'none',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'opacity 0.2s'
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                                >
+                                  Load
+                                </button>
+                                {c.name !== 'default' && (
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm(`Are you sure you want to delete ${c.name}?`)) {
+                                        deleteCity(c.name);
+                                      }
+                                    }}
+                                    style={{
+                                      padding: '6px 12px',
+                                      fontSize: 11,
+                                      background: 'rgba(255, 107, 107, 0.15)',
+                                      color: '#FF6B6B',
+                                      borderRadius: 8,
+                                      border: '1px solid rgba(255, 107, 107, 0.2)',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      transition: 'background 0.2s'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 107, 107, 0.25)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 107, 107, 0.15)'}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <button
+                                disabled
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 0',
+                                  fontSize: 11,
+                                  background: 'rgba(255,255,255,0.05)',
+                                  color: 'rgba(255,255,255,0.25)',
+                                  borderRadius: 8,
+                                  border: 'none',
+                                  fontWeight: 600,
+                                  cursor: 'not-allowed'
+                                }}
+                              >
+                                Active Territory
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ gridColumn: '1 / -1', fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '40px 0' }}>
+                      No saved territories found. Get started by initializing one!
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
         )}
@@ -7503,394 +7732,4 @@ function createZoneLabelSprite(name, color) {
 
 // Need THREE in StreetView
 
-// ── CityMapThumbnail component ──
-function CityMapThumbnail({ city, width = 180, height = 120 }) {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    // Clear background
-    ctx.fillStyle = '#1e293b'; // slate dark preview background
-    ctx.fillRect(0, 0, width, height);
-
-    // Draw abstract grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth = 1;
-    const gridSize = 10;
-    for (let i = 0; i < width; i += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(i, 0);
-      ctx.lineTo(i, height);
-      ctx.stroke();
-    }
-    for (let j = 0; j < height; j += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, j);
-      ctx.lineTo(width, j);
-      ctx.stroke();
-    }
-
-    const roads = city?.roads || [];
-    const placedAssets = city?.placedAssets || [];
-
-    // Map bounds: 0 to 20 columns/rows. Each cell is 34 units.
-    // Total map coordinates: X from 0 to 680, Z from 0 to 680.
-    const mapSize = 680; 
-    
-    // Fit map size inside canvas with padding
-    const padding = 8;
-    const drawSize = Math.min(width - padding * 2, height - padding * 2);
-    const scale = drawSize / mapSize;
-    
-    ctx.save();
-    // Center it
-    ctx.translate((width - drawSize) / 2, (height - drawSize) / 2);
-    ctx.scale(scale, scale);
-
-    // Draw grid bounds border
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, mapSize, mapSize);
-
-    // 1. Draw Roads
-    ctx.strokeStyle = '#64748b'; // soft slate grey for asphalt
-    ctx.lineWidth = 14;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    
-    roads.forEach(road => {
-      const pts = road.points || [];
-      if (pts.length < 2) return;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x * 34, pts[0].z * 34);
-      for (let i = 1; i < pts.length; i++) {
-        ctx.lineTo(pts[i].x * 34, pts[i].z * 34);
-      }
-      ctx.stroke();
-    });
-
-    // 2. Draw Placed Assets (Buildings)
-    placedAssets.forEach(asset => {
-      const col = asset.col || 0;
-      const row = asset.row || 0;
-      const w = asset.width || 1;
-      const h = asset.height || 1;
-      const scaleMultiplier = asset.scaleMultiplier || 1.0;
-      
-      const cx = col * 34 + 17;
-      const cz = row * 34 + 17;
-      
-      ctx.save();
-      ctx.translate(cx, cz);
-      if (asset.rotation) {
-        ctx.rotate(asset.rotation);
-      }
-      
-      // Draw building footprint box
-      ctx.fillStyle = asset.color || '#4ECDC4';
-      ctx.globalAlpha = 0.85;
-      
-      const aw = w * 10 * scaleMultiplier;
-      const ah = h * 10 * scaleMultiplier;
-      ctx.fillRect(-aw / 2, -ah / 2, aw, ah);
-      
-      ctx.restore();
-    });
-
-    ctx.restore();
-  }, [city, width, height]);
-
-  return (
-    <canvas 
-      ref={canvasRef} 
-      width={width} 
-      height={height} 
-      style={{ 
-        display: 'block', 
-        borderRadius: 12,
-        border: '1px solid rgba(255,255,255,0.08)'
-      }} 
-    />
-  );
-}
-
-// ── MyCitiesDashboard component ──
-function MyCitiesDashboard({ savedCitiesList, loadCity, createCity, deleteCity, onClose, zoneView }) {
-  const [newCityName, setNewCityName] = useState('');
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-
-  return (
-    <div style={{
-      width: '100%',
-      height: '100%',
-      background: 'radial-gradient(circle at top left, #1e293b, #0f172a)',
-      padding: '32px',
-      boxSizing: 'border-box',
-      display: 'flex',
-      flexDirection: 'column',
-      color: '#fff',
-      fontFamily: '"Outfit", "Inter", sans-serif',
-      overflowY: 'auto',
-      zIndex: 200,
-      position: 'relative'
-    }}>
-      {/* Upper Navigation Row */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        paddingBottom: '20px',
-        marginBottom: '24px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {savedCitiesList && savedCitiesList.some(c => c.isActive) && (
-            <button
-              onClick={onClose}
-              className="glass-button"
-              style={{
-                borderRadius: '12px',
-                padding: '8px 12px',
-                fontSize: '11px',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                border: 'none',
-                height: '36px'
-              }}
-            >
-              <Icon name="back" size={14} /> Back to City
-            </button>
-          )}
-          <span style={{ fontSize: '20px', fontWeight: 800, color: '#4ECDC4', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Icon name="city" size={24} color="#4ECDC4" /> My Cities Workspace
-          </span>
-        </div>
-
-        <button
-          onClick={() => setShowCreateDialog(true)}
-          className="clay-button"
-          style={{
-            background: '#4ECDC4',
-            color: '#fff',
-            padding: '0 16px',
-            borderRadius: '12px',
-            fontWeight: 700,
-            fontSize: '11px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            border: 'none',
-            height: '36px',
-            boxShadow: '0 4px 12px rgba(78, 205, 196, 0.3)'
-          }}
-        >
-          <Icon name="plus" size={14} color="#fff" /> Build New City
-        </button>
-      </div>
-
-      {/* Grid List of Cities */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-        gap: '24px',
-        paddingBottom: '40px'
-      }}>
-        {savedCitiesList && savedCitiesList.length > 0 ? (
-          savedCitiesList.map(c => (
-            <div
-              key={c.name}
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: c.isActive ? '2px solid #4ECDC4' : '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '20px',
-                padding: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                position: 'relative',
-                transition: 'transform 0.2s ease, border-color 0.2s ease'
-              }}
-            >
-              {/* Active Indicator Tag */}
-              {c.isActive && (
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  background: 'rgba(78,205,196,0.2)',
-                  border: '1px solid #4ECDC4',
-                  borderRadius: '10px',
-                  padding: '2px 8px',
-                  fontSize: '8px',
-                  fontWeight: 800,
-                  color: '#4ECDC4',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  zIndex: 10
-                }}>
-                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4ECDC4', display: 'inline-block', boxShadow: '0 0 4px #4ECDC4' }} />
-                  ACTIVE
-                </div>
-              )}
-
-              {/* City Canvas Map Thumbnail */}
-              <CityMapThumbnail city={c} width={208} height={130} />
-
-              {/* Info Details */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {c.name}
-                </span>
-                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)' }}>
-                  {(c.size / 1024).toFixed(1)} KB · Modified {new Date(c.modifiedAt).toLocaleDateString()}
-                </span>
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                <button
-                  onClick={() => loadCity(c.name)}
-                  className="glass-button"
-                  style={{
-                    flex: 1,
-                    borderRadius: '10px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    height: '28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                    border: 'none',
-                    background: c.isActive ? 'rgba(78, 205, 196, 0.2)' : undefined,
-                    cursor: c.isActive ? 'default' : 'pointer'
-                  }}
-                  disabled={c.isActive}
-                >
-                  <Icon name="back" size={10} style={{ transform: 'rotate(180deg)' }} /> Open Map
-                </button>
-
-                {c.name !== 'default' && (
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete ${c.name}?`)) {
-                        deleteCity(c.name);
-                      }
-                    }}
-                    className="glass-button danger"
-                    style={{
-                      borderRadius: '10px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      height: '28px',
-                      width: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: 'none',
-                      background: 'rgba(255,107,107,0.1)'
-                    }}
-                  >
-                    <Icon name="trash" size={12} color="#FF6B6B" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', gridColumn: '1 / -1', padding: '40px 0' }}>
-            No saved cities found. Click "Build New City" to create one.
-          </div>
-        )}
-      </div>
-
-      {/* Build New City Dialog (Modal) */}
-      {showCreateDialog && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15,23,42,0.85)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 300
-        }}>
-          <div className="glass-panel" style={{
-            width: '320px',
-            padding: '24px',
-            borderRadius: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            border: '1px solid rgba(255,255,255,0.15)',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
-          }}>
-            <span style={{ fontSize: '15px', fontWeight: 800, color: '#4ECDC4', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Icon name="plus" size={16} color="#4ECDC4" /> Name New City
-            </span>
-            <input
-              type="text"
-              autoFocus
-              placeholder="Enter city name..."
-              value={newCityName}
-              onChange={e => setNewCityName(e.target.value)}
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: '12px',
-                padding: '10px 14px',
-                color: '#fff',
-                fontSize: '12px',
-                outline: 'none'
-              }}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && newCityName.trim()) {
-                  createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
-                  setNewCityName('');
-                  setShowCreateDialog(false);
-                }
-              }}
-            />
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => {
-                  setNewCityName('');
-                  setShowCreateDialog(false);
-                }}
-                className="glass-button"
-                style={{ flex: 1, borderRadius: '12px', height: '34px', border: 'none' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (newCityName.trim()) {
-                    createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
-                    setNewCityName('');
-                    setShowCreateDialog(false);
-                  }
-                }}
-                className="clay-button"
-                style={{ flex: 1, background: '#4ECDC4', color: '#fff', borderRadius: '12px', height: '34px', border: 'none', fontWeight: 700 }}
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+// Need THREE in StreetView
