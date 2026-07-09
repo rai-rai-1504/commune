@@ -54,6 +54,6 @@
     "treasury": 500000,
     "traffic": "low"
   },
-  "simulationTick": 0,
+  "simulationTick": 303,
   "zones": []
 }

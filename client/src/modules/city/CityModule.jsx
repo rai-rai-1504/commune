@@ -73,18 +73,90 @@ function getRoadSamples(roadId, roadPoints) {
   return samples;
 }
 
+function getAdjustedAssetPosition(asset, roads) {
+  if (!roads || roads.length === 0) return { col: asset.col, row: asset.row };
+  
+  let closestDist = Infinity;
+  let closestNormal = { x: 0, z: 0 };
+  let closestRoadType = 'standard';
+  
+  const p = { x: asset.col, z: asset.row };
+  
+  roads.forEach(road => {
+    if (road.points.length < 2) return;
+    
+    const samples = getRoadSamples(road.id, road.points);
+    if (!samples || samples.length < 2) return;
+    
+    for (let i = 0; i < samples.length - 1; i++) {
+      const a = { x: samples[i].x, z: samples[i].z };
+      const b = { x: samples[i+1].x, z: samples[i+1].z };
+      
+      const l2 = (a.x - b.x)**2 + (a.z - b.z)**2;
+      let t = 0;
+      if (l2 > 0) {
+        t = ((p.x - a.x) * (b.x - a.x) + (p.z - a.z) * (b.z - a.z)) / l2;
+        t = Math.max(0, Math.min(1, t));
+      }
+      const proj = {
+        x: a.x + t * (b.x - a.x),
+        z: a.z + t * (b.z - a.z)
+      };
+      
+      const dx = p.x - proj.x;
+      const dz = p.z - proj.z;
+      const d = Math.sqrt(dx*dx + dz*dz);
+      
+      if (d < closestDist) {
+        closestDist = d;
+        closestRoadType = road.roadType || 'standard';
+        if (d > 0.0001) {
+          closestNormal = { x: dx / d, z: dz / d };
+        } else {
+          closestNormal = { x: 0, z: 0 };
+        }
+      }
+    }
+  });
+  
+  const getRadii = (type) => {
+    switch (type) {
+      case 'highway': return { oldR: 2.2, newR: 6.0 };
+      case 'avenue': return { oldR: 2.0, newR: 4.0 };
+      case 'multilane': return { oldR: 1.5, newR: 3.0 };
+      case 'cyberway': return { oldR: 1.1, newR: 2.2 };
+      case 'dirt': return { oldR: 0.75, newR: 1.5 };
+      case 'railway': return { oldR: 1.2, newR: 2.4 };
+      case 'brick': return { oldR: 0.9, newR: 1.8 };
+      default: return { oldR: 0.9, newR: 1.8 };
+    }
+  };
+  
+  const { oldR, newR } = getRadii(closestRoadType);
+  const deltaRadius = newR - oldR;
+  
+  if (closestDist < 6.0 && deltaRadius > 0) {
+    return {
+      col: asset.col + closestNormal.x * deltaRadius,
+      row: asset.row + closestNormal.z * deltaRadius
+    };
+  }
+  
+  return { col: asset.col, row: asset.row };
+}
+
 function findIntersections(roads) {
   if (!roads || roads.length < 2) return [];
   
   const roadCurves = roads.map(r => {
     if (r.points.length < 2) return null;
     const samples = getRoadSamples(r.id, r.points);
-    const radius = r.roadType === 'highway' ? 2.2 
-                 : r.roadType === 'avenue' ? 2.0
-                 : r.roadType === 'multilane' ? 1.5 
-                 : r.roadType === 'cyberway' ? 1.1
-                 : r.roadType === 'dirt' ? 0.75 
-                 : 0.9;
+    const radius = r.roadType === 'highway' ? 6.0 
+                 : r.roadType === 'avenue' ? 4.0
+                 : r.roadType === 'multilane' ? 3.0 
+                 : r.roadType === 'cyberway' ? 2.2
+                 : r.roadType === 'dirt' ? 1.5 
+                 : 1.8;
     return { id: r.id, type: r.roadType || 'standard', radius, samples };
   }).filter(Boolean);
 
@@ -1206,6 +1278,7 @@ export default function CityModule() {
     if (!city || !city.roads || city.roads.length === 0) return null;
     let closestDist = Infinity;
     let closestPt = null;
+    let closestRoadType = 'standard';
     const p = { x: col, z: row };
 
     city.roads.forEach(road => {
@@ -1219,6 +1292,7 @@ export default function CityModule() {
         const d = distanceToSegment(p, a, b);
         if (d < closestDist) {
           closestDist = d;
+          closestRoadType = road.roadType || 'standard';
 
           const l2 = (a.x - b.x)**2 + (a.z - b.z)**2;
           let t = 0;
@@ -1234,7 +1308,22 @@ export default function CityModule() {
       }
     });
 
-    if (closestDist < 2.2 && closestPt) {
+    const getNewRadius = (type) => {
+      switch (type) {
+        case 'highway': return 6.0;
+        case 'avenue': return 4.0;
+        case 'multilane': return 3.0;
+        case 'cyberway': return 2.2;
+        case 'dirt': return 1.5;
+        case 'railway': return 2.4;
+        case 'brick': return 1.8;
+        default: return 1.8;
+      }
+    };
+    
+    const snapThreshold = getNewRadius(closestRoadType) + 1.3;
+
+    if (closestDist < snapThreshold && closestPt) {
       const dx = closestPt.x - col;
       const dz = closestPt.z - row;
       const rotation = Math.atan2(dx, dz);
@@ -1247,6 +1336,7 @@ export default function CityModule() {
     if (!city || !city.roads || city.roads.length === 0) return null;
     let closestDist = Infinity;
     let closestPt = null;
+    let closestRoadType = 'standard';
     const p = { x: col, z: row };
 
     city.roads.forEach(road => {
@@ -1260,6 +1350,7 @@ export default function CityModule() {
         const d = distanceToSegment(p, a, b);
         if (d < closestDist) {
           closestDist = d;
+          closestRoadType = road.roadType || 'standard';
 
           const l2 = (a.x - b.x)**2 + (a.z - b.z)**2;
           let t = 0;
@@ -1275,7 +1366,20 @@ export default function CityModule() {
       }
     });
 
-    if (closestDist < 1.0 && closestPt) {
+    const getNewRadius = (type) => {
+      switch (type) {
+        case 'highway': return 6.0;
+        case 'avenue': return 4.0;
+        case 'multilane': return 3.0;
+        case 'cyberway': return 2.2;
+        case 'dirt': return 1.5;
+        case 'railway': return 2.4;
+        case 'brick': return 1.8;
+        default: return 1.8;
+      }
+    };
+
+    if (closestDist < getNewRadius(closestRoadType) && closestPt) {
       return closestPt;
     }
     return null;
@@ -1392,12 +1496,12 @@ const draw = useCallback(() => {
       if (transitionProgress > 0.0) {
         ctx.save();
         ctx.globalAlpha = transitionProgress * opacity;
-        const roadW = (type === 'highway' ? 24 
-                    : type === 'avenue' ? 22
-                    : type === 'multilane' ? 18 
-                    : type === 'cyberway' ? 14
-                    : type === 'dirt' ? 10 
-                    : 12) * zoom;
+        const roadW = (type === 'highway' ? 64 
+                    : type === 'avenue' ? 44
+                    : type === 'multilane' ? 36 
+                    : type === 'cyberway' ? 28
+                    : type === 'dirt' ? 20 
+                    : 24) * zoom;
         // 1. Outer border
         ctx.save();
         ctx.strokeStyle = isSelected ? 'rgba(239, 68, 68, 0.5)' : 'rgba(15, 23, 42, 0.12)';
@@ -1429,12 +1533,12 @@ const draw = useCallback(() => {
         if (isSelected) {
           ctx.save();
           ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-          ctx.lineWidth = (type === 'highway' ? 52 
-                        : type === 'avenue' ? 48 
-                        : type === 'multilane' ? 36 
-                        : type === 'cyberway' ? 28 
-                        : type === 'dirt' ? 20 
-                        : 24) * zoom;
+          ctx.lineWidth = (type === 'highway' ? 144 
+                        : type === 'avenue' ? 96 
+                        : type === 'multilane' ? 72 
+                        : type === 'cyberway' ? 56 
+                        : type === 'dirt' ? 40 
+                        : 48) * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
@@ -1444,7 +1548,7 @@ const draw = useCallback(() => {
         if (type === 'multilane') {
           // Main pavement
           ctx.strokeStyle = `rgba(51, 65, 85, 1.0)`;
-          ctx.lineWidth = 28 * zoom;
+          ctx.lineWidth = 56 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
@@ -1453,27 +1557,27 @@ const draw = useCallback(() => {
           ctx.strokeStyle = `rgba(245, 158, 11, 1.0)`;
           ctx.lineWidth = 1.5 * zoom;
           ctx.lineCap = 'butt';
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 2 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -2 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 4 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -4 * zoom));
 
           // Dashed lane lines
           ctx.strokeStyle = `rgba(255, 255, 255, 0.45)`;
           ctx.lineWidth = 1.5 * zoom;
           ctx.setLineDash([5 * zoom, 8 * zoom]);
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 8 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -8 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 16 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -16 * zoom));
           ctx.setLineDash([]);
         } else if (type === 'highway') {
           // Main pavement
           ctx.strokeStyle = `rgba(30, 41, 59, 1.0)`;
-          ctx.lineWidth = 44 * zoom;
+          ctx.lineWidth = 120 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
 
           // Concrete median (center)
           ctx.strokeStyle = `rgba(203, 213, 225, 1.0)`;
-          ctx.lineWidth = 4 * zoom;
+          ctx.lineWidth = 8 * zoom;
           ctx.lineCap = 'round';
           drawCurvePoints(untrimmedScreenPoints);
 
@@ -1481,61 +1585,61 @@ const draw = useCallback(() => {
           ctx.strokeStyle = `rgba(245, 158, 11, 1.0)`;
           ctx.lineWidth = 1.5 * zoom;
           ctx.lineCap = 'butt';
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 4.5 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -4.5 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 12 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -12 * zoom));
 
           // Dashed lane lines
           ctx.strokeStyle = `rgba(255, 255, 255, 0.45)`;
           ctx.lineWidth = 1.5 * zoom;
           ctx.setLineDash([6 * zoom, 10 * zoom]);
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 12 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -12 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 32 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -32 * zoom));
           ctx.setLineDash([]);
 
           // Solid white outer shoulders
           ctx.strokeStyle = `rgba(255, 255, 255, 0.6)`;
           ctx.lineWidth = 1.5 * zoom;
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 19 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -19 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 52 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -52 * zoom));
         } else if (type === 'dirt') {
           // Dirt Road pavement
           ctx.strokeStyle = `rgba(139, 90, 43, 1.0)`;
-          ctx.lineWidth = 12 * zoom;
+          ctx.lineWidth = 24 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
 
           // Ground grit texture overlay
           ctx.strokeStyle = `rgba(110, 68, 30, 0.45)`;
-          ctx.lineWidth = 10 * zoom;
+          ctx.lineWidth = 20 * zoom;
           ctx.setLineDash([2 * zoom, 4 * zoom]);
           drawCurvePoints(untrimmedScreenPoints);
           ctx.setLineDash([]);
         } else if (type === 'brick') {
           // Brick road pavement
           ctx.strokeStyle = `rgba(166, 58, 58, 1.0)`;
-          ctx.lineWidth = 16 * zoom;
+          ctx.lineWidth = 32 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
 
           // Brick joints pattern
           ctx.strokeStyle = `rgba(186, 186, 186, 0.4)`;
-          ctx.lineWidth = 16 * zoom;
+          ctx.lineWidth = 32 * zoom;
           ctx.setLineDash([1.5 * zoom, 4.5 * zoom]);
           drawCurvePoints(untrimmedScreenPoints);
           ctx.setLineDash([]);
         } else if (type === 'avenue') {
           // Main wide dark pavement
           ctx.strokeStyle = `rgba(51, 65, 85, 1.0)`;
-          ctx.lineWidth = 38 * zoom;
+          ctx.lineWidth = 76 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
 
           // Green grass median strip
           ctx.strokeStyle = `#22c55e`;
-          ctx.lineWidth = 5 * zoom;
+          ctx.lineWidth = 10 * zoom;
           ctx.lineCap = 'round';
           drawCurvePoints(untrimmedScreenPoints);
 
@@ -1543,19 +1647,19 @@ const draw = useCallback(() => {
           ctx.strokeStyle = `rgba(255, 255, 255, 0.45)`;
           ctx.lineWidth = 1.5 * zoom;
           ctx.setLineDash([5 * zoom, 8 * zoom]);
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 9 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -9 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 18 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -18 * zoom));
           ctx.setLineDash([]);
 
           // Solid white shoulders
           ctx.strokeStyle = `rgba(255, 255, 255, 0.6)`;
           ctx.lineWidth = 1.5 * zoom;
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 18 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -18 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 36 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -36 * zoom));
         } else if (type === 'cyberway') {
           // Dark pavement
           ctx.strokeStyle = `#0f172a`;
-          ctx.lineWidth = 20 * zoom;
+          ctx.lineWidth = 40 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
@@ -1566,8 +1670,8 @@ const draw = useCallback(() => {
           ctx.lineWidth = 2 * zoom;
           ctx.shadowColor = `#00ffff`;
           ctx.shadowBlur = 8 * zoom;
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 9.5 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -9.5 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 19 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -19 * zoom));
           ctx.restore();
 
           // Dashed center line
@@ -1590,7 +1694,7 @@ const draw = useCallback(() => {
           } else {
             ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
           }
-          ctx.lineWidth = 22 * zoom;
+          ctx.lineWidth = 44 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           const offsetScreenPoints = untrimmedScreenPoints.map(points => 
@@ -1601,7 +1705,7 @@ const draw = useCallback(() => {
 
           // 2. Concrete Bridge Deck (Broader)
           ctx.strokeStyle = metroView ? '#1e293b' : '#64748b';
-          ctx.lineWidth = 22 * zoom;
+          ctx.lineWidth = 44 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
@@ -1609,19 +1713,19 @@ const draw = useCallback(() => {
           // 3. Side Parapets (concrete border lines)
           ctx.strokeStyle = metroView ? '#00f2ff' : '#cbd5e1';
           ctx.lineWidth = 2.0 * zoom;
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 10.5 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -10.5 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 21 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -21 * zoom));
 
           // 4. Inner Dark Track Bed
           ctx.strokeStyle = metroView ? '#0f172a' : '#1e293b';
-          ctx.lineWidth = 15 * zoom;
+          ctx.lineWidth = 30 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
 
           // 5. Wooden Sleepers (dashes)
           ctx.strokeStyle = metroView ? '#334155' : '#78350f';
-          ctx.lineWidth = 14 * zoom;
+          ctx.lineWidth = 28 * zoom;
           ctx.setLineDash([2 * zoom, 5 * zoom]);
           drawCurvePoints(untrimmedScreenPoints);
           ctx.setLineDash([]);
@@ -1634,8 +1738,8 @@ const draw = useCallback(() => {
             ctx.shadowColor = '#00f2ff';
             ctx.shadowBlur = 10 * zoom;
           }
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 3.2 * zoom));
-          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -3.2 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, 6.4 * zoom));
+          drawCurvePoints(getOffsetSegments(segmentScreenPoints, -6.4 * zoom));
           if (metroView) {
             ctx.restore();
           }
@@ -1652,7 +1756,7 @@ const draw = useCallback(() => {
               const sz = offset.y + pt.z * cellSize;
 
               ctx.beginPath();
-              ctx.arc(sx, sz, 4.5 * zoom, 0, Math.PI * 2);
+              ctx.arc(sx, sz, 9.0 * zoom, 0, Math.PI * 2);
               ctx.fillStyle = metroView ? '#1e293b' : '#94a3b8';
               ctx.fill();
               ctx.strokeStyle = metroView ? '#00f2ff' : '#334155';
@@ -1663,7 +1767,7 @@ const draw = useCallback(() => {
         } else {
           // Standard
           ctx.strokeStyle = `rgba(71, 85, 105, 1.0)`;
-          ctx.lineWidth = 16 * zoom;
+          ctx.lineWidth = 32 * zoom;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           drawCurvePoints(untrimmedScreenPoints);
@@ -2017,8 +2121,9 @@ const draw = useCallback(() => {
         const isSelected = asset.id === selectedAssetId || (selectedAssetIds || []).includes(asset.id);
 
         // 1. Viewport frustum culling check
-        const cx = offset.x + asset.col * cellSize;
-        const cy = offset.y + asset.row * cellSize;
+        const pos = getAdjustedAssetPosition(asset, city.roads);
+        const cx = offset.x + pos.col * cellSize;
+        const cy = offset.y + pos.row * cellSize;
         const maxDim = Math.max(aw, ah) * 1.5;
 
         if (canvasRef.current) {
@@ -2272,9 +2377,10 @@ const draw = useCallback(() => {
 
   function assetAtCell(col, row) {
     return (city?.placedAssets || []).find(a => {
+      const pos = getAdjustedAssetPosition(a, city.roads);
       const scaleFactor = a.scaleMultiplier !== undefined ? a.scaleMultiplier : 1.0;
-      const dx = col - a.col;
-      const dy = row - a.row;
+      const dx = col - pos.col;
+      const dy = row - pos.row;
       const rot = a.rotation || 0;
       const localX = dx * Math.cos(rot) + dy * Math.sin(rot);
       const localY = -dx * Math.sin(rot) + dy * Math.cos(rot);
@@ -5209,14 +5315,14 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
       if (road.points.length < 2) return;
       
       const type = road.roadType || 'standard';
-      let radius = 0.9;
-      if (type === 'multilane') radius = 1.5;
-      else if (type === 'highway') radius = 2.2;
-      else if (type === 'dirt') radius = 0.75;
-      else if (type === 'brick') radius = 0.9;
-      else if (type === 'avenue') radius = 2.0;
-      else if (type === 'cyberway') radius = 1.1;
-      else if (type === 'railway') radius = 1.2;
+      let radius = 1.8;
+      if (type === 'multilane') radius = 3.0;
+      else if (type === 'highway') radius = 6.0;
+      else if (type === 'dirt') radius = 1.5;
+      else if (type === 'brick') radius = 1.8;
+      else if (type === 'avenue') radius = 4.0;
+      else if (type === 'cyberway') radius = 2.2;
+      else if (type === 'railway') radius = 2.4;
 
       const roadIndex = (city.roads || []).findIndex(r => r.id === road.id);
       let yOffset = 0.01;
@@ -5895,7 +6001,8 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
     };
 
     const buildAssetGroup = (asset, isSel) => {
-      const wx = asset.col * cellS; const wz = asset.row * cellS;
+      const pos = getAdjustedAssetPosition(asset, city.roads);
+      const wx = pos.col * cellS; const wz = pos.row * cellS;
       const aw = (asset.width || 2) * cellS; const ah = (asset.height || 2) * cellS;
       const centerX = wx;
       const centerZ = wz;
@@ -6171,8 +6278,9 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
     // Diff and render buildings
     const getAssetHash = (asset, isSelected) => {
+      const pos = getAdjustedAssetPosition(asset, city.roads);
       const objectsHash = (asset.objects || []).map(o => `${o.id}_${o.color}_${o.position?.x}_${o.position?.y}_${o.position?.z}`).join('|');
-      return `${asset.id}_${asset.col}_${asset.row}_${asset.rotation || 0}_${asset.scaleMultiplier || 1.0}_${isSelected}_${objectsHash}`;
+      return `${asset.id}_${pos.col}_${pos.row}_${asset.rotation || 0}_${asset.scaleMultiplier || 1.0}_${isSelected}_${objectsHash}`;
     };
 
     const newAssetsMap = new Map();
@@ -7118,8 +7226,9 @@ const mount = mountRef.current;
           const aw = (asset.width || 2) * minimapCellSize * scaleFactor;
           const ah = (asset.height || 2) * minimapCellSize * scaleFactor;
           
-          const cx = (asset.col - playerCol) * minimapCellSize;
-          const cy = (asset.row - playerRow) * minimapCellSize;
+          const pos = getAdjustedAssetPosition(asset, currentCity.roads);
+          const cx = (pos.col - playerCol) * minimapCellSize;
+          const cy = (pos.row - playerRow) * minimapCellSize;
 
           // Distance culling from player center
           if (cx * cx + cy * cy > 95 * 95) return;
