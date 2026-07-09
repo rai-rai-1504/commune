@@ -4349,7 +4349,7 @@ const draw = useCallback(() => {
                           <MiniRoadsMap roads={c.roads} />
 
                           {/* Card Footer Actions */}
-                          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 4, justifyContent: 'center', alignItems: 'center' }}>
                             {!isActive ? (
                               <>
                                 <button
@@ -4359,8 +4359,7 @@ const draw = useCallback(() => {
                                     setShowCitiesManager(false);
                                   }}
                                   style={{
-                                    flex: 1,
-                                    padding: '6px 0',
+                                    padding: '10px 24px',
                                     fontSize: 11,
                                     background: 'rgba(78, 205, 196, 0.1)',
                                     color: '#4ECDC4',
@@ -4369,7 +4368,11 @@ const draw = useCallback(() => {
                                     fontWeight: 700,
                                     cursor: 'pointer',
                                     transition: 'all 0.2s',
-                                    boxShadow: 'none'
+                                    boxShadow: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    textAlign: 'center'
                                   }}
                                   onMouseEnter={e => {
                                     e.currentTarget.style.background = 'rgba(78, 205, 196, 0.25)';
@@ -4389,7 +4392,7 @@ const draw = useCallback(() => {
                                       }
                                     }}
                                     style={{
-                                      padding: '6px 12px',
+                                      padding: '10px 16px',
                                       fontSize: 11,
                                       background: 'rgba(255, 107, 107, 0.05)',
                                       color: '#FF6B6B',
@@ -4397,7 +4400,10 @@ const draw = useCallback(() => {
                                       border: '1px solid rgba(255, 107, 107, 0.2)',
                                       fontWeight: 600,
                                       cursor: 'pointer',
-                                      transition: 'all 0.2s'
+                                      transition: 'all 0.2s',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center'
                                     }}
                                     onMouseEnter={e => {
                                       e.currentTarget.style.background = 'rgba(255, 107, 107, 0.2)';
@@ -4415,8 +4421,7 @@ const draw = useCallback(() => {
                               <button
                                 disabled
                                 style={{
-                                  flex: 1,
-                                  padding: '6px 0',
+                                  padding: '10px 24px',
                                   fontSize: 11,
                                   background: 'rgba(52, 211, 153, 0.08)',
                                   color: '#34D399',
