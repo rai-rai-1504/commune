@@ -221,6 +221,7 @@ export const useStore = create((set, get) => ({
   savedCitiesList: [],
   cityTool: 'select',
   hoveredCell: null,
+  showCitiesManager: false,
   streetView: false,      // toggle ground-level preview
   selectedAssetId: null,  // selected placed asset
   selectedAssetIds: [],   // multi-selected placed assets
@@ -1185,6 +1186,7 @@ export const useStore = create((set, get) => ({
   setCityTool(t) { set({ cityTool: t, pendingPlacementAsset: null }); },
   setHoveredCell(c) { set({ hoveredCell: c }); },
   setStreetView(v) { set({ streetView: v }); },
+  setShowCitiesManager(v) { set({ showCitiesManager: v }); },
   selectAsset(id) { set({ selectedAssetId: id, selectedAssetIds: id ? [id] : [] }); },
   selectAssets(ids) {
     set(state => {
@@ -1440,6 +1442,10 @@ export const useStore = create((set, get) => ({
 
   deleteCity(name) {
     get().send({ type: 'CITY_DELETE_REQUEST', name });
+  },
+
+  renameCity(oldName, newName) {
+    get().send({ type: 'CITY_RENAME_REQUEST', oldName, newName });
   },
 
   clearCity() {

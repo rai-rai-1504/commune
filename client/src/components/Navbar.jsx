@@ -9,9 +9,11 @@ const TABS = [
 ];
 
 export default function Navbar() {
-  const { activeModule, setActiveModule, connected, presence, username, setUsername, clientColor } = useStore();
+  const { activeModule, setActiveModule, connected, presence, username, setUsername, clientColor, showCitiesManager } = useStore();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+
+  if (showCitiesManager) return null;
 
   return (
     <nav className="navbar">

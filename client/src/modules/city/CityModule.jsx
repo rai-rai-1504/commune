@@ -769,13 +769,15 @@ export default function CityModule() {
     updateRoad, addZone, removeZone, updateZone,
     selectPendingAsset, randomiseAssetColors, toggleRandomiseAssetColors,
     randomColorPalette, toggleColorFamilyInPalette, activePaletteId, selectActivePalette,
-    savedCitiesList, loadCity, createCity, deleteCity
+    savedCitiesList, loadCity, createCity, deleteCity, renameCity,
+    showCitiesManager, setShowCitiesManager
   } = useStore();
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [showColorRandomizer, setShowColorRandomizer] = useState(false);
-  const [showCitiesManager, setShowCitiesManager] = useState(false);
+  const [editingCityName, setEditingCityName] = useState(null); 
+  const [tempCityName, setTempCityName] = useState('');
   const [newCityName, setNewCityName] = useState('');
   const [offset, setOffset] = useState({ x: 16, y: 16 });
   const [zoom, setZoom] = useState(1.0);
@@ -3295,28 +3297,30 @@ const draw = useCallback(() => {
 
 
       {/* ── Top-Left: City Info Pill ── */}
-      <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
-        position: 'absolute',
-        top: 80,
-        left: 16,
-        zIndex: 100,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '6px 14px',
-        borderRadius: 20,
-        pointerEvents: 'none',
-        border: zoneView ? '1px solid rgba(255, 255, 255, 0.6)' : undefined
-      }}>
-        <Icon name="city" size={18} color={zoneView ? '#1e293b' : 'rgba(255,255,255,0.9)'} />
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', color: zoneView ? '#1e293b' : '#ffffff' }}>{city?.name || 'Loading…'}</div>
-          <div style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap', color: zoneView ? '#64748b' : 'rgba(255,255,255,0.8)' }}>{presence.length} player{presence.length!==1?'s':''} online</div>
-          <div style={{ fontSize: 10, color: zoneView ? '#2563eb' : '#60a5fa', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap' }}>
-            {formatGameTime(gameTime)}
+      {!showCitiesManager && (
+        <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+          position: 'absolute',
+          top: 80,
+          left: 16,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '6px 14px',
+          borderRadius: 20,
+          pointerEvents: 'none',
+          border: zoneView ? '1px solid rgba(255, 255, 255, 0.6)' : undefined
+        }}>
+          <Icon name="city" size={18} color={zoneView ? '#1e293b' : 'rgba(255,255,255,0.9)'} />
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', color: zoneView ? '#1e293b' : '#ffffff' }}>{city?.name || 'Loading…'}</div>
+            <div style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap', color: zoneView ? '#64748b' : 'rgba(255,255,255,0.8)' }}>{presence.length} player{presence.length!==1?'s':''} online</div>
+            <div style={{ fontSize: 10, color: zoneView ? '#2563eb' : '#60a5fa', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap' }}>
+              {formatGameTime(gameTime)}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── Top-Center: Tooltip / Placement Banner ── */}
       {pendingPlacementAsset && !streetView && (
@@ -3365,7 +3369,8 @@ const draw = useCallback(() => {
       )}
 
       {/* ── Left-Side: Floating Tools Toolbar ── */}
-      <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+      {!showCitiesManager && (
+        <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
         position: 'absolute',
         left: 16,
         top: 136,
@@ -3454,6 +3459,7 @@ const draw = useCallback(() => {
           <Icon name="sweep" size={14} />
         </button>
       </div>
+      )}
 
       {/* Flyout shape options for Pencil Tool */}
       {cityTool === 'pencil' && (
@@ -3498,8 +3504,9 @@ const draw = useCallback(() => {
       )}
 
       {/* ── Top-Right: View Toggles & Placed Objects Menu ── */}
-      <div style={{ position: 'absolute', top: 80, right: 16, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-        <div style={{ display: 'flex', gap: 8 }}>
+      {!showCitiesManager && (
+        <div style={{ position: 'absolute', top: 80, right: 16, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
           <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
             display: 'flex',
             gap: 4,
@@ -4075,10 +4082,11 @@ const draw = useCallback(() => {
             </div>
           </div>
         )}
+      </div>
+      )}
 
-        {/* Cities Manager Panel Overlay */}
-        {/* Cities Manager Landing Page Overlay */}
-        {showCitiesManager && (
+      {/* Cities Manager Landing Page Overlay */}
+      {showCitiesManager && (
           <div style={{
             position: 'fixed',
             inset: 0,
@@ -4261,9 +4269,64 @@ const draw = useCallback(() => {
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontSize: 14, fontWeight: 800, color: isActive ? '#4ECDC4' : '#fff' }}>
-                                {c.name}
-                              </span>
+                              {editingCityName === c.name ? (
+                                <input 
+                                  type="text"
+                                  value={tempCityName}
+                                  onChange={e => setTempCityName(e.target.value)}
+                                  onBlur={() => {
+                                    const trimmed = tempCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+                                    if (trimmed && trimmed !== c.name) {
+                                      renameCity(c.name, trimmed);
+                                    }
+                                    setEditingCityName(null);
+                                  }}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                      const trimmed = tempCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+                                      if (trimmed && trimmed !== c.name) {
+                                        renameCity(c.name, trimmed);
+                                      }
+                                      setEditingCityName(null);
+                                    }
+                                  }}
+                                  autoFocus
+                                  style={{
+                                    background: 'rgba(0, 0, 0, 0.4)',
+                                    border: '1px solid #4ECDC4',
+                                    borderRadius: 6,
+                                    padding: '2px 6px',
+                                    color: '#fff',
+                                    fontSize: 13,
+                                    fontWeight: 800,
+                                    width: '120px',
+                                    outline: 'none'
+                                  }}
+                                />
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span 
+                                    style={{ fontSize: 14, fontWeight: 800, color: isActive ? '#4ECDC4' : '#fff', cursor: 'pointer' }}
+                                    onClick={() => {
+                                      setEditingCityName(c.name);
+                                      setTempCityName(c.name);
+                                    }}
+                                    title="Click to rename"
+                                  >
+                                    {c.name}
+                                  </span>
+                                  <span 
+                                    style={{ cursor: 'pointer', fontSize: 10, opacity: 0.5, userSelect: 'none' }}
+                                    onClick={() => {
+                                      setEditingCityName(c.name);
+                                      setTempCityName(c.name);
+                                    }}
+                                    title="Rename city"
+                                  >
+                                    ✏️
+                                  </span>
+                                </div>
+                              )}
                               <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
                                 {(c.size / 1024).toFixed(1)} KB · {new Date(c.modifiedAt).toLocaleDateString()}
                               </span>
@@ -4370,7 +4433,6 @@ const draw = useCallback(() => {
             </div>
           </div>
         )}
-      </div>
 
       {/* ── Sub-menu Overlay for Build Categories (above build deck) ── */}
       {activeCategory && !zoneView && (

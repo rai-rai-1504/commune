@@ -365,6 +365,31 @@ function handleMessage(ws, client, msg) {
       break;
     }
 
+    case 'CITY_RENAME_REQUEST': {
+      const oldFile = path.join(SAVED_CITIES_DIR, `${msg.oldName}.json`);
+      const newFile = path.join(SAVED_CITIES_DIR, `${msg.newName}.json`);
+      if (fs.existsSync(oldFile) && !fs.existsSync(newFile)) {
+        fs.renameSync(oldFile, newFile);
+        if (activeCityName === msg.oldName) {
+          activeCityName = msg.newName;
+          if (state.city) {
+            state.city.name = msg.newName;
+          }
+          saveCity();
+          broadcast({
+            type: 'CITY_STATE_UPDATE',
+            city: state.city,
+            proposals: state.proposals
+          });
+        }
+        broadcast({
+          type: 'CITY_LIST_RESPONSE',
+          cities: getCitiesList()
+        });
+      }
+      break;
+    }
+
     case 'SET_USERNAME': {
       client.username = msg.username.slice(0, 20);
       broadcast({ type: 'PRESENCE_UPDATE', presence: getPresence() });
