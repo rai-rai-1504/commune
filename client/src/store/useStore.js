@@ -218,6 +218,7 @@ export const useStore = create((set, get) => ({
 
   // ── City ───────────────────────────────────────────────────────────────
   city: null,
+  savedCitiesList: [],
   cityTool: 'select',
   hoveredCell: null,
   streetView: false,      // toggle ground-level preview
@@ -244,6 +245,7 @@ export const useStore = create((set, get) => ({
       const uname = get().username;
       if (uname) ws.send(JSON.stringify({ type: 'SET_USERNAME', username: uname }));
       ws.send(JSON.stringify({ type: 'EDITOR_JOIN', sceneId: get().editorSceneId }));
+      get().requestCitiesList();
     };
     ws.onclose = () => {
       set({ connected: false, ws: null });
@@ -279,6 +281,14 @@ export const useStore = create((set, get) => ({
     switch (msg.type) {
       case 'WELCOME': {
         set({ clientId: msg.clientId, clientColor: msg.color, city: msg.city, proposals: msg.proposals, presence: msg.presence });
+        break;
+      }
+      case 'CITY_LIST_RESPONSE': {
+        set({ savedCitiesList: msg.cities });
+        break;
+      }
+      case 'CITY_STATE_UPDATE': {
+        set({ city: msg.city, proposals: msg.proposals });
         break;
       }
       case 'PRESENCE_UPDATE':
@@ -1414,6 +1424,22 @@ export const useStore = create((set, get) => ({
       set({ selectedAssetId: null, selectedAssetIds: [] });
     }
     get().pushNotif(lock ? "All objects and roads locked! 🔒" : "All objects and roads unlocked! 🔓");
+  },
+
+  requestCitiesList() {
+    get().send({ type: 'CITY_LIST_REQUEST' });
+  },
+
+  loadCity(name) {
+    get().send({ type: 'CITY_LOAD_REQUEST', name });
+  },
+
+  createCity(name) {
+    get().send({ type: 'CITY_CREATE_REQUEST', name });
+  },
+
+  deleteCity(name) {
+    get().send({ type: 'CITY_DELETE_REQUEST', name });
   },
 
   clearCity() {

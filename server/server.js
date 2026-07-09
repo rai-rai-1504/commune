@@ -9,7 +9,14 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SAVE_FILE = path.join(__dirname, 'city_save.json');
+const SAVED_CITIES_DIR = path.join(__dirname, 'saved_cities');
+
+// Initialize saved_cities folder
+if (!fs.existsSync(SAVED_CITIES_DIR)) {
+  fs.mkdirSync(SAVED_CITIES_DIR, { recursive: true });
+}
+
+let activeCityName = 'default';
 
 const app = express();
 app.use(cors());
@@ -33,28 +40,33 @@ const state = {
 
 function saveCity() {
   try {
-    fs.writeFileSync(SAVE_FILE, JSON.stringify(state.city, null, 2), 'utf8');
+    const file = path.join(SAVED_CITIES_DIR, `${activeCityName}.json`);
+    fs.writeFileSync(file, JSON.stringify(state.city, null, 2), 'utf8');
   } catch (err) {
     console.error('Failed to save city:', err);
   }
 }
 
-function loadCity() {
+function loadCity(name = 'default') {
   try {
-    if (fs.existsSync(SAVE_FILE)) {
-      const data = fs.readFileSync(SAVE_FILE, 'utf8');
+    activeCityName = name;
+    const file = path.join(SAVED_CITIES_DIR, `${activeCityName}.json`);
+    if (fs.existsSync(file)) {
+      const data = fs.readFileSync(file, 'utf8');
       state.city = JSON.parse(data);
-      console.log('City loaded from disk');
+      console.log(`City loaded from disk: ${activeCityName}`);
     } else {
       state.city = createInitialCity();
+      // Ensure the file is written to establish it
+      fs.writeFileSync(file, JSON.stringify(state.city, null, 2), 'utf8');
     }
   } catch (err) {
-    console.error('Failed to load city, using defaults:', err);
+    console.error(`Failed to load city '${name}', using defaults:`, err);
     state.city = createInitialCity();
   }
 }
 
-loadCity();
+loadCity('default');
 
 function createInitialCity() {
   const COLS = 20, ROWS = 20;
@@ -259,8 +271,92 @@ wss.on('connection', (ws) => {
   });
 });
 
+function getCitiesList() {
+  try {
+    const files = fs.readdirSync(SAVED_CITIES_DIR);
+    return files
+      .filter(f => f.endsWith('.json'))
+      .map(f => {
+        const filePath = path.join(SAVED_CITIES_DIR, f);
+        const stats = fs.statSync(filePath);
+        const name = path.basename(f, '.json');
+        return {
+          name,
+          createdAt: stats.birthtimeMs,
+          modifiedAt: stats.mtimeMs,
+          size: stats.size,
+          isActive: name === activeCityName
+        };
+      });
+  } catch (err) {
+    console.error('Failed to read saved cities:', err);
+    return [];
+  }
+}
+
 function handleMessage(ws, client, msg) {
   switch (msg.type) {
+
+    case 'CITY_LIST_REQUEST': {
+      ws.send(JSON.stringify({
+        type: 'CITY_LIST_RESPONSE',
+        cities: getCitiesList()
+      }));
+      break;
+    }
+
+    case 'CITY_LOAD_REQUEST': {
+      saveCity();
+      loadCity(msg.name);
+      broadcast({
+        type: 'CITY_STATE_UPDATE',
+        city: state.city,
+        proposals: state.proposals
+      });
+      broadcast({
+        type: 'CITY_LIST_RESPONSE',
+        cities: getCitiesList()
+      });
+      break;
+    }
+
+    case 'CITY_CREATE_REQUEST': {
+      saveCity();
+      activeCityName = msg.name;
+      state.city = createInitialCity();
+      saveCity();
+      broadcast({
+        type: 'CITY_STATE_UPDATE',
+        city: state.city,
+        proposals: state.proposals
+      });
+      broadcast({
+        type: 'CITY_LIST_RESPONSE',
+        cities: getCitiesList()
+      });
+      break;
+    }
+
+    case 'CITY_DELETE_REQUEST': {
+      const file = path.join(SAVED_CITIES_DIR, `${msg.name}.json`);
+      if (fs.existsSync(file)) {
+        fs.unlinkSync(file);
+      }
+      if (activeCityName === msg.name) {
+        activeCityName = 'default';
+        loadCity('default');
+        broadcast({
+          type: 'CITY_STATE_UPDATE',
+          city: state.city,
+          proposals: state.proposals
+        });
+      }
+      broadcast({
+        type: 'CITY_LIST_RESPONSE',
+        cities: getCitiesList()
+      });
+      break;
+    }
 
     case 'SET_USERNAME': {
       client.username = msg.username.slice(0, 20);

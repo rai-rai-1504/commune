@@ -660,12 +660,15 @@ export default function CityModule() {
     publishedBuildings, deletePublishedBuilding, lockAllAssets,
     updateRoad, addZone, removeZone, updateZone,
     selectPendingAsset, randomiseAssetColors, toggleRandomiseAssetColors,
-    randomColorPalette, toggleColorFamilyInPalette, activePaletteId, selectActivePalette
+    randomColorPalette, toggleColorFamilyInPalette, activePaletteId, selectActivePalette,
+    savedCitiesList, loadCity, createCity, deleteCity
   } = useStore();
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [showColorRandomizer, setShowColorRandomizer] = useState(false);
+  const [showCitiesManager, setShowCitiesManager] = useState(false);
+  const [newCityName, setNewCityName] = useState('');
   const [offset, setOffset] = useState({ x: 16, y: 16 });
   const [zoom, setZoom] = useState(1.0);
   const intersections = useMemo(() => findIntersections(city?.roads || []), [city?.roads]);
@@ -3470,11 +3473,25 @@ const draw = useCallback(() => {
 
           <button
             className={zoneView ? `clay-button ${showObjectsPanel ? 'active' : ''}` : `glass-button ${showObjectsPanel ? 'active' : ''}`}
-            onClick={() => setShowObjectsPanel(!showObjectsPanel)}
+            onClick={() => {
+              setShowObjectsPanel(!showObjectsPanel);
+              setShowCitiesManager(false);
+            }}
             style={{ height: 36, padding: '0 14px', fontWeight: 600, border: 'none', display:'flex', alignItems:'center', gap: 6 }}
           >
             <Icon name="stats" size={13} />
             {zoneView ? 'Zones' : 'Objects'} ({zoneView ? (city?.zones || []).length : ((city?.placedAssets || []).length + (city?.roads || []).length)})
+          </button>
+
+          <button
+            className={zoneView ? `clay-button ${showCitiesManager ? 'active' : ''}` : `glass-button ${showCitiesManager ? 'active' : ''}`}
+            onClick={() => {
+              setShowCitiesManager(!showCitiesManager);
+              setShowObjectsPanel(false);
+            }}
+            style={{ height: 36, padding: '0 14px', fontWeight: 600, border: 'none', display:'flex', alignItems:'center', gap: 6 }}
+          >
+            🏙️ Cities
           </button>
         </div>
 
@@ -3946,6 +3963,147 @@ const draw = useCallback(() => {
                   )}
                 </>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Cities Manager Panel Overlay */}
+        {showCitiesManager && (
+          <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
+            width: 300,
+            maxHeight: '60vh',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+            padding: 16,
+            borderRadius: 20,
+            pointerEvents: 'auto',
+            animation: 'fadeIn 0.25s ease'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: zoneView ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.15)', paddingBottom: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: 13, color: zoneView ? '#1e293b' : '#4ECDC4' }}>🏙️ Cities Manager</span>
+              <button onClick={() => setShowCitiesManager(false)} style={{ background: 'none', border: 'none', color: zoneView ? '#64748b' : '#ccc', cursor: 'pointer', fontSize: 14 }}>✕</button>
+            </div>
+
+            {/* List of saved cities */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, paddingRight: 4 }}>
+              {savedCitiesList && savedCitiesList.length > 0 ? (
+                savedCitiesList.map(c => (
+                  <div key={c.name} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: c.isActive ? 'rgba(78, 205, 196, 0.15)' : 'rgba(255,255,255,0.03)',
+                    padding: '8px 12px',
+                    borderRadius: 12,
+                    border: c.isActive ? '1px solid #4ECDC4' : '1px solid rgba(255,255,255,0.1)'
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: c.isActive ? '#4ECDC4' : '#fff' }}>
+                        {c.name} {c.isActive && ' (Active)'}
+                      </span>
+                      <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)' }}>
+                        {(c.size / 1024).toFixed(1)} KB · {new Date(c.modifiedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {!c.isActive && (
+                        <>
+                          <button
+                            className="btn sm"
+                            onClick={() => loadCity(c.name)}
+                            style={{
+                              padding: '2px 8px',
+                              fontSize: 10,
+                              background: '#4ECDC4',
+                              color: '#fff',
+                              borderRadius: 8,
+                              border: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Load
+                          </button>
+                          {c.name !== 'default' && (
+                            <button
+                              className="btn sm danger"
+                              onClick={() => {
+                                if (window.confirm(`Are you sure you want to delete ${c.name}?`)) {
+                                  deleteCity(c.name);
+                                }
+                              }}
+                              style={{
+                                padding: '2px 8px',
+                                fontSize: 10,
+                                background: '#FF6B6B',
+                                color: '#fff',
+                                borderRadius: 8,
+                                border: 'none',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '12px 0' }}>
+                  No saved cities found.
+                </div>
+              )}
+            </div>
+
+            {/* Create New City form */}
+            <div style={{ borderTop: zoneView ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.15)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: zoneView ? '#1e293b' : '#fff' }}>Create New City</span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  type="text"
+                  placeholder="City name..."
+                  value={newCityName}
+                  onChange={e => setNewCityName(e.target.value)}
+                  style={{
+                    flex: 1,
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: 10,
+                    padding: '6px 10px',
+                    color: '#fff',
+                    fontSize: 11,
+                    outline: 'none'
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && newCityName.trim()) {
+                      createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
+                      setNewCityName('');
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    if (newCityName.trim()) {
+                      createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
+                      setNewCityName('');
+                    }
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: 11,
+                    background: '#4ECDC4',
+                    color: '#fff',
+                    borderRadius: 10,
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Create
+                </button>
+              </div>
             </div>
           </div>
         )}
