@@ -661,14 +661,21 @@ export default function CityModule() {
     updateRoad, addZone, removeZone, updateZone,
     selectPendingAsset, randomiseAssetColors, toggleRandomiseAssetColors,
     randomColorPalette, toggleColorFamilyInPalette, activePaletteId, selectActivePalette,
-    savedCitiesList, loadCity, createCity, deleteCity
+    savedCitiesList, loadCity, createCity, deleteCity, requestCitiesList
   } = useStore();
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [showColorRandomizer, setShowColorRandomizer] = useState(false);
   const [showCitiesManager, setShowCitiesManager] = useState(false);
+  const [isMyCitiesLanding, setIsMyCitiesLanding] = useState(true);
   const [newCityName, setNewCityName] = useState('');
+  
+  useEffect(() => {
+    if (isMyCitiesLanding) {
+      requestCitiesList();
+    }
+  }, [isMyCitiesLanding, requestCitiesList]);
   const [offset, setOffset] = useState({ x: 16, y: 16 });
   const [zoom, setZoom] = useState(1.0);
   const intersections = useMemo(() => findIntersections(city?.roads || []), [city?.roads]);
@@ -2736,6 +2743,25 @@ const draw = useCallback(() => {
     };
   }
 
+  if (isMyCitiesLanding) {
+    return (
+      <MyCitiesDashboard
+        savedCitiesList={savedCitiesList}
+        loadCity={(name) => {
+          loadCity(name);
+          setIsMyCitiesLanding(false);
+        }}
+        createCity={(name) => {
+          createCity(name);
+          setIsMyCitiesLanding(false);
+        }}
+        deleteCity={deleteCity}
+        onClose={() => setIsMyCitiesLanding(false)}
+        zoneView={zoneView}
+      />
+    );
+  }
+
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
 
@@ -3197,12 +3223,31 @@ const draw = useCallback(() => {
         gap: 8,
         padding: '6px 14px',
         borderRadius: 20,
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
         border: zoneView ? '1px solid rgba(255, 255, 255, 0.6)' : undefined
       }}>
         <Icon name="city" size={18} color={zoneView ? '#1e293b' : 'rgba(255,255,255,0.9)'} />
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', color: zoneView ? '#1e293b' : '#ffffff' }}>{city?.name || 'Loading…'}</div>
+          <button
+            onClick={() => setIsMyCitiesLanding(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '2px 0',
+              color: zoneView ? '#2563eb' : '#60a5fa',
+              fontSize: 9,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              textDecoration: 'underline',
+              outline: 'none'
+            }}
+          >
+            <Icon name="city" size={10} /> My Cities
+          </button>
           <div style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap', color: zoneView ? '#64748b' : 'rgba(255,255,255,0.8)' }}>{presence.length} player{presence.length!==1?'s':''} online</div>
           <div style={{ fontSize: 10, color: zoneView ? '#2563eb' : '#60a5fa', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap' }}>
             {formatGameTime(gameTime)}
@@ -3400,20 +3445,20 @@ const draw = useCallback(() => {
             pointerEvents: 'auto'
           }}>
             {[
-              { id: 'map', label: 'Map', iconName: 'map' },
-              { id: 'street', label: 'Street', iconName: 'street' },
-              { id: 'zone', label: 'Zone', iconName: 'zone' },
-              { id: 'metro', label: 'Metro', iconName: 'train' },
               {
                 id: 'waypoint',
-                label: 'Waypoint',
+                label: '',
                 iconElement: (
                   <svg width="12" height="12" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
                     <path d="M10 2.5C7.2 2.5 5 4.7 5 7.5C5 11.5 10 16 10 16C10 16 15 11.5 15 7.5C15 4.7 12.8 2.5 10 2.5ZM10 10C8.6 10 7.5 8.9 7.5 7.5C7.5 6.1 8.6 5 10 5C11.4 5 12.5 6.1 12.5 7.5C12.5 8.9 11.4 10 10 10Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd" />
                     <circle cx="10" cy="18" r="1" fill="currentColor" />
                   </svg>
                 )
-              }
+              },
+              { id: 'map', label: 'Map', iconName: 'map' },
+              { id: 'street', label: 'Street', iconName: 'street' },
+              { id: 'zone', label: 'Zone', iconName: 'zone' },
+              { id: 'metro', label: 'Metro', iconName: 'train' }
             ].map(v => {
               const isAct = v.id === 'waypoint' ? isSettingWaypoint : (v.id === 'street' ? streetView : (v.id === 'zone' ? zoneView : (v.id === 'metro' ? metroView : (!streetView && !zoneView && !metroView && !isSettingWaypoint))));
               const activeTheme = zoneView || metroView;
@@ -3465,7 +3510,7 @@ const draw = useCallback(() => {
                   }}
                 >
                   {v.iconElement ? v.iconElement : <Icon name={v.iconName} size={12} />}
-                  <span>{v.label}</span>
+                  {v.label && <span>{v.label}</span>}
                 </button>
               );
             })}
@@ -3481,17 +3526,6 @@ const draw = useCallback(() => {
           >
             <Icon name="stats" size={13} />
             {zoneView ? 'Zones' : 'Objects'} ({zoneView ? (city?.zones || []).length : ((city?.placedAssets || []).length + (city?.roads || []).length)})
-          </button>
-
-          <button
-            className={zoneView ? `clay-button ${showCitiesManager ? 'active' : ''}` : `glass-button ${showCitiesManager ? 'active' : ''}`}
-            onClick={() => {
-              setShowCitiesManager(!showCitiesManager);
-              setShowObjectsPanel(false);
-            }}
-            style={{ height: 36, padding: '0 14px', fontWeight: 600, border: 'none', display:'flex', alignItems:'center', gap: 6 }}
-          >
-            🏙️ Cities
           </button>
         </div>
 
@@ -7469,4 +7503,394 @@ function createZoneLabelSprite(name, color) {
 
 // Need THREE in StreetView
 
-// Need THREE in StreetView
+// ── CityMapThumbnail component ──
+function CityMapThumbnail({ city, width = 180, height = 120 }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    // Clear background
+    ctx.fillStyle = '#1e293b'; // slate dark preview background
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw abstract grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 1;
+    const gridSize = 10;
+    for (let i = 0; i < width; i += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i, height);
+      ctx.stroke();
+    }
+    for (let j = 0; j < height; j += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, j);
+      ctx.lineTo(width, j);
+      ctx.stroke();
+    }
+
+    const roads = city?.roads || [];
+    const placedAssets = city?.placedAssets || [];
+
+    // Map bounds: 0 to 20 columns/rows. Each cell is 34 units.
+    // Total map coordinates: X from 0 to 680, Z from 0 to 680.
+    const mapSize = 680; 
+    
+    // Fit map size inside canvas with padding
+    const padding = 8;
+    const drawSize = Math.min(width - padding * 2, height - padding * 2);
+    const scale = drawSize / mapSize;
+    
+    ctx.save();
+    // Center it
+    ctx.translate((width - drawSize) / 2, (height - drawSize) / 2);
+    ctx.scale(scale, scale);
+
+    // Draw grid bounds border
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, mapSize, mapSize);
+
+    // 1. Draw Roads
+    ctx.strokeStyle = '#64748b'; // soft slate grey for asphalt
+    ctx.lineWidth = 14;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    roads.forEach(road => {
+      const pts = road.points || [];
+      if (pts.length < 2) return;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x * 34, pts[0].z * 34);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.lineTo(pts[i].x * 34, pts[i].z * 34);
+      }
+      ctx.stroke();
+    });
+
+    // 2. Draw Placed Assets (Buildings)
+    placedAssets.forEach(asset => {
+      const col = asset.col || 0;
+      const row = asset.row || 0;
+      const w = asset.width || 1;
+      const h = asset.height || 1;
+      const scaleMultiplier = asset.scaleMultiplier || 1.0;
+      
+      const cx = col * 34 + 17;
+      const cz = row * 34 + 17;
+      
+      ctx.save();
+      ctx.translate(cx, cz);
+      if (asset.rotation) {
+        ctx.rotate(asset.rotation);
+      }
+      
+      // Draw building footprint box
+      ctx.fillStyle = asset.color || '#4ECDC4';
+      ctx.globalAlpha = 0.85;
+      
+      const aw = w * 10 * scaleMultiplier;
+      const ah = h * 10 * scaleMultiplier;
+      ctx.fillRect(-aw / 2, -ah / 2, aw, ah);
+      
+      ctx.restore();
+    });
+
+    ctx.restore();
+  }, [city, width, height]);
+
+  return (
+    <canvas 
+      ref={canvasRef} 
+      width={width} 
+      height={height} 
+      style={{ 
+        display: 'block', 
+        borderRadius: 12,
+        border: '1px solid rgba(255,255,255,0.08)'
+      }} 
+    />
+  );
+}
+
+// ── MyCitiesDashboard component ──
+function MyCitiesDashboard({ savedCitiesList, loadCity, createCity, deleteCity, onClose, zoneView }) {
+  const [newCityName, setNewCityName] = useState('');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  return (
+    <div style={{
+      width: '100%',
+      height: '100%',
+      background: 'radial-gradient(circle at top left, #1e293b, #0f172a)',
+      padding: '32px',
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      color: '#fff',
+      fontFamily: '"Outfit", "Inter", sans-serif',
+      overflowY: 'auto',
+      zIndex: 200,
+      position: 'relative'
+    }}>
+      {/* Upper Navigation Row */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        paddingBottom: '20px',
+        marginBottom: '24px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {savedCitiesList && savedCitiesList.some(c => c.isActive) && (
+            <button
+              onClick={onClose}
+              className="glass-button"
+              style={{
+                borderRadius: '12px',
+                padding: '8px 12px',
+                fontSize: '11px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                border: 'none',
+                height: '36px'
+              }}
+            >
+              <Icon name="back" size={14} /> Back to City
+            </button>
+          )}
+          <span style={{ fontSize: '20px', fontWeight: 800, color: '#4ECDC4', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Icon name="city" size={24} color="#4ECDC4" /> My Cities Workspace
+          </span>
+        </div>
+
+        <button
+          onClick={() => setShowCreateDialog(true)}
+          className="clay-button"
+          style={{
+            background: '#4ECDC4',
+            color: '#fff',
+            padding: '0 16px',
+            borderRadius: '12px',
+            fontWeight: 700,
+            fontSize: '11px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            border: 'none',
+            height: '36px',
+            boxShadow: '0 4px 12px rgba(78, 205, 196, 0.3)'
+          }}
+        >
+          <Icon name="plus" size={14} color="#fff" /> Build New City
+        </button>
+      </div>
+
+      {/* Grid List of Cities */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+        gap: '24px',
+        paddingBottom: '40px'
+      }}>
+        {savedCitiesList && savedCitiesList.length > 0 ? (
+          savedCitiesList.map(c => (
+            <div
+              key={c.name}
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: c.isActive ? '2px solid #4ECDC4' : '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '20px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                position: 'relative',
+                transition: 'transform 0.2s ease, border-color 0.2s ease'
+              }}
+            >
+              {/* Active Indicator Tag */}
+              {c.isActive && (
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  background: 'rgba(78,205,196,0.2)',
+                  border: '1px solid #4ECDC4',
+                  borderRadius: '10px',
+                  padding: '2px 8px',
+                  fontSize: '8px',
+                  fontWeight: 800,
+                  color: '#4ECDC4',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  zIndex: 10
+                }}>
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4ECDC4', display: 'inline-block', boxShadow: '0 0 4px #4ECDC4' }} />
+                  ACTIVE
+                </div>
+              )}
+
+              {/* City Canvas Map Thumbnail */}
+              <CityMapThumbnail city={c} width={208} height={130} />
+
+              {/* Info Details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {c.name}
+                </span>
+                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)' }}>
+                  {(c.size / 1024).toFixed(1)} KB · Modified {new Date(c.modifiedAt).toLocaleDateString()}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <button
+                  onClick={() => loadCity(c.name)}
+                  className="glass-button"
+                  style={{
+                    flex: 1,
+                    borderRadius: '10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    border: 'none',
+                    background: c.isActive ? 'rgba(78, 205, 196, 0.2)' : undefined,
+                    cursor: c.isActive ? 'default' : 'pointer'
+                  }}
+                  disabled={c.isActive}
+                >
+                  <Icon name="back" size={10} style={{ transform: 'rotate(180deg)' }} /> Open Map
+                </button>
+
+                {c.name !== 'default' && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete ${c.name}?`)) {
+                        deleteCity(c.name);
+                      }
+                    }}
+                    className="glass-button danger"
+                    style={{
+                      borderRadius: '10px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      height: '28px',
+                      width: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: 'none',
+                      background: 'rgba(255,107,107,0.1)'
+                    }}
+                  >
+                    <Icon name="trash" size={12} color="#FF6B6B" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', gridColumn: '1 / -1', padding: '40px 0' }}>
+            No saved cities found. Click "Build New City" to create one.
+          </div>
+        )}
+      </div>
+
+      {/* Build New City Dialog (Modal) */}
+      {showCreateDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15,23,42,0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 300
+        }}>
+          <div className="glass-panel" style={{
+            width: '320px',
+            padding: '24px',
+            borderRadius: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            border: '1px solid rgba(255,255,255,0.15)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+          }}>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#4ECDC4', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Icon name="plus" size={16} color="#4ECDC4" /> Name New City
+            </span>
+            <input
+              type="text"
+              autoFocus
+              placeholder="Enter city name..."
+              value={newCityName}
+              onChange={e => setNewCityName(e.target.value)}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: '12px',
+                padding: '10px 14px',
+                color: '#fff',
+                fontSize: '12px',
+                outline: 'none'
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && newCityName.trim()) {
+                  createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
+                  setNewCityName('');
+                  setShowCreateDialog(false);
+                }
+              }}
+            />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  setNewCityName('');
+                  setShowCreateDialog(false);
+                }}
+                className="glass-button"
+                style={{ flex: 1, borderRadius: '12px', height: '34px', border: 'none' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (newCityName.trim()) {
+                    createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
+                    setNewCityName('');
+                    setShowCreateDialog(false);
+                  }
+                }}
+                className="clay-button"
+                style={{ flex: 1, background: '#4ECDC4', color: '#fff', borderRadius: '12px', height: '34px', border: 'none', fontWeight: 700 }}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

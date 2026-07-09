@@ -1,0 +1,59 @@
+{
+  "id": "nova-arcadia",
+  "name": "Nova Arcadia",
+  "cols": 20,
+  "rows": 20,
+  "placedAssets": [],
+  "roads": [
+    {
+      "id": "road-init-1",
+      "points": [
+        {
+          "x": 2,
+          "z": 5
+        },
+        {
+          "x": 5,
+          "z": 8
+        },
+        {
+          "x": 10,
+          "z": 5
+        },
+        {
+          "x": 15,
+          "z": 8
+        },
+        {
+          "x": 18,
+          "z": 5
+        }
+      ]
+    },
+    {
+      "id": "road-init-2",
+      "points": [
+        {
+          "x": 5,
+          "z": 2
+        },
+        {
+          "x": 10,
+          "z": 10
+        },
+        {
+          "x": 15,
+          "z": 18
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "population": 0,
+    "happiness": 100,
+    "treasury": 500000,
+    "traffic": "low"
+  },
+  "simulationTick": 0,
+  "zones": []
+}

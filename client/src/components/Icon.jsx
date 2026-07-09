@@ -109,6 +109,12 @@ const ICONS = {
   train: (
     <><rect x="4" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/><rect x="6" y="5" width="8" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2" fill="none"/><circle cx="7" cy="11" r="1" fill="currentColor"/><circle cx="13" cy="11" r="1" fill="currentColor"/><path d="M5 14l-2 3M15 14l2 3M2 17h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></>
   ),
+  plus: (
+    <path d="M10 5v10M5 10h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+  ),
+  back: (
+    <path d="M15 10H5M9 6L5 10l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  ),
 };
 
 export default function Icon({ name, size = 16, color = 'currentColor', style = {} }) {

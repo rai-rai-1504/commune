@@ -280,12 +280,21 @@ function getCitiesList() {
         const filePath = path.join(SAVED_CITIES_DIR, f);
         const stats = fs.statSync(filePath);
         const name = path.basename(f, '.json');
+        let roads = [];
+        let placedAssets = [];
+        try {
+          const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          roads = content.roads || [];
+          placedAssets = content.placedAssets || [];
+        } catch (_) {}
         return {
           name,
           createdAt: stats.birthtimeMs,
           modifiedAt: stats.mtimeMs,
           size: stats.size,
-          isActive: name === activeCityName
+          isActive: name === activeCityName,
+          roads,
+          placedAssets
         };
       });
   } catch (err) {
