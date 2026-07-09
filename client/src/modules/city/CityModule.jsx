@@ -4092,7 +4092,7 @@ const draw = useCallback(() => {
             inset: 0,
             zIndex: 99999,
             display: 'flex',
-            background: 'rgba(7, 10, 22, 0.88)',
+            background: 'linear-gradient(135deg, rgba(6, 18, 22, 0.93) 0%, rgba(10, 24, 32, 0.95) 100%)',
             backdropFilter: 'blur(20px)',
             color: '#fff',
             padding: '40px 60px',
@@ -4362,20 +4362,26 @@ const draw = useCallback(() => {
                                     flex: 1,
                                     padding: '6px 0',
                                     fontSize: 11,
-                                    background: '#4ECDC4',
-                                    color: '#fff',
+                                    background: 'rgba(78, 205, 196, 0.1)',
+                                    color: '#4ECDC4',
                                     borderRadius: 8,
-                                    border: 'none',
+                                    border: '1px solid rgba(78, 205, 196, 0.3)',
                                     fontWeight: 700,
                                     cursor: 'pointer',
-                                    transition: 'opacity 0.2s'
+                                    transition: 'all 0.2s',
+                                    boxShadow: 'none'
                                   }}
-                                  onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-                                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                                  onMouseEnter={e => {
+                                    e.currentTarget.style.background = 'rgba(78, 205, 196, 0.25)';
+                                    e.currentTarget.style.boxShadow = '0 0 10px rgba(78, 205, 196, 0.25)';
+                                  }}
+                                  onMouseLeave={e => {
+                                    e.currentTarget.style.background = 'rgba(78, 205, 196, 0.1)';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                  }}
                                 >
-                                  Load
+                                  Load Layout
                                 </button>
-                                {c.name !== 'default' && (
                                   <button
                                     onClick={() => {
                                       if (window.confirm(`Are you sure you want to delete ${c.name}?`)) {
@@ -4385,20 +4391,25 @@ const draw = useCallback(() => {
                                     style={{
                                       padding: '6px 12px',
                                       fontSize: 11,
-                                      background: 'rgba(255, 107, 107, 0.15)',
+                                      background: 'rgba(255, 107, 107, 0.05)',
                                       color: '#FF6B6B',
                                       borderRadius: 8,
                                       border: '1px solid rgba(255, 107, 107, 0.2)',
                                       fontWeight: 600,
                                       cursor: 'pointer',
-                                      transition: 'background 0.2s'
+                                      transition: 'all 0.2s'
                                     }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 107, 107, 0.25)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 107, 107, 0.15)'}
+                                    onMouseEnter={e => {
+                                      e.currentTarget.style.background = 'rgba(255, 107, 107, 0.2)';
+                                      e.currentTarget.style.borderColor = 'rgba(255, 107, 107, 0.4)';
+                                    }}
+                                    onMouseLeave={e => {
+                                      e.currentTarget.style.background = 'rgba(255, 107, 107, 0.05)';
+                                      e.currentTarget.style.borderColor = 'rgba(255, 107, 107, 0.2)';
+                                    }}
                                   >
                                     Delete
                                   </button>
-                                )}
                               </>
                             ) : (
                               <button
@@ -4407,15 +4418,19 @@ const draw = useCallback(() => {
                                   flex: 1,
                                   padding: '6px 0',
                                   fontSize: 11,
-                                  background: 'rgba(255,255,255,0.05)',
-                                  color: 'rgba(255,255,255,0.25)',
+                                  background: 'rgba(52, 211, 153, 0.08)',
+                                  color: '#34D399',
                                   borderRadius: 8,
-                                  border: 'none',
-                                  fontWeight: 600,
-                                  cursor: 'not-allowed'
+                                  border: '1px solid rgba(52, 211, 153, 0.25)',
+                                  fontWeight: 700,
+                                  cursor: 'not-allowed',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 4
                                 }}
                               >
-                                Active Territory
+                                <span>✓</span> Active Layout
                               </button>
                             )}
                           </div>

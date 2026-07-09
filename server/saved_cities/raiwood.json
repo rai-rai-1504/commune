@@ -1,0 +1,16 @@
+{
+  "id": "nova-arcadia",
+  "name": "Nova Arcadia",
+  "cols": 20,
+  "rows": 20,
+  "placedAssets": [],
+  "roads": [],
+  "stats": {
+    "population": 0,
+    "happiness": 100,
+    "treasury": 500000,
+    "traffic": "low"
+  },
+  "simulationTick": 176,
+  "zones": []
+}
