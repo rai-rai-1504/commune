@@ -5753,57 +5753,57 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
 
           if (type === 'multilane') {
             // Double yellow lines in center
-            addMarking(0.08, 0.04, 0.015, 0.42, yellowMat);
-            addMarking(-0.08, 0.04, 0.015, 0.42, yellowMat);
+            addMarking(0.16, 0.08, 0.015, 0.42, yellowMat);
+            addMarking(-0.16, 0.08, 0.015, 0.42, yellowMat);
 
             // Dashed lane lines (alternate)
             if (i % 3 === 0) {
-              addMarking(0.75, 0.04, 0.015, 0.42, whiteMat);
-              addMarking(-0.75, 0.04, 0.015, 0.42, whiteMat);
+              addMarking(1.5, 0.04, 0.015, 0.42, whiteMat);
+              addMarking(-1.5, 0.04, 0.015, 0.42, whiteMat);
             }
           } else if (type === 'highway') {
-            // Concrete median jersey barrier
-            addMarking(0, 0.24, 0.5, 0.42, concreteMat);
+            // Concrete median jersey barrier (wider in 3D too)
+            addMarking(0, 0.48, 0.5, 0.42, concreteMat);
 
             // Solid yellow inner lines
-            addMarking(0.22, 0.04, 0.015, 0.42, yellowMat);
-            addMarking(-0.22, 0.04, 0.015, 0.42, yellowMat);
+            addMarking(0.6, 0.08, 0.015, 0.42, yellowMat);
+            addMarking(-0.6, 0.08, 0.015, 0.42, yellowMat);
 
             // Dashed lane lines (alternate)
             if (i % 3 === 0) {
-              addMarking(1.05, 0.04, 0.015, 0.42, whiteMat);
-              addMarking(-1.05, 0.04, 0.015, 0.42, whiteMat);
+              addMarking(2.8, 0.04, 0.015, 0.42, whiteMat);
+              addMarking(-2.8, 0.04, 0.015, 0.42, whiteMat);
             }
 
             // Solid white outer shoulders
-            addMarking(1.9, 0.04, 0.015, 0.42, whiteMat);
-            addMarking(-1.9, 0.04, 0.015, 0.42, whiteMat);
+            addMarking(5.4, 0.08, 0.015, 0.42, whiteMat);
+            addMarking(-5.4, 0.08, 0.015, 0.42, whiteMat);
           } else if (type === 'avenue') {
             // green grass center median strip
-            addMarking(0, 0.4, 0.02, 0.42, greenGrassMat);
+            addMarking(0, 0.8, 0.02, 0.42, greenGrassMat);
 
             // double white line shoulders
-            addMarking(0.24, 0.04, 0.015, 0.42, whiteMat);
-            addMarking(-0.24, 0.04, 0.015, 0.42, whiteMat);
+            addMarking(0.48, 0.08, 0.015, 0.42, whiteMat);
+            addMarking(-0.48, 0.08, 0.015, 0.42, whiteMat);
 
             // dashed white lanes
             if (i % 3 === 0) {
-              addMarking(1.1, 0.04, 0.015, 0.42, whiteMat);
-              addMarking(-1.1, 0.04, 0.015, 0.42, whiteMat);
+              addMarking(2.2, 0.04, 0.015, 0.42, whiteMat);
+              addMarking(-2.2, 0.04, 0.015, 0.42, whiteMat);
             }
           } else if (type === 'cyberway') {
             // neon cyan glowing borders at the edges
-            addMarking(1.1, 0.06, 0.02, 0.42, cyanGlowMat);
-            addMarking(-1.1, 0.06, 0.02, 0.42, cyanGlowMat);
+            addMarking(2.2, 0.12, 0.02, 0.42, cyanGlowMat);
+            addMarking(-2.2, 0.12, 0.02, 0.42, cyanGlowMat);
 
             // blue/cyan dash markers in center
             if (i % 3 === 0) {
-              addMarking(0, 0.04, 0.018, 0.35, cyanGlowMat);
+              addMarking(0, 0.08, 0.018, 0.35, cyanGlowMat);
             }
           } else {
             // Standard center dashes
             if (i % 2 === 0) {
-              addMarking(0, 0.06, 0.015, 0.4, dashMat);
+              addMarking(0, 0.12, 0.015, 0.4, dashMat);
             }
           }
         }
@@ -6711,7 +6711,7 @@ const mount = mountRef.current;
         const road = clickedRoadId ? (latestCity?.roads || []).find(r => r.id === clickedRoadId) : null;
         
         if (clickedAssetId && asset) {
-          if (e.button === 2) {
+          if (e.button === 2 || e.button === 0) {
             selectAsset(clickedAssetId);
             setSelectedRoadId(null);
             
@@ -6720,10 +6720,6 @@ const mount = mountRef.current;
             const my = containerRect ? e.clientY - containerRect.top : e.clientY;
             const coords = getInitialClampedCoords(mx, my, 'asset', showColorRandomizer);
             setAssetContextMenu({ ...coords, asset, type: 'asset' });
-          } else if (e.button === 0) {
-            selectAsset(clickedAssetId);
-            setSelectedRoadId(null);
-            setAssetContextMenu(null);
           }
         } else if (clickedRoadId && road) {
           if (clickedRoadId === selectedRoadIdRef.current) {
@@ -7025,6 +7021,7 @@ const mount = mountRef.current;
 
       // Roaming humans update
       humansRef.current.forEach(h => {
+        return; // Stopped walking and swing animation per request
         const mesh = h.mesh;
 
         // Update progress parameter t

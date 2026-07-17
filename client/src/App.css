@@ -316,7 +316,7 @@ select.form-input { cursor: pointer; }
 
 .asset-ctx-menu {
   position: absolute;
-  z-index: 9000;
+  z-index: 999999;
   width: 210px;
   background: rgba(10, 15, 30, 0.72);
   backdrop-filter: blur(22px) saturate(1.8);
