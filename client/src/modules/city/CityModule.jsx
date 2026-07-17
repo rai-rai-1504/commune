@@ -868,6 +868,43 @@ export default function CityModule() {
   const [sizeRandomizeMode, setSizeRandomizeMode] = useState('default'); // 'default' | 'randomize'
   const [sizeRandomizeMin, setSizeRandomizeMin] = useState(0.8);
   const [sizeRandomizeMax, setSizeRandomizeMax] = useState(2.2);
+  const [svPanelPos, setSvPanelPos] = useState({ x: null, y: null });
+
+  useEffect(() => {
+    setSvPanelPos({ x: null, y: null });
+  }, [selectedAssetId, streetView]);
+
+  const handleSvPanelMouseDown = (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('button, input, select, textarea, span, label')) return;
+    e.preventDefault();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const parentRect = containerRef.current?.getBoundingClientRect();
+    const initialX = rect.left - (parentRect ? parentRect.left : 0);
+    const initialY = rect.top - (parentRect ? parentRect.top : 0);
+
+    const handleMouseMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      setSvPanelPos({
+        x: initialX + dx,
+        y: initialY + dy
+      });
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
 
   const getInitialClampedCoords = (mx, my, type, isRandomizerOpen) => {
     const isAsset = type === 'asset';
@@ -2970,6 +3007,9 @@ const draw = useCallback(() => {
           getInitialClampedCoords={getInitialClampedCoords}
           showColorRandomizer={showColorRandomizer}
           waypoint={waypoint}
+          svPanelPos={svPanelPos}
+          setSvPanelPos={setSvPanelPos}
+          handleSvPanelMouseDown={handleSvPanelMouseDown}
         />
       ) : (
         <canvas
@@ -3050,7 +3090,7 @@ const draw = useCallback(() => {
       )}
 
       {/* ── Glassmorphic Context Menu (Asset & Road) ── */}
-      {assetContextMenu && (() => {
+      {assetContextMenu && !streetView && (() => {
         const { x, y, type } = assetContextMenu;
         const isAsset = type === 'asset';
         const asset = isAsset ? assetContextMenu.asset : null;
@@ -3610,7 +3650,7 @@ const draw = useCallback(() => {
       )}
 
       {/* ── Top-Right: View Toggles & Placed Objects Menu ── */}
-      {!showCitiesManager && (
+      {!showCitiesManager && !streetView && (
         <div style={{ position: 'absolute', top: 80, right: 16, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
           <div style={{ display: 'flex', gap: 8 }}>
           <div className={zoneView ? "clay-panel" : "glass-panel"} style={{
@@ -5168,7 +5208,7 @@ const draw = useCallback(() => {
 }
 
 // ── Street View: simple Three.js first-person walk ────────────────────────
-function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime, metroView, setAssetContextMenu, containerRef, getInitialClampedCoords, showColorRandomizer, waypoint }) {
+function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersections = [], gameTime, metroView, setAssetContextMenu, containerRef, getInitialClampedCoords, showColorRandomizer, waypoint, svPanelPos, setSvPanelPos, handleSvPanelMouseDown }) {
   const mountRef = useRef(null);
   const animRef = useRef(null);
   const keys = useRef({});
@@ -6332,7 +6372,7 @@ function StreetView({ city, onExit, selectedRoadId, setSelectedRoadId, intersect
     });
     humansRef.current = [];
 
-    if (city.roads && city.roads.length > 0) {
+    if (false && city.roads && city.roads.length > 0) {
       const CLOTHING_COLORS = [0xff5722, 0xe91e63, 0x9c27b0, 0x3f51b5, 0x00bcd4, 0x4caf50, 0xffeb3b, 0xff9800];
       const numHumans = Math.min(15, city.roads.length * 3);
       for (let i = 0; i < numHumans; i++) {
@@ -7407,16 +7447,23 @@ const mount = mountRef.current;
 
       {/* Floating Edit Panel in Street View */}
       {selectedAsset && (
-        <div style={{
-          position: 'absolute', top: 60, right: 12, width: 280,
-          background: 'rgba(22, 27, 38, 0.85)', backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12,
-          padding: '16px', color: '#fff', zIndex: 100,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          display: 'flex', flexDirection: 'column', gap: 12,
-          maxHeight: 'calc(100% - 80px)', overflowY: 'auto'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div 
+          onMouseDown={handleSvPanelMouseDown}
+          style={{
+            position: 'absolute',
+            top: svPanelPos.y !== null ? svPanelPos.y : 60,
+            right: svPanelPos.x !== null ? 'auto' : 12,
+            left: svPanelPos.x !== null ? svPanelPos.x : 'auto',
+            width: 280,
+            background: 'rgba(22, 27, 38, 0.85)', backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12,
+            padding: '16px', color: '#fff', zIndex: 999999,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            display: 'flex', flexDirection: 'column', gap: 12,
+            maxHeight: 'calc(100% - 80px)', overflowY: 'auto'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'move', userSelect: 'none' }}>
             <span style={{ fontWeight: 700, fontSize: 13, color: '#4ECDC4' }}>🏢 Edit Placed Asset</span>
             <button onClick={() => selectAsset(null)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 14 }}>✕</button>
           </div>

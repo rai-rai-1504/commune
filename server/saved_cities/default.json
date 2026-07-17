@@ -1,0 +1,3090 @@
+{
+  "id": "nova-arcadia",
+  "name": "Nova Arcadia",
+  "cols": 20,
+  "rows": 20,
+  "placedAssets": [
+    {
+      "id": "9285179c-75ff-47e3-bc23-7ca88dc6ea4f",
+      "name": "Hyper-Block Condominiums",
+      "objects": [
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 0.1,
+            "z": 0
+          },
+          "scale": {
+            "x": 12,
+            "y": 0.2,
+            "z": 12
+          },
+          "color": "#0f172a",
+          "name": "Hyper_Base"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 0.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_0"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 0.6,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_0"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 0.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_0"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 1.26,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_0"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 3.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_1"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 3.6,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_1"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 3.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_1"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 4.26,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_1"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 2.1,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_2"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 2.1,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_2"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 2.1,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_2"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 2.7600000000000002,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_2"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 3.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_3"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 3.6,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_3"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 3.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_3"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 4.26,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_3"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_4"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 0.6,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_4"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_4"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 1.26,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_4"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 2.1,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_5"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 2.1,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_5"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 2.1,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_5"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 2.7600000000000002,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_5"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 0.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_6"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 0.6,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_6"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 0.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_6"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 1.26,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_6"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 3.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_7"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 3.6,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_7"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 3.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_7"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 4.26,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_7"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 2.1,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_8"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 2.1,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_8"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 2.1,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_8"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 2.7600000000000002,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_8"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 3.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_9"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -4.4,
+            "y": 3.6,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_9"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -5.32,
+            "y": 3.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_9"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -4.4,
+            "y": 4.26,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_9"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 2.1,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_10"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 2.1,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_10"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 2.1,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_10"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 2.7600000000000002,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_10"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 3.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_11"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 3.6,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_11"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 3.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_11"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 4.26,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_11"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 0.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_12"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 0.6,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_12"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 0.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_12"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 1.26,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_12"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 2.1,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_13"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 2.1,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_13"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 2.1,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_13"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 2.7600000000000002,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_13"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_14"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 0.6,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_14"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_14"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 1.26,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_14"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 3.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_15"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 3.6,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_15"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 3.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_15"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 4.26,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_15"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 2.1,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_16"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 2.1,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_16"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 2.1,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_16"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 2.7600000000000002,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_16"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 3.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_17"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 3.6,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_17"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 3.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_17"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 4.26,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_17"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 0.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_18"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 0.6,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_18"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 0.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_18"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 1.26,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_18"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 2.1,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_19"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": -2.2,
+            "y": 2.1,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_19"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -3.12,
+            "y": 2.1,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_19"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": -2.2,
+            "y": 2.7600000000000002,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_19"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_20"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_20"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 0.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_20"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 1.26,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_20"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 2.1,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_21"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 2.1,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_21"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 2.1,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_21"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 2.7600000000000002,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_21"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_22"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_22"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 0.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_22"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 1.26,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_22"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 3.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_23"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 3.6,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_23"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 3.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_23"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 4.26,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_23"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 2.1,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_24"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 2.1,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_24"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 2.1,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_24"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 2.7600000000000002,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_24"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 3.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_25"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 3.6,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_25"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 3.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_25"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 4.26,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_25"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_26"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_26"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 0.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_26"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 1.26,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_26"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 2.1,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_27"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 2.1,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_27"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 2.1,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_27"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 2.7600000000000002,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_27"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_28"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 0.6,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_28"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 0.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_28"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 1.26,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_28"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 3.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_29"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 0,
+            "y": 3.6,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_29"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": -0.92,
+            "y": 3.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_29"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 0,
+            "y": 4.26,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_29"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 0.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_30"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 0.6,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_30"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 0.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_30"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 1.26,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_30"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 3.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_31"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 3.6,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_31"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 3.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_31"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 4.26,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_31"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 2.1,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_32"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 2.1,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_32"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 2.1,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_32"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 2.7600000000000002,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_32"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 3.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_33"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 3.6,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_33"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 3.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_33"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 4.26,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_33"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_34"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 0.6,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_34"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_34"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 1.26,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_34"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 2.1,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_35"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 2.1,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_35"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 2.1,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_35"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 2.7600000000000002,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_35"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 0.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_36"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 0.6,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_36"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 0.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_36"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 1.26,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_36"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 3.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_37"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 3.6,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_37"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 3.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_37"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 4.26,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_37"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 2.1,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_38"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 2.1,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_38"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 2.1,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_38"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 2.7600000000000002,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_38"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 3.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_39"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 2.2,
+            "y": 3.6,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_39"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 1.2800000000000002,
+            "y": 3.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_39"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 2.2,
+            "y": 4.26,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_39"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 2.1,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_40"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 2.1,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_40"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 2.1,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_40"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 2.7600000000000002,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_40"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 3.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_41"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 3.6,
+            "z": -3.49
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_41"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 3.6,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_41"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 4.26,
+            "z": -4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_41"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 0.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_42"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 0.6,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_42"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 0.6,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_42"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 1.26,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_42"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 2.1,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_43"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 2.1,
+            "z": -1.29
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_43"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 2.1,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_43"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 2.7600000000000002,
+            "z": -2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_43"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_44"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 0.6,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_44"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 0.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_44"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 1.26,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_44"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 3.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_45"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 3.6,
+            "z": 0.91
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_45"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 3.6,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_45"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 4.26,
+            "z": 0
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_45"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 2.1,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_46"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 2.1,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_46"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 2.1,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_46"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 2.7600000000000002,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_46"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 3.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_47"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 3.6,
+            "z": 3.1100000000000003
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_47"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 3.6,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_47"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 4.26,
+            "z": 2.2
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_47"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 0.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_48"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 0.6,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_48"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 0.6,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_48"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 1.26,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_48"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 2.1,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 1.8,
+            "y": 1.3,
+            "z": 1.8
+          },
+          "color": "#475569",
+          "name": "HBlock_Unit_49"
+        },
+        {
+          "geometry": "box",
+          "position": {
+            "x": 4.4,
+            "y": 2.1,
+            "z": 5.3100000000000005
+          },
+          "scale": {
+            "x": 1.2,
+            "y": 0.8,
+            "z": 0.04
+          },
+          "color": "#38bdf8",
+          "name": "HBlock_Win_49"
+        },
+        {
+          "geometry": "cylinder",
+          "position": {
+            "x": 3.4800000000000004,
+            "y": 2.1,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.08,
+            "y": 1.5,
+            "z": 0.08
+          },
+          "color": "#94a3b8",
+          "name": "HBlock_Pipe_49"
+        },
+        {
+          "geometry": "sphere",
+          "position": {
+            "x": 4.4,
+            "y": 2.7600000000000002,
+            "z": 4.4
+          },
+          "scale": {
+            "x": 0.12,
+            "y": 0.12,
+            "z": 0.12
+          },
+          "color": "#f43f5e",
+          "name": "HBlock_Beacon_49"
+        }
+      ],
+      "col": 13.30363347490876,
+      "row": 12.269159868103873,
+      "rotation": -1.012197011451334,
+      "color": "#0f172a",
+      "placedBy": "hello",
+      "placedAt": 1784279021612,
+      "width": 12,
+      "height": 12,
+      "scaleMultiplier": 1
+    }
+  ],
+  "roads": [
+    {
+      "id": "road-init-1",
+      "points": [
+        {
+          "x": 2,
+          "z": 5
+        },
+        {
+          "x": 5,
+          "z": 8
+        },
+        {
+          "x": 10,
+          "z": 5
+        },
+        {
+          "x": 15,
+          "z": 8
+        },
+        {
+          "x": 18,
+          "z": 5
+        }
+      ]
+    },
+    {
+      "id": "road-init-2",
+      "points": [
+        {
+          "x": 5,
+          "z": 2
+        },
+        {
+          "x": 10,
+          "z": 10
+        },
+        {
+          "x": 15,
+          "z": 18
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "population": 320,
+    "happiness": 52,
+    "treasury": 499998,
+    "traffic": "low"
+  },
+  "simulationTick": 32,
+  "zones": []
+}
