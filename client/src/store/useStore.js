@@ -221,7 +221,7 @@ export const useStore = create((set, get) => ({
   savedCitiesList: [],
   cityTool: 'select',
   hoveredCell: null,
-  showCitiesManager: false,
+  showCitiesManager: true,
   streetView: false,      // toggle ground-level preview
   selectedAssetId: null,  // selected placed asset
   selectedAssetIds: [],   // multi-selected placed assets

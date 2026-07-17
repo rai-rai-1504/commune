@@ -4307,6 +4307,7 @@ const draw = useCallback(() => {
                       if (e.key === 'Enter' && newCityName.trim()) {
                         createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
                         setNewCityName('');
+                        setShowCitiesManager(false);
                       }
                     }}
                   />
@@ -4315,6 +4316,7 @@ const draw = useCallback(() => {
                       if (newCityName.trim()) {
                         createCity(newCityName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'));
                         setNewCityName('');
+                        setShowCitiesManager(false);
                       }
                     }}
                     style={{
